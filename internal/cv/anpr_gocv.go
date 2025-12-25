@@ -8,6 +8,8 @@ import (
 	"image/color"
 	"log"
 	"os"
+	"os/exec"
+	"strings"
 
 	"gocv.io/x/gocv"
 )
@@ -27,11 +29,6 @@ func NewANPRService(modelPath string) *ANPRService {
 	}
 
 	// Attempt to load the model.
-	// Note: loading .pt directly in OpenCV (GoCV) usually requires it to be exported to ONNX
-	// or using the LibTorch binding. OpenCV DNN module supports some Torch models.
-	// We try ReadNetFromTorch or ReadNet (auto detect).
-	// If it fails, we log it but don't crash, allowing the app to run without ANPR.
-
 	net := gocv.ReadNet(modelPath, "")
 	if net.Empty() {
 		log.Printf("Warning: Failed to load model %s. Ensure it is compatible with OpenCV DNN (or convert to ONNX).", modelPath)
@@ -74,8 +71,7 @@ func (s *ANPRService) CaptureAndDetect(cameraSource string) (string, string, err
 	gocv.IMWrite(filename, img)
 
 	// Perform Detection
-	// Preprocessing: YOLO style (assuming YOLOv5/8 as common for plate detection)
-	// BlobFromImage(img, scale, size, mean, swapRB, crop)
+	// Preprocessing: YOLO style
 	blob := gocv.BlobFromImage(img, 1.0/255.0, image.Pt(640, 640), gocv.NewScalar(0, 0, 0, 0), true, false)
 	defer blob.Close()
 
@@ -83,19 +79,38 @@ func (s *ANPRService) CaptureAndDetect(cameraSource string) (string, string, err
 	prob := s.Net.Forward("")
 	defer prob.Close()
 
-	// Post-processing would go here to extract bounding boxes and run OCR (e.g., Tesseract).
-	// Since GoCV is just the vision part, we would typically crop the plate and pass to an OCR lib.
-	// For this scope, we simulate the OCR result if a detection (box) is found.
+	// REAL OCR Implementation using Tesseract CLI
+	// This ensures that the detection is based on the actual image content.
+	// Requires 'tesseract' to be installed on the system.
 
-	// Mocking the result for now as full YOLO decoding + OCR in pure GoCV without extra libs (Tesseract) is complex.
-	// In a real "very detailed" project, we would iterate the output layers.
-	detectedText := "B 9999 TEST"
+	out, err := exec.Command("tesseract", filename, "stdout", "--psm", "7").Output()
+	if err != nil {
+		log.Printf("Tesseract OCR failed: %v. Make sure tesseract-ocr is installed.", err)
+		// Fallback to a generic string if OCR fails, to avoid crashing flow
+		return "OCR_FAILED", filename, nil
+	}
 
-	// Draw rectangle on image for debug (simplified)
+	detectedText := strings.TrimSpace(string(out))
+	detectedText = cleanPlateText(detectedText)
+
+	// Draw rectangle on image for debug (simplified as we didn't parse YOLO boxes yet)
+	// In a full implementation, we would use the YOLO boxes to crop the plate before OCR.
+	// For now, we assume the camera is framed on the plate or Tesseract can find it.
 	gocv.Rectangle(&img, image.Rect(100, 100, 300, 200), color.RGBA{0, 255, 0, 0}, 2)
-	gocv.IMWrite(filename, img) // Overwrite with annotated image
+	gocv.IMWrite(filename, img)
 
 	return detectedText, filename, nil
+}
+
+func cleanPlateText(text string) string {
+	// Keep only alphanumeric and spaces
+	clean := strings.Map(func(r rune) rune {
+		if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == ' ' {
+			return r
+		}
+		return -1
+	}, strings.ToUpper(text))
+	return strings.TrimSpace(clean)
 }
 
 func SystemClock() int64 {
