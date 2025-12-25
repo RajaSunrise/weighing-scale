@@ -49,6 +49,7 @@ func (s *Server) Login(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Set("user_id", user.ID)
 	session.Set("username", user.Username)
+	session.Set("full_name", user.FullName)
 	session.Set("role", user.Role)
 	session.Save()
 

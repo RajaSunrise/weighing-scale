@@ -4,12 +4,19 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"stoneweigh/internal/models"
 )
 
 // ShowReports renders the reports page with historical data
 func (s *Server) ShowReports(c *gin.Context) {
+	session := sessions.Default(c)
+	fullName := "Operator"
+	if v := session.Get("full_name"); v != nil {
+		fullName = v.(string)
+	}
+
 	// Parse filters
 	startStr := c.Query("start_date")
 	endStr := c.Query("end_date")
@@ -42,21 +49,28 @@ func (s *Server) ShowReports(c *gin.Context) {
 	s.DB.Where("weighed_at BETWEEN ? AND ?", start, end).Order("weighed_at desc").Find(&records)
 
 	c.HTML(http.StatusOK, "reports.html", gin.H{
-		"title":     "Laporan",
-		"active":    "reports",
-		"showNav":   true,
-		"Records":   records,
-		"StartDate": start.Format("2006-01-02"),
-		"EndDate":   end.Format("2006-01-02"),
+		"title":       "Laporan",
+		"active":      "reports",
+		"showNav":     true,
+		"CurrentUser": fullName,
+		"Records":     records,
+		"StartDate":   start.Format("2006-01-02"),
+		"EndDate":     end.Format("2006-01-02"),
 	})
 }
 
 // ShowSettings renders the main settings landing page
 func (s *Server) ShowSettings(c *gin.Context) {
+	session := sessions.Default(c)
+	fullName := "Operator"
+	if v := session.Get("full_name"); v != nil {
+		fullName = v.(string)
+	}
 	c.HTML(http.StatusOK, "settings.html", gin.H{
-		"title":   "Pengaturan",
-		"active":  "settings",
-		"showNav": true,
+		"title":       "Settings",
+		"active":      "settings",
+		"showNav":     true,
+		"CurrentUser": fullName,
 	})
 }
 

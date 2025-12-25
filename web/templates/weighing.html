@@ -163,6 +163,20 @@ function selectScale(id) {
     // Trigger ANPR (simulated for now, or based on camera url)
     captureWeight(id);
 }
+
+async function captureWeight(scaleId) {
+    const res = await fetch(`/api/anpr/trigger?scale_id=${scaleId}`, { method: 'POST' });
+    const data = await res.json();
+
+    if (data.status === 'success' || data.status === 'simulated') {
+        document.getElementById('plate_no').value = data.plate;
+        document.getElementById('cctv-preview').src = data.snapshot;
+        document.getElementById('anpr-result').innerText = data.plate;
+    } else {
+        console.error("ANPR Failed");
+        document.getElementById('anpr-result').innerText = "ERROR";
+    }
+}
 </script>
 
 {{ template "footer" . }}

@@ -29,6 +29,12 @@ func NewServer(db *gorm.DB, sm *hardware.ScaleManager, anpr *cv.ANPRService) *Se
 // === VIEW HANDLERS ===
 
 func (s *Server) ShowDashboard(c *gin.Context) {
+	session := sessions.Default(c)
+	fullName := "Operator"
+	if v := session.Get("full_name"); v != nil {
+		fullName = v.(string)
+	}
+
 	// 1. Fetch Stats for Today
 	startOfDay := time.Now().Truncate(24 * time.Hour)
 
@@ -54,9 +60,10 @@ func (s *Server) ShowDashboard(c *gin.Context) {
 	s.DB.Order("weighed_at desc").Limit(10).Find(&recent)
 
 	c.HTML(http.StatusOK, "dashboard.html", gin.H{
-		"title":   "Dashboard",
-		"active":  "dashboard",
-		"showNav": true,
+		"title":       "Dashboard",
+		"active":      "dashboard",
+		"showNav":     true,
+		"CurrentUser": fullName,
 		"Stats": gin.H{
 			"TodayCount":  todayCount,
 			"TodayWeight": todayWeight,
@@ -68,6 +75,11 @@ func (s *Server) ShowDashboard(c *gin.Context) {
 func (s *Server) ShowWeighing(c *gin.Context) {
 	session := sessions.Default(c)
 	uidVal := session.Get("user_id")
+
+	fullName := "Operator"
+	if v := session.Get("full_name"); v != nil {
+		fullName = v.(string)
+	}
 
 	// If admin, show all active stations
 	// If operator, show only assigned stations
@@ -89,10 +101,11 @@ func (s *Server) ShowWeighing(c *gin.Context) {
 	}
 
 	c.HTML(http.StatusOK, "weighing.html", gin.H{
-		"title":   "Weighing Station",
-		"active":  "weighing",
-		"showNav": true,
-		"Stations": allowedStations,
+		"title":       "Weighing Station",
+		"active":      "weighing",
+		"showNav":     true,
+		"CurrentUser": fullName,
+		"Stations":    allowedStations,
 	})
 }
 

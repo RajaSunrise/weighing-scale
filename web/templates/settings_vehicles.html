@@ -67,7 +67,7 @@
 document.addEventListener('DOMContentLoaded', loadVehicles);
 
 async function loadVehicles() {
-    const res = await fetch('/settings/api/vehicles');
+    const res = await fetch('/api/vehicles');
     const data = await res.json();
     const tbody = document.getElementById('vehicleTableBody');
     tbody.innerHTML = '';
@@ -95,7 +95,7 @@ document.getElementById('addVehicleForm').addEventListener('submit', async (e) =
     // Convert tare to number
     data.default_tare = parseFloat(data.default_tare) || 0;
 
-    const res = await fetch('/settings/api/vehicles', {
+    const res = await fetch('/api/vehicles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -112,7 +112,7 @@ document.getElementById('addVehicleForm').addEventListener('submit', async (e) =
 
 async function deleteVehicle(id) {
     if(!confirm("Anda yakin?")) return;
-    await fetch('/settings/api/vehicles/' + id, { method: 'DELETE' });
+    await fetch('/api/vehicles/' + id, { method: 'DELETE' });
     loadVehicles();
 }
 </script>

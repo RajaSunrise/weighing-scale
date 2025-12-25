@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"stoneweigh/internal/models"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -12,10 +13,17 @@ import (
 // === User Management ===
 
 func (s *Server) ShowUsers(c *gin.Context) {
+	session := sessions.Default(c)
+	fullName := "Operator"
+	if v := session.Get("full_name"); v != nil {
+		fullName = v.(string)
+	}
+
 	c.HTML(http.StatusOK, "users.html", gin.H{
-		"title":   "User Management",
-		"active":  "settings",
-		"showNav": true,
+		"title":       "User Management",
+		"active":      "settings",
+		"showNav":     true,
+		"CurrentUser": fullName,
 	})
 }
 
