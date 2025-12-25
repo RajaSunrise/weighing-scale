@@ -6,44 +6,41 @@ import (
 
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
 	"stoneweigh/internal/cv"
+	"stoneweigh/internal/database"
 	"stoneweigh/internal/handlers"
 	"stoneweigh/internal/hardware"
 	"stoneweigh/internal/models"
+	"stoneweigh/internal/pkg/logger"
 	"stoneweigh/internal/router"
 )
 
 func main() {
+	// Initialize Logger
+	logger.Init()
+
 	// Load .env
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found")
 	}
 
 	// 1. Initialize Database
-	dbDSN := os.Getenv("DB_DSN")
-	if dbDSN == "" {
-		dbDSN = "stoneweigh.db"
-	}
-	db, err := gorm.Open(sqlite.Open(dbDSN), &gorm.Config{})
-	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
-	}
-
-	// Migrate Schema
-	db.AutoMigrate(&models.WeighingRecord{}, &models.ScaleConfig{}, &models.Vehicle{}, &models.Invoice{}, &models.User{})
+	// We use the internal/database package which now handles the Postgres/Sqlite logic + migration
+	database.Connect()
+	db := database.DB
 
 	// Seed Admin User
 	seedAdmin(db)
 
 	// 2. Initialize Hardware (Scales)
 	hardware.InitScaleManager()
-	// Add default scales (Mocking ports for now - in prod use env vars to loop)
-	hardware.Manager.AddScale(models.ScaleConfig{Model: gorm.Model{ID: 1}, Name: "Main Gate", Port: "COM3", BaudRate: 9600, Enabled: true})
-	hardware.Manager.AddScale(models.ScaleConfig{Model: gorm.Model{ID: 2}, Name: "Side Gate", Port: "COM4", BaudRate: 9600, Enabled: true})
-	hardware.Manager.AddScale(models.ScaleConfig{Model: gorm.Model{ID: 3}, Name: "Back Gate", Port: "COM5", BaudRate: 9600, Enabled: true})
+
+	// Load configs from DB
+	// If no configs exist, maybe seed default ones for MVP (optional)
+	// But `ReloadConfig` will handle empty lists gracefully.
+	hardware.Manager.ReloadConfig(db)
 
 	if os.Getenv("ENABLE_DEMO_SCALE") == "true" {
 		hardware.Manager.StartDemoMode()

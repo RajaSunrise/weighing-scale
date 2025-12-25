@@ -30,19 +30,31 @@ type WeighingRecord struct {
 	WeighedAt     time.Time `json:"weighed_at"`
 }
 
-// ScaleConfig represents the configuration for a physical scale connected via Serial
-type ScaleConfig struct {
+// WeighingStation represents a physical weighing station configuration
+// It combines Scale config and Camera config into one logical unit.
+type WeighingStation struct {
 	gorm.Model
-	Name       string `json:"name"`        // e.g., "Main Gate Scale"
-	Port       string `json:"port"`        // e.g., "COM3" or "/dev/ttyUSB0"
+	Name       string `json:"name"`        // e.g., "Main Gate"
+	ScalePort  string `json:"scale_port"`  // e.g., "COM3" or "/dev/ttyUSB0"
 	BaudRate   int    `json:"baud_rate"`   // e.g., 9600
-	DataBits   int    `json:"data_bits"`   // e.g., 8
-	StopBits   int    `json:"stop_bits"`   // e.g., 1
-	Parity     int    `json:"parity"`      // 0:None, 1:Odd, 2:Even
+	CameraURL  string `json:"camera_url"`  // RTSP URL
 	Enabled    bool   `json:"enabled"`
 }
 
-// Vehicle represents master data for known vehicles (optional but useful for frequent trucks)
+// Deprecated: Use WeighingStation instead. Kept for migration safety if needed,
+// but we will likely migrate data to WeighingStation.
+type ScaleConfig struct {
+	gorm.Model
+	Name       string `json:"name"`
+	Port       string `json:"port"`
+	BaudRate   int    `json:"baud_rate"`
+	DataBits   int    `json:"data_bits"`
+	StopBits   int    `json:"stop_bits"`
+	Parity     int    `json:"parity"`
+	Enabled    bool   `json:"enabled"`
+}
+
+// Vehicle represents master data for known vehicles
 type Vehicle struct {
 	gorm.Model
 	PlateNumber   string  `gorm:"uniqueIndex" json:"plate_number"`
@@ -68,4 +80,15 @@ type User struct {
 	PasswordHash string `json:"-"` // Store bcrypt hash
 	FullName     string `json:"full_name"`
 	Role         string `json:"role"` // "admin", "operator"
+}
+
+// UserStationAssignment links a User to specific WeighingStations.
+// If a user has NO assignments, they might see nothing (or all, depending on policy).
+// We will enforce: No assignment = No access to operate.
+type UserStationAssignment struct {
+	gorm.Model
+	UserID            uint            `json:"user_id"`
+	User              User            `json:"user"`
+	WeighingStationID uint            `json:"weighing_station_id"`
+	WeighingStation   WeighingStation `json:"weighing_station"`
 }
