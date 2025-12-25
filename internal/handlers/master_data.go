@@ -4,16 +4,24 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"stoneweigh/internal/models"
 )
 
 // ShowVehicleSettings renders the vehicle management page
 func (s *Server) ShowVehicleSettings(c *gin.Context) {
+	session := sessions.Default(c)
+	fullName := "Operator"
+	if v := session.Get("full_name"); v != nil {
+		fullName = v.(string)
+	}
+
 	c.HTML(http.StatusOK, "settings_vehicles.html", gin.H{
-		"title":   "Vehicle Management",
-		"active":  "settings",
-		"showNav": true,
+		"title":       "Vehicle Management",
+		"active":      "settings",
+		"showNav":     true,
+		"CurrentUser": fullName,
 	})
 }
 

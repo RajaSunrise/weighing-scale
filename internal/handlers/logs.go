@@ -5,15 +5,23 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
 // ShowLogs renders the log viewer page
 func (s *Server) ShowLogs(c *gin.Context) {
+	session := sessions.Default(c)
+	fullName := "Operator"
+	if v := session.Get("full_name"); v != nil {
+		fullName = v.(string)
+	}
+
 	c.HTML(http.StatusOK, "logs.html", gin.H{
-		"title":   "System Logs",
-		"active":  "settings",
-		"showNav": true,
+		"title":       "System Logs",
+		"active":      "settings",
+		"showNav":     true,
+		"CurrentUser": fullName,
 	})
 }
 

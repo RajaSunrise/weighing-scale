@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"stoneweigh/internal/models"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -86,9 +87,16 @@ func (s *Server) DeleteStation(c *gin.Context) {
 // The existing `settings.html` seems to be for general settings.
 // We will modify it to act as a container or add a specific route.
 func (s *Server) ShowSettingsHardware(c *gin.Context) {
+	session := sessions.Default(c)
+	fullName := "Operator"
+	if v := session.Get("full_name"); v != nil {
+		fullName = v.(string)
+	}
+
 	c.HTML(http.StatusOK, "settings_hardware.html", gin.H{
-		"title":   "Konfigurasi Hardware",
-		"active":  "settings",
-		"showNav": true,
+		"title":       "Hardware Settings",
+		"active":      "settings",
+		"showNav":     true,
+		"CurrentUser": fullName,
 	})
 }
