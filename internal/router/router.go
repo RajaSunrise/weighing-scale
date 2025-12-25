@@ -49,6 +49,7 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 		protected.GET("/", server.ShowDashboard)
 		protected.GET("/dashboard", server.ShowDashboard)
 		protected.GET("/weighing", server.ShowWeighing)
+		protected.GET("/reports", server.ShowReports)
 
 		// API - Transactions & Hardware
 		api := protected.Group("/api")
@@ -62,12 +63,16 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 		admin := protected.Group("/settings")
 		admin.Use(middleware.RoleRequired("admin"))
 		{
+			admin.GET("/", server.ShowSettings)
 			admin.GET("/vehicles", server.ShowVehicleSettings)
 			admin.GET("/api/vehicles", server.ListVehicles)
 			admin.POST("/api/vehicles", server.CreateVehicle)
 			admin.DELETE("/api/vehicles/:id", server.DeleteVehicle)
 		}
 	}
+
+	// 404 Handler
+	r.NoRoute(server.Show404)
 
 	return r
 }
