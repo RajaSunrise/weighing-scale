@@ -1,6 +1,6 @@
-# StoneWeigh - Sistem Timbangan Digital Modern
+# StoneWeigh - System Timbangan Digital Modern
 
-StoneWeigh adalah aplikasi manajemen jembatan timbang (weighbridge) modern yang dibangun menggunakan **Go (Golang)**, **HTML Templates**, dan **Tailwind CSS**. Sistem ini dirancang untuk kecepatan, keandalan offline, dan kemudahan integrasi hardware.
+StoneWeigh adalah aplikasi manajemen jembatan timbang (weighbridge) modern yang dibangun menggunakan **Go (Golang)**, **HTML Templates**, dan **Tailwind CSS**. System ini dirancang untuk kecepatan, keandalan offline, dan kemudahan integrasi hardware.
 
 ## 🚀 Fitur Utama
 
@@ -48,8 +48,8 @@ StoneWeigh adalah aplikasi manajemen jembatan timbang (weighbridge) modern yang 
 
 3.  **Jalankan Aplikasi**
 
-    *   **Mode Standar (Tanpa OpenCV/ANPR)**:
-        Gunakan tag build default (Mock ANPR akan aktif jika library tidak ditemukan, atau paksa dengan tag custom jika diimplementasikan). Saat ini, aplikasi akan otomatis menggunakan Mock jika build tag `gocv` tidak disertakan atau jika library system tidak ada (tergantung implementasi file).
+    *   **Mode Standard (Tanpa OpenCV/ANPR)**:
+        Gunakan tag build default (Mock ANPR akan aktif jika library tidak ditemukan, atau paksa dengan tag custom jika diimplementasikan). Saat ini, aplikasi akan otomatis menggunakan Mock jika build tag `gocv` tidak disertakan atau jika library system tidak ada (tergantung implements file).
 
         Untuk lingkungan pengembangan tanpa OpenCV:
         ```bash
@@ -92,7 +92,7 @@ Model deteksi plat nomor (`.pt`) harus diletakkan di folder `models/platdetectio
 4.  **Timbangan**:
     *   Pilih timbangan yang aktif.
     *   Berat akan muncul secara real-time.
-    *   Klik "Foto & Analisa" untuk menangkap plat nomor.
+    *   Klik "Photo & Analisa" untuk menangkap plat nomor.
     *   Isi detail muatan dan klik "Simpan".
 5.  **Laporan**: Buka menu Laporan untuk melihat riwayat dan mencetak ulang PDF.
 

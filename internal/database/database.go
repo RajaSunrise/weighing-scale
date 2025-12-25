@@ -46,5 +46,5 @@ func Connect() {
 	}
 
 	log.Println("Database connected successfully")
-	DB.AutoMigrate(&models.User{}, &models.Transaction{})
+	DB.AutoMigrate(&models.User{}, &models.Invoice{}, &models.ScaleConfig{}, &models.Vehicle{}, &models.WeighingRecord{})
 }
