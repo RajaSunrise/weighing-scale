@@ -142,6 +142,11 @@ document.getElementById('user-form').addEventListener('submit', async (e) => {
         return;
     }
 
+    // Remove empty ID to prevent JSON unmarshal error on backend
+    if (!data.id) {
+        delete data.id;
+    }
+
     const res = await fetch('/api/users', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},

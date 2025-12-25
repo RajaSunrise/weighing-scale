@@ -152,6 +152,12 @@ document.getElementById('station-form').addEventListener('submit', async (e) => 
     data.enabled = data.enabled === 'on';
 
     const id = document.getElementById('station-id').value;
+
+    // Remove empty ID to prevent JSON unmarshal error on backend (expecting uint)
+    if (!id) {
+        delete data.id;
+    }
+
     const url = id ? `/api/stations/${id}` : '/api/stations';
     const method = id ? 'PUT' : 'POST';
 
