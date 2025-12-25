@@ -1,0 +1,50 @@
+2025/12/25 05:11:14 Using SQLite (not implemented in this snippet, defaulting to Postgres attempt)
+
+2025/12/25 05:11:14 [35m/app/internal/database/database.go:40
+[0m[31m[error] [0mfailed to initialize database, got error failed to connect to `user=postgres database=stoneweigh`:
+	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connect: connection refused
+	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connect: connection refused
+2025/12/25 05:11:14 Failed to connect to database: failed to connect to `user=postgres database=stoneweigh`:
+	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connect: connection refused
+	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connect: connection refused
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] Loaded HTML Templates (2):
+	-
+	- layout.html
+
+[GIN-debug] GET    /static/*filepath         --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (3 handlers)
+[GIN-debug] HEAD   /static/*filepath         --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (3 handlers)
+[GIN-debug] GET    /                         --> stoneweigh/internal/handlers.ShowLogin (3 handlers)
+[GIN-debug] GET    /dashboard                --> stoneweigh/internal/handlers.ShowDashboard (3 handlers)
+[GIN-debug] GET    /weighing-station         --> stoneweigh/internal/handlers.ShowWeighing (3 handlers)
+[GIN-debug] GET    /report-dashboard         --> stoneweigh/internal/handlers.ShowDashboard (3 handlers)
+[GIN-debug] GET    /driver-vehicle           --> stoneweigh/internal/handlers.ShowDashboard (3 handlers)
+[GIN-debug] GET    /user-management          --> stoneweigh/internal/handlers.ShowDashboard (3 handlers)
+[GIN-debug] GET    /settings-hardware        --> stoneweigh/internal/handlers.ShowDashboard (3 handlers)
+[GIN-debug] POST   /api/login                --> stoneweigh/internal/handlers.Login (3 handlers)
+[GIN-debug] GET    /api/transactions         --> stoneweigh/internal/handlers.GetTransactions (3 handlers)
+[GIN-debug] POST   /api/transactions         --> stoneweigh/internal/handlers.CreateTransaction (3 handlers)
+[GIN-debug] GET    /api/stream               --> stoneweigh/internal/handlers.StreamCCTV (3 handlers)
+2025/12/25 05:11:14 Server starting on :8080
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN] 2025/12/25 - 05:12:51 | 200 |     548.757µs |             ::1 | GET      "/"
+[GIN] 2025/12/25 - 05:14:47 | 200 |     528.753µs |             ::1 | GET      "/dashboard"
+[GIN] 2025/12/25 - 05:18:12 | 200 |     585.385µs |             ::1 | GET      "/"
+[GIN] 2025/12/25 - 05:18:12 | 200 |     5.04952ms |             ::1 | GET      "/static/vendor/react-router-dom.development.js"
+[GIN] 2025/12/25 - 05:18:12 | 200 |    5.491714ms |             ::1 | GET      "/static/vendor/tailwindcss.js"
+[GIN] 2025/12/25 - 05:18:12 | 200 |    5.226993ms |             ::1 | GET      "/static/vendor/react-router.development.js"
+[GIN] 2025/12/25 - 05:18:12 | 200 |    5.495064ms |             ::1 | GET      "/static/vendor/history.development.js"
+[GIN] 2025/12/25 - 05:18:12 | 200 |     5.64726ms |             ::1 | GET      "/static/vendor/react.development.js"
+[GIN] 2025/12/25 - 05:18:12 | 200 |     5.90082ms |             ::1 | GET      "/static/vendor/react-dom.development.js"
+[GIN] 2025/12/25 - 05:18:12 | 200 |     776.241µs |             ::1 | GET      "/static/vendor/babel.min.js"
+[GIN] 2025/12/25 - 05:18:13 | 200 |     374.966µs |             ::1 | GET      "/static/js/components.jsx"
+[GIN] 2025/12/25 - 05:18:16 | 200 |     166.663µs |             ::1 | POST     "/api/login"
+[GIN] 2025/12/25 - 05:18:16 | 200 |     365.485µs |             ::1 | GET      "/dashboard"
+[GIN] 2025/12/25 - 05:18:17 | 200 |     420.424µs |             ::1 | GET      "/weighing-station"
