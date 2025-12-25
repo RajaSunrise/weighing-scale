@@ -1,12 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log("StoneWeigh UI Loaded");
 
-    const scaleElements = [1, 2, 3].map(id => ({
-        display: document.getElementById(`weight-display-${id}`),
-        status: document.getElementById(`status-scale-${id}`),
-        container: document.getElementById(`weight-display-${id}`)?.closest('.relative')
-    }));
-
     // SSE Connection to Backend Stream
     // We use the protected API route. The browser cookies will handle auth.
     const evtSource = new EventSource("/api/scales/stream");
@@ -16,28 +10,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = JSON.parse(event.data);
             // data format: { scale_id: 1, weight: 12345, connected: true }
 
-            const idx = data.scale_id - 1;
-            if (scaleElements[idx] && scaleElements[idx].display) {
-                const el = scaleElements[idx];
+            // Dynamic ID lookup
+            const displayEl = document.getElementById(`weight-display-${data.scale_id}`);
+            const statusEl = document.getElementById(`status-scale-${data.scale_id}`);
 
+            if (displayEl) {
                 // Update Weight
-                el.display.innerText = data.weight.toFixed(0).padStart(5, '0');
+                displayEl.innerText = data.weight.toFixed(0).padStart(5, '0');
 
                 // Update Status
-                if(el.status) {
+                if(statusEl) {
                     if (data.connected) {
-                        el.status.innerText = "TERHUBUNG";
-                        el.status.className = "px-2 py-1 rounded bg-success/10 text-success text-xs font-bold";
+                        statusEl.innerText = "TERHUBUNG";
+                        statusEl.className = "px-2 py-1 rounded bg-success/10 text-success text-xs font-bold";
                     } else {
-                        el.status.innerText = "TERPUTUS";
-                        el.status.className = "px-2 py-1 rounded bg-red-500/10 text-red-500 text-xs font-bold";
+                        statusEl.innerText = "TERPUTUS";
+                        statusEl.className = "px-2 py-1 rounded bg-red-500/10 text-red-500 text-xs font-bold";
                     }
                 }
             }
 
             // If we are currently "weighing" on this scale, update the form form values too
-            // For MVP, we assume Scale 1 is the active form scale
-            if (data.scale_id === 1) {
+            const activeScaleId = document.getElementById('active-scale-id')?.value;
+            if (activeScaleId && parseInt(activeScaleId) === data.scale_id) {
                 const grossEl = document.getElementById('val-gross');
                 const netEl = document.getElementById('val-net');
                 const tareEl = document.getElementById('val-tare');
@@ -64,18 +59,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     evtSource.onerror = function(err) {
         console.error("EventSource failed:", err);
-        // EventSource auto-reconnects, but we might want to show UI state
     };
 
     // Capture Button Logic
     window.captureWeight = function(scaleId) {
-        const btn = event.currentTarget;
-        const originalContent = btn.innerHTML;
-        btn.innerHTML = `<div class="loader border-white/20 border-t-white w-5 h-5"></div> Memproses...`;
-        btn.disabled = true;
+        const btn = event.currentTarget || document.activeElement;
+
+        // Prevent recursive calls if triggered programmatically
+        if (btn && btn.classList.contains('processing')) return;
+
+        // Visual feedback if clicked
+        if (btn && btn.tagName === 'BUTTON') {
+             const originalContent = btn.innerHTML;
+             btn.innerHTML = `<div class="loader border-white/20 border-t-white w-5 h-5"></div> Memproses...`;
+             btn.classList.add('processing');
+             btn.disabled = true;
+
+             // Reset after short delay just for visual effect if ANPR is fast
+             setTimeout(() => {
+                 btn.innerHTML = originalContent;
+                 btn.classList.remove('processing');
+                 btn.disabled = false;
+             }, 1000);
+        }
 
         // Trigger ANPR
-        fetch('/api/anpr/trigger', { method: 'POST' })
+        // In real world, pass scale_id to select correct camera
+        fetch(`/api/anpr/trigger?scale_id=${scaleId}`, { method: 'POST' })
             .then(res => res.json())
             .then(data => {
                 const anprEl = document.getElementById('anpr-result');
@@ -92,11 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             })
-            .catch(err => console.error(err))
-            .finally(() => {
-                btn.innerHTML = originalContent;
-                btn.disabled = false;
-            });
+            .catch(err => console.error(err));
     };
 
     // Form Submission Logic
@@ -110,7 +116,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Extract numbers from UI
             data.gross = parseFloat(document.getElementById('val-gross').innerText);
             data.tare = parseFloat(document.getElementById('val-tare').innerText);
-            data.scale_id = 1; // Defaulting to scale 1 for now
+            data.scale_id = parseInt(document.getElementById('active-scale-id').value);
+
+            if (!data.scale_id) {
+                alert("Pilih timbangan terlebih dahulu");
+                return;
+            }
 
             try {
                 const res = await fetch('/api/transaction', {
@@ -123,7 +134,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(res.ok) {
                     alert('Transaksi Berhasil! Tiket: ' + result.ticket);
                     // Open PDF
-                    window.open('/' + result.invoice, '_blank');
+                    // Ensure we don't double slash
+                    const url = result.invoice.startsWith('/') ? result.invoice : '/' + result.invoice;
+                    window.open(url, '_blank');
+
                     // Reset
                     form.reset();
                     document.getElementById('anpr-result').innerText = "SCANNING...";

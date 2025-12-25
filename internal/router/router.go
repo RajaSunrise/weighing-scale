@@ -59,15 +59,42 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 			api.GET("/scales/stream", server.StreamScaleData)
 		}
 
-		// Admin Only Routes
-		admin := protected.Group("/settings")
-		admin.Use(middleware.RoleRequired("admin"))
+		// Admin Only Routes - Pages
+		adminPages := protected.Group("/settings")
+		adminPages.Use(middleware.RoleRequired("admin"))
 		{
-			admin.GET("/", server.ShowSettings)
-			admin.GET("/vehicles", server.ShowVehicleSettings)
-			admin.GET("/api/vehicles", server.ListVehicles)
-			admin.POST("/api/vehicles", server.CreateVehicle)
-			admin.DELETE("/api/vehicles/:id", server.DeleteVehicle)
+			adminPages.GET("/", server.ShowSettings)
+			adminPages.GET("/vehicles", server.ShowVehicleSettings)
+			adminPages.GET("/hardware", server.ShowSettingsHardware)
+			adminPages.GET("/users", server.ShowUsers)
+			adminPages.GET("/logs", server.ShowLogs)
+		}
+
+		// Admin Only Routes - APIs
+		// We map them to /api/... but enforce admin role
+		adminApi := protected.Group("/api")
+		adminApi.Use(middleware.RoleRequired("admin"))
+		{
+			// Vehicle API
+			adminApi.GET("/vehicles", server.ListVehicles)
+			adminApi.POST("/vehicles", server.CreateVehicle)
+			adminApi.DELETE("/vehicles/:id", server.DeleteVehicle)
+
+			// Station / Hardware API
+			adminApi.GET("/stations", server.GetStations)
+			adminApi.POST("/stations", server.CreateStation)
+			adminApi.PUT("/stations/:id", server.UpdateStation)
+			adminApi.DELETE("/stations/:id", server.DeleteStation)
+
+			// User Management API
+			adminApi.GET("/users", server.GetUsers)
+			adminApi.POST("/users", server.CreateUser)
+			adminApi.DELETE("/users/:id", server.DeleteUser)
+			adminApi.GET("/users/:id/assignments", server.GetUserAssignments)
+			adminApi.POST("/users/:id/assignments", server.UpdateUserAssignments)
+
+			// Logs
+			adminApi.GET("/logs", server.GetLogsAPI)
 		}
 	}
 

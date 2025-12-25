@@ -1,0 +1,185 @@
+{{ template "header" . }}
+
+<div class="h-full flex flex-col p-6 gap-6">
+    <header class="flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-bold text-white">Konfigurasi Hardware</h2>
+            <p class="text-text-secondary">Kelola koneksi timbangan dan kamera CCTV</p>
+        </div>
+        <button onclick="openStationModal()" class="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg font-bold flex items-center gap-2">
+            <span class="material-symbols-outlined">add</span> Tambah Stasiun
+        </button>
+    </header>
+
+    <!-- Station List -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto">
+        <!-- Populated via JS -->
+        <div id="station-grid" class="contents"></div>
+    </div>
+</div>
+
+<!-- Add/Edit Station Modal -->
+<div id="station-modal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50">
+    <div class="bg-surface-dark border border-border-dark rounded-xl p-6 w-full max-w-lg">
+        <h3 class="text-xl font-bold text-white mb-4" id="modal-title">Stasiun Baru</h3>
+        <form id="station-form" class="space-y-4">
+            <input type="hidden" name="id" id="station-id">
+
+            <div>
+                <label class="block text-xs font-bold text-text-secondary mb-1">Nama Stasiun</label>
+                <input type="text" name="name" id="station-name" class="w-full bg-background-dark border border-border-dark rounded px-3 py-2 text-white" placeholder="Contoh: Timbangan Gerbang Depan" required>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-text-secondary mb-1">Port Serial</label>
+                    <input type="text" name="scale_port" id="station-port" class="w-full bg-background-dark border border-border-dark rounded px-3 py-2 text-white" placeholder="COM1 / /dev/ttyUSB0" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-text-secondary mb-1">Baud Rate</label>
+                    <input type="number" name="baud_rate" id="station-baud" class="w-full bg-background-dark border border-border-dark rounded px-3 py-2 text-white" value="9600" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-text-secondary mb-1">URL CCTV (RTSP)</label>
+                <input type="text" name="camera_url" id="station-camera" class="w-full bg-background-dark border border-border-dark rounded px-3 py-2 text-white" placeholder="rtsp://admin:pass@ip:554/stream">
+                <p class="text-xs text-text-secondary mt-1">Kosongkan jika menggunakan Webcam default (USB)</p>
+            </div>
+
+            <div class="flex items-center gap-2 mt-2">
+                <input type="checkbox" name="enabled" id="station-enabled" class="w-4 h-4 rounded bg-background-dark border-border-dark text-primary focus:ring-primary" checked>
+                <label for="station-enabled" class="text-sm text-white">Aktifkan Stasiun Ini</label>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-6">
+                <button type="button" onclick="closeStationModal()" class="px-4 py-2 text-text-secondary hover:text-white">Batal</button>
+                <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded font-bold">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    loadStations();
+});
+
+async function loadStations() {
+    const res = await fetch('/api/stations');
+    const stations = await res.json();
+    const container = document.getElementById('station-grid');
+    container.innerHTML = '';
+
+    stations.forEach(st => {
+        const div = document.createElement('div');
+        div.className = "bg-surface-dark border border-border-dark rounded-xl p-6 relative group hover:border-primary/50 transition-colors";
+        div.innerHTML = `
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="p-3 bg-primary/10 text-primary rounded-lg">
+                        <span class="material-symbols-outlined">scale</span>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-lg">${st.name}</h3>
+                        <p class="text-xs text-text-secondary">ID: ${st.ID}</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick='editStation(${JSON.stringify(st)})' class="p-2 hover:bg-white/10 rounded text-text-secondary hover:text-white">
+                        <span class="material-symbols-outlined text-sm">edit</span>
+                    </button>
+                    <button onclick="deleteStation(${st.ID})" class="p-2 hover:bg-red-500/10 rounded text-red-500">
+                        <span class="material-symbols-outlined text-sm">delete</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="flex items-center justify-between text-sm p-3 bg-black/20 rounded border border-white/5">
+                    <span class="text-text-secondary">Serial Port</span>
+                    <span class="font-mono text-white">${st.scale_port} <span class="text-xs text-gray-500">(${st.baud_rate})</span></span>
+                </div>
+                <div class="flex items-center justify-between text-sm p-3 bg-black/20 rounded border border-white/5">
+                    <span class="text-text-secondary">Kamera</span>
+                    <span class="font-mono text-white truncate max-w-[200px]" title="${st.camera_url}">${st.camera_url || 'Default USB'}</span>
+                </div>
+                <div class="flex items-center justify-between text-sm pt-2">
+                     <span class="text-text-secondary">Status</span>
+                     <span class="px-2 py-0.5 rounded text-xs font-bold ${st.enabled ? 'bg-success/10 text-success' : 'bg-red-500/10 text-red-500'}">
+                        ${st.enabled ? 'AKTIF' : 'NON-AKTIF'}
+                     </span>
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function openStationModal() {
+    document.getElementById('station-form').reset();
+    document.getElementById('station-id').value = '';
+    document.getElementById('modal-title').innerText = "Stasiun Baru";
+    document.getElementById('station-modal').classList.remove('hidden');
+    document.getElementById('station-modal').classList.add('flex');
+}
+
+function editStation(data) {
+    document.getElementById('station-id').value = data.ID;
+    document.getElementById('station-name').value = data.name;
+    document.getElementById('station-port').value = data.scale_port;
+    document.getElementById('station-baud').value = data.baud_rate;
+    document.getElementById('station-camera').value = data.camera_url;
+    document.getElementById('station-enabled').checked = data.enabled;
+
+    document.getElementById('modal-title').innerText = "Edit Stasiun";
+    document.getElementById('station-modal').classList.remove('hidden');
+    document.getElementById('station-modal').classList.add('flex');
+}
+
+function closeStationModal() {
+    document.getElementById('station-modal').classList.add('hidden');
+    document.getElementById('station-modal').classList.remove('flex');
+}
+
+document.getElementById('station-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+
+    // Convert types
+    data.baud_rate = parseInt(data.baud_rate);
+    data.enabled = data.enabled === 'on';
+
+    const id = document.getElementById('station-id').value;
+
+    // Remove empty ID to prevent JSON unmarshal error on backend (expecting uint)
+    if (!id) {
+        delete data.id;
+    }
+
+    const url = id ? `/api/stations/${id}` : '/api/stations';
+    const method = id ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+        method: method,
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    });
+
+    if(res.ok) {
+        closeStationModal();
+        loadStations();
+    } else {
+        alert("Gagal menyimpan");
+    }
+});
+
+async function deleteStation(id) {
+    if(!confirm('Hapus stasiun ini?')) return;
+    await fetch('/api/stations/'+id, { method: 'DELETE' });
+    loadStations();
+}
+</script>
+
+{{ template "footer" . }}

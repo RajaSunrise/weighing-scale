@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/sessions"
@@ -65,10 +66,33 @@ func (s *Server) ShowDashboard(c *gin.Context) {
 }
 
 func (s *Server) ShowWeighing(c *gin.Context) {
+	session := sessions.Default(c)
+	uidVal := session.Get("user_id")
+
+	// If admin, show all active stations
+	// If operator, show only assigned stations
+	// Note: We need to pass the list of allowed stations to the template so JS can render them dynamically
+	// instead of hardcoded 1,2,3.
+
+	var allowedStations []models.WeighingStation
+
+	if role := session.Get("role"); role == "admin" {
+		s.DB.Where("enabled = ?", true).Find(&allowedStations)
+	} else if uidVal != nil {
+		var assignments []models.UserStationAssignment
+		s.DB.Preload("WeighingStation").Where("user_id = ?", uidVal).Find(&assignments)
+		for _, a := range assignments {
+			if a.WeighingStation.Enabled {
+				allowedStations = append(allowedStations, a.WeighingStation)
+			}
+		}
+	}
+
 	c.HTML(http.StatusOK, "weighing.html", gin.H{
 		"title":   "Weighing Station",
 		"active":  "weighing",
 		"showNav": true,
+		"Stations": allowedStations,
 	})
 }
 
@@ -117,6 +141,8 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 	path, err := reporting.GenerateInvoice(record)
 	if err == nil {
 		record.InvoicePath = path
+	} else {
+		fmt.Printf("Error generating PDF: %v\n", err)
 	}
 
 	if err := s.DB.Create(&record).Error; err != nil {
@@ -124,18 +150,33 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 		return
 	}
 
+	// Fix PDF Path for Frontend:
+	// The reporting package returns relative path like "web/static/reports/..."
+	// We need to strip "web" so it becomes "/static/reports/..."
+	webPath := "/" + strings.TrimPrefix(record.InvoicePath, "web/")
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Transaction saved",
 		"ticket":  ticket,
-		"invoice": record.InvoicePath,
+		"invoice": webPath,
 	})
 }
 
 // TriggerANPR captures a frame and detects license plate
 func (s *Server) TriggerANPR(c *gin.Context) {
-	// In a real scenario, we'd map ScaleID to a specific camera URL
-	// cameraURL := "rtsp://..."
-	cameraURL := "0" // Default webcam
+	scaleID := c.Query("scale_id")
+
+	cameraURL := "0" // Default to webcam
+
+	// Lookup station if ID provided
+	if scaleID != "" {
+		var station models.WeighingStation
+		if err := s.DB.First(&station, scaleID).Error; err == nil {
+			if station.CameraURL != "" {
+				cameraURL = station.CameraURL
+			}
+		}
+	}
 
 	plate, snapshotPath, err := s.ANPRService.CaptureAndDetect(cameraURL)
 	if err != nil {
@@ -157,39 +198,41 @@ func (s *Server) TriggerANPR(c *gin.Context) {
 
 // StreamScaleData sets up an SSE stream for real-time weights
 func (s *Server) StreamScaleData(c *gin.Context) {
+	session := sessions.Default(c)
+	uidVal := session.Get("user_id")
+	role := session.Get("role")
+
+	// Filter IDs
+	allowedIDs := make(map[uint]bool)
+	if role == "admin" {
+		// all allowed
+	} else if uidVal != nil {
+		var assignments []models.UserStationAssignment
+		s.DB.Where("user_id = ?", uidVal).Find(&assignments)
+		for _, a := range assignments {
+			allowedIDs[a.WeighingStationID] = true
+		}
+	}
+
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
-
-	// clientChan := make(chan hardware.ScaleData, 10)
-
-	// Determine how to register this client to the broadcater.
-	// For simplicity in this MVP, we'll just listen to the main channel
-	// (Note: In production, we need a proper fan-out pattern or this will steal messages)
-	// We will simulate a dedicated listener or just poll the state for now to avoid complexity of a full Hub.
-
-	// Better approach for MVP: Just loop and fetch current state or wait for a specific event
-	// But `hardware.Manager.DataChannel` is a single channel.
-	// We need a proper broadcaster.
-
-	// Quick fix: Just send a "connected" message and rely on client polling or
-	// actually implement the Hub.
-	// Let's implement a simple poll loop for the specific scale requested or all.
 
 	ticker := time.NewTicker(200 * time.Millisecond)
 	defer ticker.Stop()
 
 	c.Stream(func(w io.Writer) bool {
 		if _, ok := <-ticker.C; ok {
-			// Iterate all scales and send data
-			// In a real app, we'd only send *changes*
 			s.ScaleMgr.Mu.Lock()
 			for id, scale := range s.ScaleMgr.Scales {
-				c.SSEvent("message", gin.H{
-					"scale_id": id,
-					"weight":   scale.LastWeight,
-					"connected": scale.Connected,
-				})
+				// Only send data if allowed
+				if role == "admin" || allowedIDs[id] {
+					c.SSEvent("message", gin.H{
+						"scale_id": id,
+						"weight":   scale.LastWeight,
+						"connected": scale.Connected,
+					})
+				}
 			}
 			s.ScaleMgr.Mu.Unlock()
 			return true

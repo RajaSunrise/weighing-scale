@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.bug.st/serial"
+	"gorm.io/gorm"
 	"stoneweigh/internal/models"
 )
 
@@ -17,10 +18,11 @@ type ScaleManager struct {
 	Scales      map[uint]*ScaleConnection
 	DataChannel chan ScaleData // Channel to broadcast updates
 	Mu          sync.Mutex
+	stopChans   map[uint]chan bool // To stop monitoring goroutines
 }
 
 type ScaleConnection struct {
-	Config models.ScaleConfig
+	Config models.WeighingStation // UPDATED: Use WeighingStation
 	Port   serial.Port
 	LastWeight float64
 	Connected  bool
@@ -39,24 +41,88 @@ func InitScaleManager() {
 	Manager = &ScaleManager{
 		Scales:      make(map[uint]*ScaleConnection),
 		DataChannel: make(chan ScaleData, 100),
+		stopChans:   make(map[uint]chan bool),
 	}
 }
 
-// AddScale registers and attempts to connect to a scale
-func (sm *ScaleManager) AddScale(config models.ScaleConfig) {
+// ReloadConfig loads configuration from the DB and restarts connections
+func (sm *ScaleManager) ReloadConfig(db *gorm.DB) {
+	log.Println("Reloading Scale Configurations...")
+	var stations []models.WeighingStation
+	if err := db.Where("enabled = ?", true).Find(&stations).Error; err != nil {
+		log.Printf("Error loading stations: %v", err)
+		return
+	}
+
+	// 1. Identify removed or updated stations
+	sm.Mu.Lock()
+	currentIDs := make(map[uint]bool)
+	for _, s := range stations {
+		currentIDs[s.ID] = true
+	}
+
+	// Stop monitors for stations that no longer exist or are disabled
+	for id, _ := range sm.Scales {
+		if !currentIDs[id] {
+			if stop, ok := sm.stopChans[id]; ok {
+				close(stop)
+				delete(sm.stopChans, id)
+			}
+			if conn, ok := sm.Scales[id]; ok && conn.Port != nil {
+				conn.Port.Close()
+			}
+			delete(sm.Scales, id)
+			log.Printf("Stopped Scale %d", id)
+		}
+	}
+	sm.Mu.Unlock()
+
+	// 2. Add or Update stations
+	// For simplicity, we'll stop and restart even if unchanged,
+	// or we could check diffs. Let's restart to ensure clean state.
+	for _, station := range stations {
+		sm.AddOrUpdateScale(station)
+	}
+}
+
+// AddOrUpdateScale registers and attempts to connect to a scale
+func (sm *ScaleManager) AddOrUpdateScale(config models.WeighingStation) {
 	sm.Mu.Lock()
 	defer sm.Mu.Unlock()
+
+	// If exists, stop first
+	if _, exists := sm.Scales[config.ID]; exists {
+		if stop, ok := sm.stopChans[config.ID]; ok {
+			close(stop)
+			delete(sm.stopChans, config.ID)
+		}
+		// Close port if open
+		if sm.Scales[config.ID].Port != nil {
+			sm.Scales[config.ID].Port.Close()
+		}
+	}
 
 	conn := &ScaleConnection{
 		Config: config,
 	}
 	sm.Scales[config.ID] = conn
-	go sm.monitorScale(config.ID)
+
+	stop := make(chan bool)
+	sm.stopChans[config.ID] = stop
+
+	go sm.monitorScale(config.ID, stop)
 }
 
 // monitorScale constantly tries to read from the scale
-func (sm *ScaleManager) monitorScale(scaleID uint) {
+func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 	for {
+		select {
+		case <-stopChan:
+			return
+		default:
+			// Continue
+		}
+
 		sm.Mu.Lock()
 		conn, exists := sm.Scales[scaleID]
 		sm.Mu.Unlock()
@@ -67,32 +133,46 @@ func (sm *ScaleManager) monitorScale(scaleID uint) {
 
 		if !conn.Connected {
 			// Attempt connection
+			// Default serial settings if not specified
+			baud := conn.Config.BaudRate
+			if baud == 0 { baud = 9600 }
+
 			mode := &serial.Mode{
-				BaudRate: conn.Config.BaudRate,
-				DataBits: conn.Config.DataBits,
-				Parity:   serial.Parity(conn.Config.Parity),
-				StopBits: serial.StopBits(conn.Config.StopBits),
+				BaudRate: baud,
+				DataBits: 8,
+				Parity:   serial.NoParity,
+				StopBits: serial.OneStopBit,
 			}
 
-			port, err := serial.Open(conn.Config.Port, mode)
+			port, err := serial.Open(conn.Config.ScalePort, mode)
 			if err != nil {
 				// Failed to connect, wait and retry
-				// log.Printf("Failed to open scale %d on %s: %v", scaleID, conn.Config.Port, err)
-
-				// Send disconnected status
 				sm.DataChannel <- ScaleData{ScaleID: scaleID, Connected: false, Timestamp: time.Now().Unix()}
-				time.Sleep(5 * time.Second)
+
+				// Sleep with check for stop
+				select {
+				case <-time.After(5 * time.Second):
+				case <-stopChan:
+					return
+				}
 				continue
 			}
 
 			conn.Port = port
 			conn.Connected = true
-			log.Printf("Connected to Scale %d on %s", scaleID, conn.Config.Port)
+			log.Printf("Connected to Scale %d (%s) on %s", scaleID, conn.Config.Name, conn.Config.ScalePort)
 		}
 
 		// Read loop
 		scanner := bufio.NewScanner(conn.Port)
 		for scanner.Scan() {
+			select {
+			case <-stopChan:
+				conn.Port.Close()
+				return
+			default:
+			}
+
 			text := scanner.Text()
 			weight := parseWeight(text)
 
@@ -124,8 +204,9 @@ func (sm *ScaleManager) StartDemoMode() {
 
 		for range ticker.C {
 			sm.Mu.Lock()
-			// Simulate random weights for Scale 1 if disconnected
-			if conn, ok := sm.Scales[1]; ok {
+			// Simulate random weights for Scale 1 (or any existing scale)
+			// Iterate through all scales and simulate if not connected
+			for id, conn := range sm.Scales {
 				if !conn.Connected {
 					// Toggle between empty (0) and loaded (~25000)
 					now := time.Now().Unix()
@@ -135,15 +216,14 @@ func (sm *ScaleManager) StartDemoMode() {
 						// Jitter
 						conn.LastWeight = 24500 + float64(now%100)
 					}
-					// Do not set conn.Connected = true here to avoid confusing monitorScale
-				}
 
-				// Broadcast fake data
-				sm.DataChannel <- ScaleData{
-					ScaleID:   1,
-					Weight:    conn.LastWeight,
-					Connected: true, // Tell frontend it's connected
-					Timestamp: time.Now().Unix(),
+					// Broadcast fake data
+					sm.DataChannel <- ScaleData{
+						ScaleID:   id,
+						Weight:    conn.LastWeight,
+						Connected: true,
+						Timestamp: time.Now().Unix(),
+					}
 				}
 			}
 			sm.Mu.Unlock()
@@ -151,12 +231,7 @@ func (sm *ScaleManager) StartDemoMode() {
 	}()
 }
 
-// parseWeight parses the raw serial string from a generic scale indicator
-// This varies wildly by manufacturer (Mettler Toledo, Avery, etc.)
-// For this MVP, we assume a simple format or just extract numbers.
 func parseWeight(raw string) float64 {
-	// Example format: "ST,GS,  12040 kg" or "  12040"
-	// Sanitize string to keep only numbers and dot
 	clean := strings.Map(func(r rune) rune {
 		if (r >= '0' && r <= '9') || r == '.' || r == '-' {
 			return r
