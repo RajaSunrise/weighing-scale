@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded', () => {
             data.tare = parseFloat(document.getElementById('val-tare').innerText);
             data.scale_id = parseInt(document.getElementById('active-scale-id').value);
 
+            // Clean empty ID to prevent Go binding errors
+            if (!data.id) delete data.id;
+
             if (!data.scale_id) {
                 alert("Pilih timbangan terlebih dahulu");
                 return;
