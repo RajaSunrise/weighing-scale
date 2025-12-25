@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 
 	"stoneweigh/internal/cv"
@@ -36,38 +37,62 @@ func TestANPRDetection(t *testing.T) {
 		"https://imgs.search.brave.com/0pXu9kATZ_aeNvwaFRZqxCwdpV3FfOUN18ePtMwhVgo/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9iZXJ0/dWFocG9zLmNvbS93/cC1jb250ZW50L3Vw/bG9hZHMvMjAyNS8w/Ny9QbGF0LU5vbi1C/TS03NTB4Njc1Lmpw/ZWc",
 	}
 
+	// Expected results map (key: index + 1)
+	expectedPlates := map[int]string{
+		1: "B 8187",
+		2: "B 9190 IC",
+		3: "K 8324 QD",
+	}
+
 	// Initialize Service
-	// Path assumes running from repo root. In test context, might differ.
-	// But let's assume standard go test execution.
-	anpr := cv.NewANPRService("../../models/platdetection.pt")
+	// Path assumes running from repo root via `go test ./internal/cv/tests/...`.
+	// But `models/` is at repo root. `internal/cv/tests` is 3 dirs deep relative to root?
+	// Actually, `go test` sets the working directory to the package directory.
+	// So we are in `internal/cv/tests`.
+	// To reach root: `../../../`
+	modelPath := "../../../models/platdetection.pt"
+
+	// Check if we are running from root (e.g. go test ./...) or from package.
+	// Best is to use absolute path or try both.
+	if _, err := os.Stat(modelPath); os.IsNotExist(err) {
+		// Try from root
+		if _, err := os.Stat("models/platdetection.pt"); err == nil {
+			modelPath = "models/platdetection.pt"
+		}
+	}
+
+	anpr := cv.NewANPRService(modelPath)
 
 	if !anpr.IsLoaded {
 		fmt.Println("WARNING: ANPR Model not loaded (Mock Mode or Missing File). Detection will be simulated.")
 	}
 
 	for i, url := range urls {
-		filename := fmt.Sprintf("test_image_%d.jpg", i+1)
-		fmt.Printf("Downloading Image %d...\n", i+1)
+		idx := i + 1
+		filename := fmt.Sprintf("test_image_%d.jpg", idx)
+		fmt.Printf("Downloading Image %d...\n", idx)
 
 		err := downloadImage(url, filename)
 		if err != nil {
-			t.Errorf("Failed to download image %d: %v", i+1, err)
+			t.Errorf("Failed to download image %d: %v", idx, err)
 			continue
 		}
 		defer os.Remove(filename) // Cleanup
 
-		fmt.Printf("Processing Image %d...\n", i+1)
-
-		// CaptureAndDetect expects a camera URL/ID, but under the hood GoCV opens it.
-		// GoCV OpenVideoCapture works with files too!
-		// So we pass the filename.
+		fmt.Printf("Processing Image %d...\n", idx)
 
 		plate, snapshot, err := anpr.CaptureAndDetect(filename)
 		if err != nil {
-			t.Errorf("Error detecting image %d: %v", i+1, err)
+			t.Errorf("Error detecting image %d: %v", idx, err)
 		} else {
-			fmt.Printf("RESULT Image %d: Detected Plate: %s\n", i+1, plate)
+			fmt.Printf("RESULT Image %d: Detected Plate: %s\n", idx, plate)
 			fmt.Printf("       Snapshot saved to: %s\n", snapshot)
+
+			// Assertion
+			expected := expectedPlates[idx]
+			if !strings.Contains(plate, expected) {
+				t.Errorf("Image %d: Expected plate to contain '%s', got '%s'", idx, expected, plate)
+			}
 			fmt.Println("------------------------------------------------")
 		}
 	}
