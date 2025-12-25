@@ -1,0 +1,53 @@
+{{ template "header" . }}
+
+<div class="h-full flex flex-col p-6 gap-6">
+    <header class="flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-bold text-white">System Logs</h2>
+            <p class="text-text-secondary">Aktivitas sistem dan error logs</p>
+        </div>
+        <button onclick="loadLogs()" class="px-4 py-2 bg-surface-dark border border-border-dark text-white rounded-lg hover:bg-white/5 transition-colors">
+            <span class="material-symbols-outlined align-middle mr-1">refresh</span> Refresh
+        </button>
+    </header>
+
+    <div class="bg-black border border-border-dark rounded-xl p-4 flex-1 overflow-hidden flex flex-col">
+        <div class="font-mono text-xs text-text-secondary mb-2 border-b border-white/10 pb-2">logs/system.log</div>
+        <div id="log-container" class="flex-1 overflow-y-auto font-mono text-sm space-y-1 text-gray-300">
+            <!-- Logs go here -->
+            <div class="text-center pt-10 text-text-secondary">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    loadLogs();
+    // Auto refresh every 5s
+    setInterval(loadLogs, 5000);
+});
+
+async function loadLogs() {
+    const container = document.getElementById('log-container');
+    try {
+        const res = await fetch('/api/logs');
+        const lines = await res.json();
+
+        container.innerHTML = lines.map(line => {
+            // Simple color coding
+            let color = 'text-gray-300';
+            if (line.includes('ERROR') || line.includes('Fatal')) color = 'text-red-400';
+            if (line.includes('WARN')) color = 'text-yellow-400';
+
+            return `<div class="${color} hover:bg-white/5 px-2 rounded">${line}</div>`;
+        }).join('');
+
+        // Scroll to bottom
+        container.scrollTop = container.scrollHeight;
+    } catch (e) {
+        console.error(e);
+    }
+}
+</script>
+
+{{ template "footer" . }}

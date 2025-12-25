@@ -11,11 +11,14 @@ StoneWeigh adalah aplikasi manajemen jembatan timbang (weighbridge) modern yang 
 *   **Manajemen Data**:
     *   Dashboard analitik harian (Total kendaraan, total berat).
     *   Master Data Kendaraan & Supir.
+    *   **Manajemen Pengguna & Stasiun**: Atur siapa yang mengelola timbangan tertentu.
+    *   **Konfigurasi Dinamis**: Ubah setting hardware tanpa restart via UI.
     *   Pencetakan tiket/surat jalan dalam format PDF.
 *   **Keamanan**:
     *   Login Administrator & Operator.
+    *   System Logs Viewer.
     *   Rate Limiting & Logging.
-    *   Data tersimpan aman di database (SQLite/PostgreSQL).
+    *   Data tersimpan aman di PostgreSQL (Disarankan) atau SQLite.
 
 ## 🛠️ Teknologi
 
@@ -25,13 +28,32 @@ StoneWeigh adalah aplikasi manajemen jembatan timbang (weighbridge) modern yang 
 *   **Computer Vision**: GoCV (OpenCV bindings) atau Mock Mode
 *   **PDF**: gofpdf
 
-## 📦 Instalasi
+## 📦 Instalasi OpenCV (Production)
 
-### Prasyarat
-1.  **Go** (Versi 1.21 atau lebih baru)
-2.  **(Opsional)** **OpenCV 4.x** jika ingin menggunakan fitur ANPR asli. Jika tidak, aplikasi akan berjalan dalam mode Mock (Simulasi).
+Untuk menggunakan fitur deteksi plat nomor (ANPR) di lingkungan produksi, Anda wajib menginstall OpenCV 4.x.
 
-### Langkah-langkah
+### 🐧 Linux (Ubuntu/Debian)
+```bash
+sudo apt-get update
+sudo apt-get install -y libopencv-dev build-essential
+```
+
+### 🪟 Windows
+1. Download dan Install [MinGW-W64](https://sourceforge.net/projects/mingw-w64/).
+2. Download OpenCV Prebuilt for Windows atau gunakan Chocolatey:
+   ```powershell
+   choco install opencv
+   ```
+3. Pastikan `OPENCV_DIR` terdaftar di Environment Variables.
+
+### 🍎 macOS
+```bash
+brew install opencv
+```
+
+---
+
+## 🚀 Cara Menjalankan
 
 1.  **Clone Repository**
     ```bash
@@ -44,20 +66,18 @@ StoneWeigh adalah aplikasi manajemen jembatan timbang (weighbridge) modern yang 
     ```bash
     cp .env.example .env
     ```
-    Edit `.env` untuk mengatur port serial timbangan, database, dan akun admin awal.
+    **PENTING**: Edit `.env` untuk mengatur koneksi **PostgreSQL**. Jika gagal connect ke Postgres, aplikasi akan berhenti (safety measure).
 
 3.  **Jalankan Aplikasi**
 
-    *   **Mode Standard (Tanpa OpenCV/ANPR)**:
-        Gunakan tag build default (Mock ANPR akan aktif jika library tidak ditemukan, atau paksa dengan tag custom jika diimplementasikan). Saat ini, aplikasi akan otomatis menggunakan Mock jika build tag `gocv` tidak disertakan atau jika library system tidak ada (tergantung implements file).
-
-        Untuk lingkungan pengembangan tanpa OpenCV:
+    *   **Mode Standard (Mock ANPR)**:
+        Jika OpenCV tidak terinstall, ANPR akan menggunakan mode simulasi.
         ```bash
         go run cmd/server/main.go
         ```
 
-    *   **Mode Produksi (Dengan OpenCV/ANPR)**:
-        Pastikan OpenCV terinstall, lalu jalankan:
+    *   **Mode Produksi (Dengan OpenCV)**:
+        Pastikan OpenCV terinstall dengan benar.
         ```bash
         go run -tags gocv cmd/server/main.go
         ```
@@ -65,36 +85,32 @@ StoneWeigh adalah aplikasi manajemen jembatan timbang (weighbridge) modern yang 
 4.  **Akses Aplikasi**
     Buka browser dan kunjungi: `http://localhost:8080`
 
-## ⚙️ Konfigurasi Hardware
+## ⚙️ Panduan Konfigurasi
 
-### Timbangan (Serial / RS232)
-Edit `.env` untuk menentukan port COM/TTY:
+### 1. Database
+Pastikan PostgreSQL sudah berjalan. Buat database baru (misal: `stone`).
+Setting di `.env`:
 ```ini
-SCALE_PORTS="1=COM3:9600,2=/dev/ttyUSB0:9600"
-```
-Jika tidak ada timbangan fisik, Anda dapat mengaktifkan **Demo Mode** untuk simulasi berat server-side:
-```bash
-export ENABLE_DEMO_SCALE=true
+DB_DRIVER=postgres
+DB_DSN="host=localhost user=postgres password=secret dbname=stone port=5432 sslmode=disable"
 ```
 
-### CCTV / ANPR
-Edit `.env` untuk URL RTSP kamera:
-```ini
-CCTV_RTSP_URLS="1=rtsp://admin:pass@192.168.1.10:554/stream"
-```
-Model deteksi plat nomor (`.pt`) harus diletakkan di folder `models/platdetection.pt`.
+### 2. Hardware (Timbangan & CCTV)
+Sekarang Anda dapat mengatur hardware langsung dari aplikasi!
+1. Login sebagai **Admin**.
+2. Masuk ke **Pengaturan > Konfigurasi Hardware**.
+3. Tambah Stasiun baru, masukkan Port Serial (contoh: `/dev/ttyUSB0` atau `COM3`) dan URL RTSP CCTV.
 
-## 📚 Panduan Penggunaan
+### 3. Manajemen User & Akses
+Anda dapat membatasi operator hanya bisa mengakses timbangan tertentu.
+1. Masuk ke **Pengaturan > Manajemen Pengguna**.
+2. Buat User baru (Role: Operator).
+3. Klik **"Atur Akses"** dan pilih timbangan yang diizinkan untuk user tersebut.
 
-1.  **Login**: Masuk menggunakan kredensial admin (Default: `admin` / `secret_password_123` dari .env).
-2.  **Dashboard**: Lihat ringkasan transaksi hari ini.
-3.  **Pengaturan**: Daftarkan kendaraan dan supir rutin di menu "Manajemen Kendaraan" untuk mempercepat proses input.
-4.  **Timbangan**:
-    *   Pilih timbangan yang aktif.
-    *   Berat akan muncul secara real-time.
-    *   Klik "Photo & Analisa" untuk menangkap plat nomor.
-    *   Isi detail muatan dan klik "Simpan".
-5.  **Laporan**: Buka menu Laporan untuk melihat riwayat dan mencetak ulang PDF.
+### 4. System Logs
+Untuk memantau error atau aktivitas sistem:
+1. Masuk ke **Pengaturan > Log Sistem**.
+2. Log akan refresh otomatis setiap 5 detik.
 
 ## 📁 Struktur Project
 
@@ -105,13 +121,12 @@ stoneweigh/
 │   ├── cv/             # Logika Computer Vision (ANPR)
 │   ├── handlers/       # HTTP Handlers (Controller)
 │   ├── hardware/       # Driver Serial Timbangan
-│   ├── middleware/     # Auth, Logging, RateLimit
+│   ├── pkg/logger/     # System Logger
 │   ├── models/         # Database Structs
 │   ├── reporting/      # Generator PDF
 │   └── router/         # Konfigurasi Gin Router
-├── models/             # File model AI (.pt)
 ├── web/
-│   ├── static/         # CSS, JS, Images
+│   ├── static/         # CSS, JS, Images, Reports
 │   └── templates/      # File HTML
 └── .env.example        # Template konfigurasi
 ```
