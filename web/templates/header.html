@@ -1,6 +1,6 @@
 {{ define "header" }}
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="id" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -68,11 +68,11 @@
                 </a>
                 <a href="/weighing" class="flex items-center gap-3 px-4 py-3 rounded-lg {{ if eq .active "weighing" }}bg-primary/10 text-primary{{ else }}text-text-secondary hover:text-white hover:bg-card-hover{{ end }} transition-colors">
                     <span class="material-symbols-outlined">scale</span>
-                    <span class="font-medium">Weighing</span>
+                    <span class="font-medium">Timbangan</span>
                 </a>
-                <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg {{ if eq .active "reports" }}bg-primary/10 text-primary{{ else }}text-text-secondary hover:text-white hover:bg-card-hover{{ end }} transition-colors">
-                    <span class="material-symbols-outlined">description</span>
-                    <span class="font-medium">Reports</span>
+                <a href="/settings/vehicles" class="flex items-center gap-3 px-4 py-3 rounded-lg {{ if eq .active "settings" }}bg-primary/10 text-primary{{ else }}text-text-secondary hover:text-white hover:bg-card-hover{{ end }} transition-colors">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span class="font-medium">Pengaturan</span>
                 </a>
             </nav>
         </div>
@@ -83,7 +83,7 @@
                 </div>
                 <div>
                     <p class="text-sm font-bold">Operator</p>
-                    <p class="text-xs text-text-secondary">Logged in</p>
+                    <a href="/logout" class="text-xs text-text-secondary hover:text-white">Keluar (Logout)</a>
                 </div>
             </div>
         </div>

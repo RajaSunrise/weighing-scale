@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"stoneweigh/internal/cv"
@@ -27,10 +28,39 @@ func NewServer(db *gorm.DB, sm *hardware.ScaleManager, anpr *cv.ANPRService) *Se
 // === VIEW HANDLERS ===
 
 func (s *Server) ShowDashboard(c *gin.Context) {
+	// 1. Fetch Stats for Today
+	startOfDay := time.Now().Truncate(24 * time.Hour)
+
+	var todayCount int64
+	var todayWeight float64 // Sum of NetWeight
+
+	s.DB.Model(&models.WeighingRecord{}).
+		Where("weighed_at >= ?", startOfDay).
+		Count(&todayCount)
+
+	type Result struct {
+		Total float64
+	}
+	var res Result
+	s.DB.Model(&models.WeighingRecord{}).
+		Select("sum(net_weight) as total").
+		Where("weighed_at >= ?", startOfDay).
+		Scan(&res)
+	todayWeight = res.Total
+
+	// 2. Fetch Recent Transactions
+	var recent []models.WeighingRecord
+	s.DB.Order("weighed_at desc").Limit(10).Find(&recent)
+
 	c.HTML(http.StatusOK, "dashboard.html", gin.H{
 		"title":   "Dashboard",
 		"active":  "dashboard",
 		"showNav": true,
+		"Stats": gin.H{
+			"TodayCount":  todayCount,
+			"TodayWeight": todayWeight,
+		},
+		"Recent": recent,
 	})
 }
 
@@ -60,6 +90,12 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 		return
 	}
 
+	session := sessions.Default(c)
+	managerName := "Unknown"
+	if val := session.Get("username"); val != nil {
+		managerName = val.(string)
+	}
+
 	net := input.Gross - input.Tare
 	ticket := fmt.Sprintf("T-%d", time.Now().Unix())
 
@@ -68,6 +104,7 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 		ScaleID:      input.ScaleID,
 		PlateNumber:  input.PlateNumber,
 		DriverName:   input.DriverName,
+		ManagerName:  managerName,
 		Product:      input.Product,
 		GrossWeight:  input.Gross,
 		TareWeight:   input.Tare,

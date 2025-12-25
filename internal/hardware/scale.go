@@ -115,6 +115,42 @@ func (sm *ScaleManager) monitorScale(scaleID uint) {
 	}
 }
 
+// Demo Mode: Simulates scale activity
+func (sm *ScaleManager) StartDemoMode() {
+	go func() {
+		log.Println("Starting Demo Scale Simulation...")
+		ticker := time.NewTicker(500 * time.Millisecond)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			sm.Mu.Lock()
+			// Simulate random weights for Scale 1 if disconnected
+			if conn, ok := sm.Scales[1]; ok {
+				if !conn.Connected {
+					// Toggle between empty (0) and loaded (~25000)
+					now := time.Now().Unix()
+					if (now/20)%2 == 0 {
+						conn.LastWeight = 0
+					} else {
+						// Jitter
+						conn.LastWeight = 24500 + float64(now%100)
+					}
+					// Do not set conn.Connected = true here to avoid confusing monitorScale
+				}
+
+				// Broadcast fake data
+				sm.DataChannel <- ScaleData{
+					ScaleID:   1,
+					Weight:    conn.LastWeight,
+					Connected: true, // Tell frontend it's connected
+					Timestamp: time.Now().Unix(),
+				}
+			}
+			sm.Mu.Unlock()
+		}
+	}()
+}
+
 // parseWeight parses the raw serial string from a generic scale indicator
 // This varies wildly by manufacturer (Mettler Toledo, Avery, etc.)
 // For this MVP, we assume a simple format or just extract numbers.

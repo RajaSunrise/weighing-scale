@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="id" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,8 +24,8 @@
     <div class="w-full max-w-md p-8 bg-surface-dark rounded-2xl shadow-2xl border border-white/5">
         <div class="flex flex-col items-center mb-8">
             <div class="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-2xl font-bold mb-4">S</div>
-            <h1 class="text-2xl font-bold">Welcome Back</h1>
-            <p class="text-gray-400">Sign in to access StoneWeigh</p>
+            <h1 class="text-2xl font-bold">Selamat Datang</h1>
+            <p class="text-gray-400">Silakan masuk untuk mengakses StoneWeigh</p>
         </div>
 
         <form id="loginForm" class="space-y-6">
@@ -39,10 +39,10 @@
                 <input type="password" name="password" class="w-full bg-background-dark border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary transition-colors" placeholder="••••••••" required>
             </div>
 
-            <div id="error-msg" class="text-red-500 text-sm text-center hidden">Invalid credentials</div>
+            <div id="error-msg" class="text-red-500 text-sm text-center hidden">Username atau Password salah</div>
 
             <button type="submit" class="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-colors">
-                Sign In
+                Masuk
             </button>
         </form>
     </div>
@@ -66,7 +66,7 @@
                     window.location.href = result.redirect;
                 } else {
                     const errorEl = document.getElementById('error-msg');
-                    errorEl.innerText = result.error || 'Login failed';
+                    errorEl.innerText = result.error || 'Login gagal';
                     errorEl.classList.remove('hidden');
                 }
             } catch (err) {

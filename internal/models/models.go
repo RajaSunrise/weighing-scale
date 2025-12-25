@@ -13,6 +13,7 @@ type WeighingRecord struct {
 	ScaleID      uint      `json:"scale_id"`
 	PlateNumber  string    `gorm:"index" json:"plate_number"`
 	DriverName   string    `json:"driver_name"`
+	ManagerName  string    `json:"manager_name"` // Name of the operator/manager
 	Product      string    `json:"product"`
 
 	GrossWeight  float64   `json:"gross_weight"` // Initial weight

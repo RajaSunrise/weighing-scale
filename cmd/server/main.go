@@ -45,6 +45,10 @@ func main() {
 	hardware.Manager.AddScale(models.ScaleConfig{Model: gorm.Model{ID: 2}, Name: "Side Gate", Port: "COM4", BaudRate: 9600, Enabled: true})
 	hardware.Manager.AddScale(models.ScaleConfig{Model: gorm.Model{ID: 3}, Name: "Back Gate", Port: "COM5", BaudRate: 9600, Enabled: true})
 
+	if os.Getenv("ENABLE_DEMO_SCALE") == "true" {
+		hardware.Manager.StartDemoMode()
+	}
+
 	// 3. Initialize CV
 	anpr := cv.NewANPRService("models/platdetection.pt")
 
