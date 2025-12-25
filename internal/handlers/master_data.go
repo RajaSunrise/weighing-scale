@@ -1,0 +1,74 @@
+package handlers
+
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"stoneweigh/internal/models"
+)
+
+// ShowVehicleSettings renders the vehicle management page
+func (s *Server) ShowVehicleSettings(c *gin.Context) {
+	c.HTML(http.StatusOK, "settings_vehicles.html", gin.H{
+		"title":   "Vehicle Management",
+		"active":  "settings",
+		"showNav": true,
+	})
+}
+
+// ListVehicles API returns all registered vehicles
+func (s *Server) ListVehicles(c *gin.Context) {
+	var vehicles []models.Vehicle
+	if err := s.DB.Find(&vehicles).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch vehicles"})
+		return
+	}
+	c.JSON(http.StatusOK, vehicles)
+}
+
+// CreateVehicle API adds a new vehicle
+func (s *Server) CreateVehicle(c *gin.Context) {
+	var input struct {
+		PlateNumber  string  `json:"plate_number" binding:"required"`
+		DriverName   string  `json:"driver_name" binding:"required"`
+		DefaultTare  float64 `json:"default_tare"`
+		OwnerCompany string  `json:"owner_company"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	vehicle := models.Vehicle{
+		PlateNumber:  input.PlateNumber,
+		DriverName:   input.DriverName,
+		DefaultTare:  input.DefaultTare,
+		OwnerCompany: input.OwnerCompany,
+	}
+
+	if err := s.DB.Create(&vehicle).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create vehicle. Plate number might be duplicate."})
+		return
+	}
+
+	c.JSON(http.StatusCreated, vehicle)
+}
+
+// DeleteVehicle API removes a vehicle
+func (s *Server) DeleteVehicle(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	if err := s.DB.Delete(&models.Vehicle{}, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete vehicle"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Vehicle deleted"})
+}

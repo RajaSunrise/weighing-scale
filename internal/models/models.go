@@ -59,3 +59,12 @@ type Invoice struct {
 	Amount           float64        `json:"amount"` // Calculated cost
 	GeneratedAt      time.Time      `json:"generated_at"`
 }
+
+// User represents a system user (Admin/Operator)
+type User struct {
+	gorm.Model
+	Username     string `gorm:"uniqueIndex;not null" json:"username"`
+	PasswordHash string `json:"-"` // Store bcrypt hash
+	FullName     string `json:"full_name"`
+	Role         string `json:"role"` // "admin", "operator"
+}
