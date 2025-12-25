@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    container_name: stoneweigh-app
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_DRIVER=sqlite
+      - DB_NAME=stoneweigh.db
+      - ENABLE_DEMO_SCALE=true
+    volumes:
+      - ./logs:/app/logs
+      - ./stoneweigh.db:/app/stoneweigh.db
+      - ./web/static/images:/app/web/static/images
+    # To run tests instead of server, you can override command
+    # command: go test -tags gocv -v ./...
