@@ -1,0 +1,92 @@
+{{ template "header" . }}
+
+<div class="h-full overflow-y-auto p-6">
+    <header class="flex justify-between items-center mb-8">
+        <div>
+            <h2 class="text-2xl font-bold text-white">Dashboard</h2>
+            <p class="text-text-secondary">Ringkasan operasional harian</p>
+        </div>
+        <div class="flex gap-4">
+            <button class="flex items-center gap-2 px-4 py-2 bg-surface-dark border border-border-dark rounded-lg text-sm hover:bg-card-hover transition-colors">
+                <span class="material-symbols-outlined text-lg">calendar_today</span>
+                <span>Hari Ini</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Stat Card 1 -->
+        <div class="p-6 bg-surface-dark border border-border-dark rounded-xl">
+            <div class="flex justify-between items-start mb-4">
+                <div class="p-2 bg-primary/10 rounded-lg text-primary">
+                    <span class="material-symbols-outlined">local_shipping</span>
+                </div>
+            </div>
+            <h3 class="text-3xl font-bold text-white mb-1">{{ .Stats.TodayCount }}</h3>
+            <p class="text-sm text-text-secondary">Total Kendaraan</p>
+        </div>
+
+        <!-- Stat Card 2 -->
+        <div class="p-6 bg-surface-dark border border-border-dark rounded-xl">
+            <div class="flex justify-between items-start mb-4">
+                <div class="p-2 bg-warning/10 rounded-lg text-warning">
+                    <span class="material-symbols-outlined">weight</span>
+                </div>
+            </div>
+            <h3 class="text-3xl font-bold text-white mb-1">{{ printf "%.0f" .Stats.TodayWeight }} <span class="text-lg text-text-secondary font-normal">kg</span></h3>
+            <p class="text-sm text-text-secondary">Total Berat Bersih</p>
+        </div>
+
+        <!-- Stat Card 3 -->
+        <div class="p-6 bg-surface-dark border border-border-dark rounded-xl">
+            <div class="flex justify-between items-start mb-4">
+                <div class="p-2 bg-success/10 rounded-lg text-success">
+                    <span class="material-symbols-outlined">payments</span>
+                </div>
+            </div>
+            <h3 class="text-3xl font-bold text-white mb-1">{{ .Stats.TodayCount }}</h3>
+            <p class="text-sm text-text-secondary">Tiket Tercetak</p>
+        </div>
+    </div>
+
+    <!-- Recent Activity Table -->
+    <div class="bg-surface-dark border border-border-dark rounded-xl overflow-hidden">
+        <div class="p-6 border-b border-border-dark flex justify-between items-center">
+            <h3 class="font-bold text-lg">Transaksi Terakhir</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-card-dark text-text-secondary font-medium border-b border-border-dark">
+                    <tr>
+                        <th class="px-6 py-4">Waktu</th>
+                        <th class="px-6 py-4">Tiket</th>
+                        <th class="px-6 py-4">No. Polisi</th>
+                        <th class="px-6 py-4">Muatan</th>
+                        <th class="px-6 py-4 text-right">Netto</th>
+                        <th class="px-6 py-4 text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-dark">
+                    {{ range .Recent }}
+                    <tr class="hover:bg-card-hover transition-colors">
+                        <td class="px-6 py-4 text-text-secondary">{{ .WeighedAt.Format "15:04" }}</td>
+                        <td class="px-6 py-4 font-mono text-xs">{{ .TicketNumber }}</td>
+                        <td class="px-6 py-4 font-medium text-white">{{ .PlateNumber }}</td>
+                        <td class="px-6 py-4">{{ .Product }}</td>
+                        <td class="px-6 py-4 text-right font-mono">{{ printf "%.0f" .NetWeight }} kg</td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="inline-block px-2 py-1 rounded text-xs font-medium bg-success/10 text-success">Selesai</span>
+                        </td>
+                    </tr>
+                    {{ else }}
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-text-secondary">Belum ada data transaksi hari ini.</td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{{ template "footer" . }}

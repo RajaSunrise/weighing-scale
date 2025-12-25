@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - StoneWeigh</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: { "primary": "#136dec", "background-dark": "#101822", "surface-dark": "#192433" },
+                    fontFamily: { "display": ["Manrope", "sans-serif"] }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background-dark font-display text-white h-screen flex items-center justify-center">
+
+    <div class="w-full max-w-md p-8 bg-surface-dark rounded-2xl shadow-2xl border border-white/5">
+        <div class="flex flex-col items-center mb-8">
+            <div class="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-2xl font-bold mb-4">S</div>
+            <h1 class="text-2xl font-bold">Selamat Datang</h1>
+            <p class="text-gray-400">Silakan masuk untuk mengakses StoneWeigh</p>
+        </div>
+
+        <form id="loginForm" class="space-y-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Username</label>
+                <input type="text" name="username" class="w-full bg-background-dark border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary transition-colors" placeholder="admin" required>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Password</label>
+                <input type="password" name="password" class="w-full bg-background-dark border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary transition-colors" placeholder="••••••••" required>
+            </div>
+
+            <div id="error-msg" class="text-red-500 text-sm text-center hidden">Username atau Password salah</div>
+
+            <button type="submit" class="w-full bg-primary hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-colors">
+                Masuk
+            </button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    window.location.href = result.redirect;
+                } else {
+                    const errorEl = document.getElementById('error-msg');
+                    errorEl.innerText = result.error || 'Login gagal';
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+</html>

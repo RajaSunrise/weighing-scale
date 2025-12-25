@@ -1,0 +1,79 @@
+{{ template "header" . }}
+
+<div class="h-full flex flex-col p-6 gap-6">
+    <header class="flex justify-between items-center">
+        <div>
+            <h2 class="text-2xl font-bold text-white">Laporan Transaksi</h2>
+            <p class="text-text-secondary">Riwayat penimbangan dan ekspor data</p>
+        </div>
+
+        <!-- Date Filter -->
+        <form method="GET" action="/reports" class="flex gap-4 items-end">
+            <div>
+                <label class="block text-xs font-bold text-text-secondary mb-1">Dari Tanggal</label>
+                <input type="date" name="start_date" value="{{ .StartDate }}" class="bg-background-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-text-secondary mb-1">Sampai Tanggal</label>
+                <input type="date" name="end_date" value="{{ .EndDate }}" class="bg-background-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary">
+            </div>
+            <button type="submit" class="px-4 py-2 bg-surface-dark border border-border-dark hover:bg-card-hover text-white text-sm font-bold rounded-lg transition-colors">
+                Filter
+            </button>
+            <button type="button" onclick="window.print()" class="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">print</span> Cetak
+            </button>
+        </form>
+    </header>
+
+    <!-- Report Table -->
+    <div class="bg-surface-dark border border-border-dark rounded-xl flex-1 overflow-hidden flex flex-col">
+        <div class="overflow-x-auto h-full">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-card-dark text-text-secondary font-medium border-b border-border-dark sticky top-0">
+                    <tr>
+                        <th class="px-6 py-4">Waktu</th>
+                        <th class="px-6 py-4">No. Tiket</th>
+                        <th class="px-6 py-4">No. Polisi</th>
+                        <th class="px-6 py-4">Supir</th>
+                        <th class="px-6 py-4">Muatan</th>
+                        <th class="px-6 py-4 text-right">Gross (kg)</th>
+                        <th class="px-6 py-4 text-right">Tare (kg)</th>
+                        <th class="px-6 py-4 text-right">Netto (kg)</th>
+                        <th class="px-6 py-4 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-dark overflow-y-auto">
+                    {{ range .Records }}
+                    <tr class="hover:bg-card-hover transition-colors">
+                        <td class="px-6 py-4 text-text-secondary whitespace-nowrap">{{ .WeighedAt.Format "02 Jan 15:04" }}</td>
+                        <td class="px-6 py-4 font-mono text-xs">{{ .TicketNumber }}</td>
+                        <td class="px-6 py-4 font-medium text-white">{{ .PlateNumber }}</td>
+                        <td class="px-6 py-4">{{ .DriverName }}</td>
+                        <td class="px-6 py-4">{{ .Product }}</td>
+                        <td class="px-6 py-4 text-right font-mono">{{ printf "%.0f" .GrossWeight }}</td>
+                        <td class="px-6 py-4 text-right font-mono text-text-secondary">{{ printf "%.0f" .TareWeight }}</td>
+                        <td class="px-6 py-4 text-right font-mono font-bold text-success">{{ printf "%.0f" .NetWeight }}</td>
+                        <td class="px-6 py-4 text-center">
+                            {{ if .InvoicePath }}
+                            <a href="/{{ .InvoicePath }}" target="_blank" class="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-white/10 text-primary" title="Lihat PDF">
+                                <span class="material-symbols-outlined text-lg">description</span>
+                            </a>
+                            {{ end }}
+                        </td>
+                    </tr>
+                    {{ else }}
+                    <tr>
+                        <td colspan="9" class="px-6 py-12 text-center text-text-secondary">
+                            <span class="material-symbols-outlined text-4xl mb-2">inbox</span>
+                            <p>Tidak ada data ditemukan untuk periode ini.</p>
+                        </td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{{ template "footer" . }}
