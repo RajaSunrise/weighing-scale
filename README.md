@@ -22,7 +22,7 @@ StoneWeigh adalah aplikasi manajemen jembatan timbang (weighbridge) modern yang 
 
 ## 🛠️ Teknologi
 
-*   **Backend**: Go 1.22+ (Gin Framework, GORM)
+*   **Backend**: Go 1.25+ (Gin Framework, GORM)
 *   **Frontend**: Server-side HTML Templates + Tailwind CSS (via CDN/Local)
 *   **Database**: SQLite (Default) atau PostgreSQL
 *   **Computer Vision**: GoCV (OpenCV bindings) atau Mock Mode
