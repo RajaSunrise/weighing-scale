@@ -235,6 +235,27 @@ const LoginScreen = () => {
 
 // Screen: Dashboard
 const DashboardScreen = () => {
+    const [stats, setStats] = useState({total_count: 0, total_weight: 0, pending_count: 0});
+    const [recentTx, setRecentTx] = useState([]);
+
+    useEffect(() => {
+        const fetchData = () => {
+            fetch('/api/stats')
+                .then(res => res.json())
+                .then(data => setStats(data))
+                .catch(console.error);
+
+            fetch('/api/transactions')
+                .then(res => res.json())
+                .then(data => setRecentTx(data))
+                .catch(console.error);
+        };
+
+        fetchData();
+        const interval = setInterval(fetchData, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
     return (
         <div className="flex h-screen w-full bg-background-light dark:bg-background-dark overflow-hidden">
             <aside className="w-20 lg:w-72 flex-shrink-0 flex flex-col justify-between border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111822] transition-all duration-300">
@@ -313,10 +334,10 @@ const DashboardScreen = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-3xl font-bold">45 <span className="text-lg font-medium text-text-secondary">Kendaraan</span></p>
+                                    <p className="text-3xl font-bold">{stats.total_count} <span className="text-lg font-medium text-text-secondary">Kendaraan</span></p>
                                     <p className="text-emerald-500 text-sm font-medium flex items-center gap-1 mt-1">
                                         <span className="material-symbols-outlined text-base">trending_up</span>
-                                        +12% dari kemarin
+                                        Live Update
                                     </p>
                                 </div>
                             </div>
@@ -328,10 +349,10 @@ const DashboardScreen = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-3xl font-bold">1,204 <span className="text-lg font-medium text-text-secondary">Ton</span></p>
+                                    <p className="text-3xl font-bold">{(stats.total_weight / 1000).toFixed(2)} <span className="text-lg font-medium text-text-secondary">Ton</span></p>
                                     <p className="text-emerald-500 text-sm font-medium flex items-center gap-1 mt-1">
                                         <span className="material-symbols-outlined text-base">trending_up</span>
-                                        +5% dari target
+                                        Accumulated
                                     </p>
                                 </div>
                             </div>
@@ -343,10 +364,10 @@ const DashboardScreen = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <p className="text-3xl font-bold">3 <span className="text-lg font-medium text-text-secondary">Kendaraan</span></p>
+                                    <p className="text-3xl font-bold">{stats.pending_count} <span className="text-lg font-medium text-text-secondary">Kendaraan</span></p>
                                     <p className="text-text-secondary text-sm font-medium flex items-center gap-1 mt-1">
                                         <span className="material-symbols-outlined text-base">check_circle</span>
-                                        Normal
+                                        Active
                                     </p>
                                 </div>
                             </div>
@@ -450,23 +471,28 @@ const DashboardScreen = () => {
                                     <a href="/history-detail" className="text-primary text-sm font-medium hover:underline">Lihat Semua</a>
                                 </div>
                                 <div className="flex flex-col gap-3 flex-1 overflow-hidden">
-                                    <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#192433] border-l-4 border-primary shadow-md">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div>
-                                                <p className="text-xs font-bold text-primary mb-1">SEDANG DITIMBANG</p>
-                                                <h4 className="text-xl font-extrabold">B 1234 XYZ</h4>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-xs text-text-secondary">Masuk</p>
-                                                <p className="font-medium text-sm">10:45</p>
+                                    {/* Dynamic List */}
+                                    {recentTx.length === 0 ? (
+                                        <p className="text-center text-slate-500 p-4">Belum ada data</p>
+                                    ) : recentTx.map((tx, idx) => (
+                                        <div key={tx.ticket_id} className="p-4 rounded-xl bg-white dark:bg-[#151e29] border border-transparent hover:bg-slate-50 dark:hover:bg-[#1b2633] transition-colors group">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="size-8 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center">
+                                                        <span className="material-symbols-outlined text-lg">{tx.status === 'PENDING' ? 'pending' : 'check'}</span>
+                                                    </div>
+                                                    <div>
+                                                        <h5 className="text-sm font-bold text-slate-800 dark:text-slate-200">{tx.plate_number}</h5>
+                                                        <p className="text-xs text-text-secondary">{(tx.net_weight/1000).toFixed(2)} Ton</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className={`px-2 py-1 rounded text-[10px] font-bold ${tx.status === 'PENDING' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-emerald-500/10 text-emerald-500'}`}>{tx.status}</span>
+                                                    <p className="text-xs text-text-secondary mt-1">{new Date(tx.entry_time).toLocaleTimeString()}</p>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-text-secondary">
-                                            <span className="material-symbols-outlined text-lg">local_shipping</span>
-                                            <span>Dump Truck - 6 Roda</span>
-                                        </div>
-                                    </div>
-                                    {/* Other queue items... */}
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -562,7 +588,12 @@ const WeighingStationScreen = () => {
                                             })
                                         })
                                         .then(res => res.json())
-                                        .then(data => alert("Data saved! Ticket ID: " + data.ticket_id))
+                                        .then(data => {
+                                            alert("Data saved! Ticket ID: " + data.ticket_id);
+                                            if (data.pdf_url) {
+                                                window.open(data.pdf_url, '_blank');
+                                            }
+                                        })
                                         .catch(err => alert("Error saving data"));
                                     }}
                                     className="w-full bg-primary hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-lg shadow-lg shadow-primary/20 flex items-center justify-center gap-3 transition-transform active:scale-[0.98]">

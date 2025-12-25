@@ -1,0 +1,5 @@
+stoneweigh
+stoneweigh.db
+server.log
+server.pid
+web/static/reports/*.pdf

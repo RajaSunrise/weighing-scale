@@ -5,10 +5,12 @@ import (
 	"time"
 	"math/rand"
 	"strconv"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"stoneweigh/internal/models"
 	"stoneweigh/internal/database"
+	"stoneweigh/internal/pkg/report"
 )
 
 func ShowLogin(c *gin.Context) {
@@ -35,10 +37,9 @@ func ShowWeighing(c *gin.Context) {
 	})
 }
 
-// API Handlers (mock implementation for some parts)
+// API Handlers
 
 func Login(c *gin.Context) {
-	// Mock login
 	var creds struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -48,8 +49,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Real implementation would check DB
-	// For prototype, accept any non-empty
+	// Mock auth
 	if creds.Email != "" && creds.Password != "" {
 		c.JSON(http.StatusOK, gin.H{"token": "mock-token-123"})
 	} else {
@@ -59,11 +59,26 @@ func Login(c *gin.Context) {
 
 func GetTransactions(c *gin.Context) {
 	var transactions []models.Transaction
-	// Check if DB is connected
 	if database.DB != nil {
-		database.DB.Find(&transactions)
+		database.DB.Order("created_at desc").Limit(10).Find(&transactions)
 	}
 	c.JSON(http.StatusOK, transactions)
+}
+
+func GetStats(c *gin.Context) {
+	var stats struct {
+		TotalCount     int64   `json:"total_count"`
+		TotalWeight    float64 `json:"total_weight"`
+		PendingCount   int64   `json:"pending_count"`
+	}
+
+	if database.DB != nil {
+		database.DB.Model(&models.Transaction{}).Count(&stats.TotalCount)
+		database.DB.Model(&models.Transaction{}).Select("sum(net_weight)").Scan(&stats.TotalWeight)
+		database.DB.Model(&models.Transaction{}).Where("status = ?", "PENDING").Count(&stats.PendingCount)
+	}
+
+	c.JSON(http.StatusOK, stats)
 }
 
 func CreateTransaction(c *gin.Context) {
@@ -74,16 +89,28 @@ func CreateTransaction(c *gin.Context) {
 	}
 	txn.TicketID = "T-" + strconv.Itoa(rand.Intn(100000))
 	txn.EntryTime = time.Now()
-	txn.Status = "PENDING"
+	txn.Status = "COMPLETED" // Assume completed for this flow
 
 	if database.DB != nil {
 		database.DB.Create(&txn)
 	}
-	c.JSON(http.StatusOK, txn)
+
+	// Generate PDF
+	pdfPath, err := report.GenerateTicketPDF(txn)
+	pdfUrl := ""
+	if err == nil {
+		// Convert path to URL
+		filename := filepath.Base(pdfPath)
+		pdfUrl = "/static/reports/" + filename
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"ticket_id": txn.TicketID,
+		"pdf_url":   pdfUrl,
+	})
 }
 
-// Mock CCTV Stream Handler (MJPEG)
+// Mock CCTV Stream Handler
 func StreamCCTV(c *gin.Context) {
-	// In a real app, this would stream MJPEG frames from gocv
 	c.String(http.StatusOK, "CCTV Stream Placeholder")
 }

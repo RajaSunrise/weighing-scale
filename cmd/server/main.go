@@ -18,17 +18,14 @@ func main() {
 		os.Setenv("DB_PASSWORD", "postgres")
 		os.Setenv("DB_NAME", "stoneweigh")
 		os.Setenv("DB_PORT", "5432")
-		os.Setenv("USE_SQLITE", "true") // Fallback
+		// Force SQLite for this sandbox env to ensure it works out of the box
+		os.Setenv("USE_SQLITE", "true")
 	}
 
 	database.Connect()
 
 	r := gin.Default()
 
-	// Load Templates
-	// We need to define the layout logic.
-	// Gin's HTML render defaults to loading all.
-	// We'll use LoadHTMLGlob.
 	r.LoadHTMLGlob("web/templates/*")
 
 	// Serve Static Files
@@ -38,16 +35,17 @@ func main() {
 	r.GET("/", handlers.ShowLogin)
 	r.GET("/dashboard", handlers.ShowDashboard)
 	r.GET("/weighing-station", handlers.ShowWeighing)
-	r.GET("/report-dashboard", handlers.ShowDashboard) // Placeholder re-use
-	r.GET("/driver-vehicle", handlers.ShowDashboard) // Placeholder re-use
-	r.GET("/user-management", handlers.ShowDashboard) // Placeholder re-use
-	r.GET("/settings-hardware", handlers.ShowDashboard) // Placeholder re-use
+	r.GET("/report-dashboard", handlers.ShowDashboard)
+	r.GET("/driver-vehicle", handlers.ShowDashboard)
+	r.GET("/user-management", handlers.ShowDashboard)
+	r.GET("/settings-hardware", handlers.ShowDashboard)
 
 	// API Routes
 	api := r.Group("/api")
 	{
 		api.POST("/login", handlers.Login)
 		api.GET("/transactions", handlers.GetTransactions)
+		api.GET("/stats", handlers.GetStats)
 		api.POST("/transactions", handlers.CreateTransaction)
 		api.GET("/stream", handlers.StreamCCTV)
 	}
