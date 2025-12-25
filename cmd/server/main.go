@@ -2,56 +2,64 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/gin-gonic/gin"
-	"stoneweigh/internal/database"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+
+	"stoneweigh/internal/cv"
 	"stoneweigh/internal/handlers"
+	"stoneweigh/internal/hardware"
+	"stoneweigh/internal/models"
 )
 
 func main() {
-	// Initialize Database
-	// Set default env vars for sandbox if not set
-	if os.Getenv("DB_HOST") == "" {
-		os.Setenv("DB_HOST", "localhost")
-		os.Setenv("DB_USER", "postgres")
-		os.Setenv("DB_PASSWORD", "postgres")
-		os.Setenv("DB_NAME", "stoneweigh")
-		os.Setenv("DB_PORT", "5432")
-		// Force SQLite for this sandbox env to ensure it works out of the box
-		os.Setenv("USE_SQLITE", "true")
+	// 1. Initialize Database
+	db, err := gorm.Open(sqlite.Open("stoneweigh.db"), &gorm.Config{})
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
 	}
 
-	database.Connect()
+	// Migrate Schema
+	db.AutoMigrate(&models.WeighingRecord{}, &models.ScaleConfig{}, &models.Vehicle{}, &models.Invoice{})
 
+	// 2. Initialize Hardware (Scales)
+	hardware.InitScaleManager()
+	// Add default scales (Mocking ports for now)
+	hardware.Manager.AddScale(models.ScaleConfig{Model: gorm.Model{ID: 1}, Name: "Main Gate", Port: "COM3", BaudRate: 9600, Enabled: true})
+	hardware.Manager.AddScale(models.ScaleConfig{Model: gorm.Model{ID: 2}, Name: "Side Gate", Port: "COM4", BaudRate: 9600, Enabled: true})
+	hardware.Manager.AddScale(models.ScaleConfig{Model: gorm.Model{ID: 3}, Name: "Back Gate", Port: "COM5", BaudRate: 9600, Enabled: true})
+
+	// 3. Initialize CV
+	anpr := cv.NewANPRService("models/platdetection.pt")
+
+	// 4. Initialize Handlers
+	server := handlers.NewServer(db, hardware.Manager, anpr)
+
+	// 5. Setup Router
 	r := gin.Default()
 
-	r.LoadHTMLGlob("web/templates/*")
-
-	// Serve Static Files
+	// Static Files
 	r.Static("/static", "./web/static")
 
-	// Routes
-	r.GET("/", handlers.ShowLogin)
-	r.GET("/dashboard", handlers.ShowDashboard)
-	r.GET("/weighing-station", handlers.ShowWeighing)
-	r.GET("/report-dashboard", handlers.ShowDashboard)
-	r.GET("/driver-vehicle", handlers.ShowDashboard)
-	r.GET("/user-management", handlers.ShowDashboard)
-	r.GET("/settings-hardware", handlers.ShowDashboard)
+	// HTML Templates
+	// Gin requires loading templates before defining routes that use them
+	r.LoadHTMLGlob("web/templates/*")
 
-	// API Routes
+	// Routes
+	r.GET("/", server.ShowDashboard)
+	r.GET("/dashboard", server.ShowDashboard)
+	r.GET("/weighing", server.ShowWeighing)
+
 	api := r.Group("/api")
 	{
-		api.POST("/login", handlers.Login)
-		api.GET("/transactions", handlers.GetTransactions)
-		api.GET("/stats", handlers.GetStats)
-		api.POST("/transactions", handlers.CreateTransaction)
-		api.GET("/stream", handlers.StreamCCTV)
+		api.POST("/transaction", server.SaveTransaction)
+		api.POST("/anpr/trigger", server.TriggerANPR)
+		api.GET("/scales/stream", server.StreamScaleData)
 	}
 
-	log.Println("Server starting on :8080")
+	log.Println("StoneWeigh Server starting on :8080")
 	if err := r.Run(":8080"); err != nil {
-		log.Fatal(err)
+		log.Fatal("Server failed:", err)
 	}
 }
