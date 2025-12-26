@@ -62,7 +62,7 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	// --- Details Grid ---
 	// Background for Details
 	pdf.SetFillColor(245, 247, 250)
-	pdf.Rect(10, 80, 190, 60, "F")
+	pdf.Rect(10, 80, 190, 70, "F") // Increased height
 
 	pdf.SetY(85)
 	pdf.SetX(15)
@@ -84,9 +84,9 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	pdf.SetX(15)
 	// Column 1
 	pdf.SetFont("Arial", "B", 11)
-	pdf.Cell(40, 8, "Jenis Muatan")
+	pdf.Cell(40, 8, "Perusahaan")
 	pdf.SetFont("Arial", "", 11)
-	pdf.Cell(50, 8, ": "+record.Product)
+	pdf.Cell(50, 8, ": "+record.CompanyName)
 
 	// Column 2
 	pdf.SetX(110)
@@ -96,8 +96,16 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	pdf.Cell(50, 8, ": "+record.ManagerName)
 	pdf.Ln(10)
 
+	pdf.SetX(15)
+	// Column 1
+	pdf.SetFont("Arial", "B", 11)
+	pdf.Cell(40, 8, "Jenis Muatan")
+	pdf.SetFont("Arial", "", 11)
+	pdf.Cell(50, 8, ": "+record.Product)
+	pdf.Ln(10)
+
 	// --- Weight Data Box ---
-	pdf.SetY(120)
+	pdf.SetY(160) // Moved down
 	pdf.SetFont("Arial", "B", 14)
 	pdf.Cell(0, 10, "DATA PENIMBANGAN (Kg)")
 	pdf.Ln(10)
@@ -139,6 +147,10 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 
 	pdf.SetX(115)
 	pdf.Cell(95, 5, "( "+record.ManagerName+" )")
+
+	// --- Extra Info (Entry/Exit) ---
+	pdf.SetY(135)
+	// We could put entry/exit times here if we had them. Currently just WeighedAt.
 
 	// --- Footer ---
 	pdf.SetY(260)

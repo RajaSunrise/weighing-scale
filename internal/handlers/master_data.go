@@ -80,3 +80,20 @@ func (s *Server) DeleteVehicle(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Vehicle deleted"})
 }
+
+// GetVehicleDetails returns details for a specific plate (public for operators)
+func (s *Server) GetVehicleDetails(c *gin.Context) {
+	plate := c.Query("plate")
+	if plate == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Plate number required"})
+		return
+	}
+
+	var vehicle models.Vehicle
+	if err := s.DB.Where("plate_number = ?", plate).First(&vehicle).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Vehicle not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, vehicle)
+}

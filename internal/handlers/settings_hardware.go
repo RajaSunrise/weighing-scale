@@ -12,7 +12,7 @@ import (
 
 func (s *Server) GetStations(c *gin.Context) {
 	var stations []models.WeighingStation
-	if err := s.DB.Find(&stations).Error; err != nil {
+	if err := s.DB.Preload("Cameras").Find(&stations).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch stations"})
 		return
 	}
@@ -32,8 +32,6 @@ func (s *Server) CreateStation(c *gin.Context) {
 	}
 
 	// Reload hardware manager to apply changes
-	// Note: In a real distributed system, we'd need a pub/sub.
-	// For this single instance, we can call directly.
 	go s.ScaleMgr.ReloadConfig(s.DB)
 
 	c.JSON(http.StatusOK, input)
@@ -57,8 +55,13 @@ func (s *Server) UpdateStation(c *gin.Context) {
 	station.Name = input.Name
 	station.ScalePort = input.ScalePort
 	station.BaudRate = input.BaudRate
-	station.CameraURL = input.CameraURL
 	station.Enabled = input.Enabled
+
+	// Handle Cameras update
+	// 1. Delete existing cameras
+	s.DB.Where("weighing_station_id = ?", station.ID).Delete(&models.StationCamera{})
+	// 2. Add new ones
+	station.Cameras = input.Cameras
 
 	if err := s.DB.Save(&station).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update station"})

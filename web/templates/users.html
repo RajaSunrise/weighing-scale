@@ -86,10 +86,9 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    loadUsers();
-    loadStationsForModal();
-});
+// Trigger immediately for HTMX swaps
+loadUsers();
+loadStationsForModal();
 
 async function loadUsers() {
     const res = await fetch('/api/users');

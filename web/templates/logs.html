@@ -21,11 +21,12 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    loadLogs();
-    // Auto refresh every 5s
-    setInterval(loadLogs, 5000);
-});
+// Trigger immediately for HTMX swaps
+loadLogs();
+// Auto refresh every 5s
+if (!window.logInterval) {
+    window.logInterval = setInterval(loadLogs, 5000);
+}
 
 async function loadLogs() {
     const container = document.getElementById('log-container');
