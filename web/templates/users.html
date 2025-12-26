@@ -88,7 +88,6 @@
 <script>
 // Trigger immediately for HTMX swaps
 loadUsers();
-loadStationsForModal();
 
 async function loadUsers() {
     const res = await fetch('/api/users');
@@ -167,15 +166,14 @@ async function deleteUser(id) {
 }
 
 // Access Management
-let allStations = [];
-
-async function loadStationsForModal() {
-    const res = await fetch('/api/stations');
-    allStations = await res.json();
-}
+// Removed global cache to ensure fresh data
 
 async function openAccessModal(userId) {
     document.getElementById('access-user-id').value = userId;
+
+    // Fetch stations fresh
+    const resStations = await fetch('/api/stations');
+    const allStations = await resStations.json();
 
     // Fetch current assignments
     const res = await fetch(`/api/users/${userId}/assignments`);

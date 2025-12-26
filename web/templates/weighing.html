@@ -213,6 +213,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('input-gross').addEventListener('input', updateCalculations);
 
+    // Initialize SSE (Server Sent Events)
+    initSSE();
+
     // Form Submission
     document.getElementById('weighing-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -283,8 +286,12 @@ async function fetchVehicleDetails(plate) {
             const data = await res.json();
             document.getElementById('driver_name').value = data.driver_name || '';
             document.getElementById('company_name').value = data.owner_company || '';
-            // Also set default tare if available and not yet set?
-            // For now, let's just set the fields.
+
+            // Auto-fill Tare
+            if (data.default_tare && data.default_tare > 0) {
+                 document.getElementById('val-tare').innerText = data.default_tare + " kg";
+                 updateCalculations();
+            }
         }
     } catch (e) {
         console.log("Vehicle not found");
@@ -408,6 +415,46 @@ function updateCalculations() {
     const net = gross - tare;
 
     document.getElementById('val-net').innerText = net + " kg";
+}
+
+function initSSE() {
+    const evtSource = new EventSource("/api/scales/stream");
+
+    evtSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        const scaleId = data.scale_id;
+        const weight = data.weight;
+        const connected = data.connected;
+
+        // Update card
+        const display = document.getElementById(`weight-display-${scaleId}`);
+        const status = document.getElementById(`status-scale-${scaleId}`);
+
+        if (display) {
+            display.innerText = weight; // .padStart(5, '0');
+        }
+        if (status) {
+            if (connected) {
+                status.innerText = "ONLINE";
+                status.className = "px-2 py-1 rounded bg-success/10 text-success text-xs font-bold";
+            } else {
+                status.innerText = "TERPUTUS";
+                status.className = "px-2 py-1 rounded bg-red-500/10 text-red-500 text-xs font-bold";
+            }
+        }
+
+        // If active scale, update form fields if NOT manual
+        if (activeScaleId == scaleId) {
+            if (!document.getElementById('manual-weight-toggle').checked) {
+                document.getElementById('val-gross').innerText = weight + " kg";
+                updateCalculations();
+            }
+        }
+    };
+
+    evtSource.onerror = function(err) {
+        console.error("EventSource failed:", err);
+    };
 }
 </script>
 

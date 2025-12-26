@@ -716,3 +716,181 @@
 2025/12/26 05:44:27 [HTTP] 200 |      92.128µs |             ::1 | GET     /static/images/placeholder_truck.jpg
 2025/12/26 05:44:27 [HTTP] 200 |  1.800908729s |             ::1 | GET     /api/scales/stream
 2025/12/26 05:44:29 [HTTP] 200 |  2.200963743s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:47:08 [HTTP] 200 |   24.807671ms |             ::1 | GET     /login
+2025/12/26 06:47:09 [HTTP] 200 |  111.375702ms |             ::1 | POST    /login
+2025/12/26 06:47:09 [HTTP] 200 |    13.57697ms |             ::1 | GET     /dashboard
+2025/12/26 06:47:09 [HTTP] 200 |     700.201µs |             ::1 | GET     /static/js/main.js
+2025/12/26 06:47:11 [HTTP] 200 |    3.282975ms |             ::1 | GET     /settings/users
+2025/12/26 06:47:11 [HTTP] 200 |    3.784613ms |             ::1 | GET     /api/users
+2025/12/26 06:47:11 [HTTP] 200 |  1.618341499s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:47:12 [HTTP] 200 |    2.214042ms |             ::1 | GET     /api/stations
+2025/12/26 06:47:12 [HTTP] 200 |    2.364528ms |             ::1 | GET     /api/users/1/assignments
+2025/12/26 06:47:13 [HTTP] 200 |  2.401364603s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:47:40 [HTTP] 200 |    7.902049ms |             ::1 | GET     /login
+2025/12/26 06:47:40 [HTTP] 200 |   83.759658ms |             ::1 | POST    /login
+2025/12/26 06:47:40 [HTTP] 200 |    2.228539ms |             ::1 | GET     /dashboard
+2025/12/26 06:47:40 [HTTP] 200 |     236.412µs |             ::1 | GET     /static/js/main.js
+2025/12/26 06:47:42 [HTTP] 200 |    4.601715ms |             ::1 | GET     /settings/hardware
+2025/12/26 06:47:42 [HTTP] 200 |     295.627µs |             ::1 | GET     /api/stations
+2025/12/26 06:47:42 [HTTP] 200 |  1.800538537s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:47:44 [HTTP] 500 |    6.747832ms |             ::1 | POST    /api/stations
+2025/12/26 06:47:44 [HTTP] 200 |     1.42692ms |             ::1 | GET     /settings/hardware
+2025/12/26 06:47:44 [HTTP] 200 |    2.529912ms |             ::1 | GET     /api/stations
+2025/12/26 06:47:45 [HTTP] 200 |    3.930793ms |             ::1 | GET     /settings/users
+2025/12/26 06:47:45 [HTTP] 200 |     371.318µs |             ::1 | GET     /api/users
+2025/12/26 06:47:45 [HTTP] 200 |  2.400589474s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:47:46 [HTTP] 200 |     326.134µs |             ::1 | GET     /api/stations
+2025/12/26 06:47:46 [HTTP] 200 |     418.238µs |             ::1 | GET     /api/users/1/assignments
+2025/12/26 06:47:47 [HTTP] 200 |  2.400392719s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:48:42 [HTTP] 200 |    3.111053ms |             ::1 | GET     /login
+2025/12/26 06:48:42 [HTTP] 200 |   83.009558ms |             ::1 | POST    /login
+2025/12/26 06:48:42 [HTTP] 200 |     1.71828ms |             ::1 | GET     /dashboard
+2025/12/26 06:48:42 [HTTP] 200 |     125.226µs |             ::1 | GET     /static/js/main.js
+2025/12/26 06:48:44 [HTTP] 200 |    2.747019ms |             ::1 | GET     /settings/hardware
+2025/12/26 06:48:44 [HTTP] 200 |     571.336µs |             ::1 | GET     /api/stations
+2025/12/26 06:48:44 [HTTP] 200 |  1.800921957s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:48:45 [HTTP] 500 |    2.908785ms |             ::1 | POST    /api/stations
+2025/12/26 06:48:45 [HTTP] 200 |     1.08816ms |             ::1 | GET     /settings/hardware
+2025/12/26 06:48:46 [HTTP] 200 |     525.963µs |             ::1 | GET     /api/stations
+2025/12/26 06:48:48 [HTTP] 200 |    1.329489ms |             ::1 | GET     /settings/users
+2025/12/26 06:48:48 [HTTP] 200 |     398.511µs |             ::1 | GET     /api/users
+2025/12/26 06:48:48 [HTTP] 200 |   3.40081485s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:48:49 [HTTP] 200 |     592.568µs |             ::1 | GET     /api/stations
+2025/12/26 06:48:49 [HTTP] 200 |     343.776µs |             ::1 | GET     /api/users/1/assignments
+2025/12/26 06:48:50 [HTTP] 200 |    5.066719ms |             ::1 | GET     /weighing
+2025/12/26 06:48:50 [HTTP] 200 |     141.555µs |             ::1 | GET     /static/images/placeholder_truck.jpg
+2025/12/26 06:48:50 [HTTP] 200 |  2.201208303s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:48:52 [HTTP] 200 |  2.200325427s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:48:52 [HTTP] 200 |  2.200871772s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:52:28 Logger initialized
+2025/12/26 06:52:28 Using SQLite database (configured)...
+2025/12/26 06:52:28 Database connected successfully
+2025/12/26 06:52:29 Admin user 'indraaja' seeded successfully
+2025/12/26 06:52:29 Reloading Scale Configurations...
+2025/12/26 06:52:29 ANPR Service running in MOCK mode (No OpenCV detected)
+2025/12/26 06:52:29 StoneWeigh Server starting on :8000
+2025/12/26 06:52:29 Server failed:listen tcp :8000: bind: address already in use
+2025/12/26 06:52:39 [HTTP] 200 |     959.774µs |             ::1 | GET     /login
+2025/12/26 06:52:39 [HTTP] 200 |   82.809473ms |             ::1 | POST    /login
+2025/12/26 06:52:39 [HTTP] 200 |    4.876961ms |             ::1 | GET     /dashboard
+2025/12/26 06:52:39 [HTTP] 200 |     266.177µs |             ::1 | GET     /static/js/main.js
+2025/12/26 06:52:41 [HTTP] 200 |     1.32092ms |             ::1 | GET     /settings/hardware
+2025/12/26 06:52:41 [HTTP] 200 |     369.883µs |             ::1 | GET     /api/stations
+2025/12/26 06:52:41 [HTTP] 200 |  1.800270293s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:52:43 [HTTP] 500 |     521.867µs |             ::1 | POST    /api/stations
+2025/12/26 06:52:43 [HTTP] 200 |    3.521369ms |             ::1 | GET     /settings/hardware
+2025/12/26 06:52:43 [HTTP] 200 |     280.084µs |             ::1 | GET     /api/stations
+2025/12/26 06:52:45 [HTTP] 200 |    1.261331ms |             ::1 | GET     /settings/users
+2025/12/26 06:52:45 [HTTP] 200 |     319.079µs |             ::1 | GET     /api/users
+2025/12/26 06:52:45 [HTTP] 200 |   3.40076939s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:52:46 [HTTP] 200 |     334.418µs |             ::1 | GET     /api/stations
+2025/12/26 06:52:46 [HTTP] 200 |     299.076µs |             ::1 | GET     /api/users/1/assignments
+2025/12/26 06:52:47 [HTTP] 200 |    3.607374ms |             ::1 | GET     /weighing
+2025/12/26 06:52:47 [HTTP] 200 |      87.427µs |             ::1 | GET     /static/images/placeholder_truck.jpg
+2025/12/26 06:52:47 [HTTP] 200 |  2.200332966s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:52:49 [HTTP] 200 |  2.201245269s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:52:49 [HTTP] 200 |  2.201340008s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:54:42 Logger initialized
+2025/12/26 06:54:42 Using SQLite database (configured)...
+2025/12/26 06:54:42 Database connected successfully
+2025/12/26 06:54:42 Admin user 'indraaja' seeded successfully
+2025/12/26 06:54:42 Reloading Scale Configurations...
+2025/12/26 06:54:42 ANPR Service running in MOCK mode (No OpenCV detected)
+2025/12/26 06:54:42 StoneWeigh Server starting on :8000
+2025/12/26 06:54:42 Server failed:listen tcp :8000: bind: address already in use
+2025/12/26 06:54:52 [HTTP] 200 |    5.674692ms |             ::1 | GET     /login
+2025/12/26 06:54:52 [HTTP] 200 |   84.256684ms |             ::1 | POST    /login
+2025/12/26 06:54:52 [HTTP] 200 |     9.59095ms |             ::1 | GET     /dashboard
+2025/12/26 06:54:52 [HTTP] 200 |     232.062µs |             ::1 | GET     /static/js/main.js
+2025/12/26 06:54:54 [HTTP] 200 |    2.543836ms |             ::1 | GET     /settings/hardware
+2025/12/26 06:54:54 [HTTP] 200 |  1.600926404s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:54:54 [HTTP] 200 |     983.995µs |             ::1 | GET     /api/stations
+2025/12/26 06:54:56 [HTTP] 500 |     952.386µs |             ::1 | POST    /api/stations
+2025/12/26 06:54:56 [HTTP] 200 |    4.059809ms |             ::1 | GET     /settings/hardware
+2025/12/26 06:54:56 [HTTP] 200 |     372.849µs |             ::1 | GET     /api/stations
+2025/12/26 06:54:58 [HTTP] 200 |    1.548264ms |             ::1 | GET     /settings/users
+2025/12/26 06:54:58 [HTTP] 200 |  3.401382759s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:54:58 [HTTP] 200 |    2.032573ms |             ::1 | GET     /api/users
+2025/12/26 06:54:59 [HTTP] 200 |     405.233µs |             ::1 | GET     /api/stations
+2025/12/26 06:54:59 [HTTP] 200 |    1.406114ms |             ::1 | GET     /api/users/1/assignments
+2025/12/26 06:55:00 [HTTP] 200 |    1.854513ms |             ::1 | GET     /weighing
+2025/12/26 06:55:00 [HTTP] 200 |      93.711µs |             ::1 | GET     /static/images/placeholder_truck.jpg
+2025/12/26 06:55:00 [HTTP] 200 |  2.201051587s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:55:02 [HTTP] 200 |  2.200808482s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:55:02 [HTTP] 200 |  2.200909008s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:56:13 Logger initialized
+2025/12/26 06:56:13 Using SQLite database (configured)...
+2025/12/26 06:56:13 Database connected successfully
+2025/12/26 06:56:13 Reloading Scale Configurations...
+2025/12/26 06:56:13 ANPR Service running in MOCK mode (No OpenCV detected)
+2025/12/26 06:56:13 StoneWeigh Server starting on :8000
+2025/12/26 06:56:13 Server failed:listen tcp :8000: bind: address already in use
+2025/12/26 06:56:21 [HTTP] 200 |    4.389846ms |             ::1 | GET     /login
+2025/12/26 06:56:21 [HTTP] 200 |   82.541337ms |             ::1 | POST    /login
+2025/12/26 06:56:21 [HTTP] 200 |    2.587335ms |             ::1 | GET     /dashboard
+2025/12/26 06:56:21 [HTTP] 200 |     111.105µs |             ::1 | GET     /static/js/main.js
+2025/12/26 06:56:23 [HTTP] 200 |    1.863652ms |             ::1 | GET     /settings/hardware
+2025/12/26 06:56:23 [HTTP] 200 |     434.972µs |             ::1 | GET     /api/stations
+2025/12/26 06:56:23 [HTTP] 200 |  1.800513593s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:56:25 [HTTP] 500 |    2.916879ms |             ::1 | POST    /api/stations
+2025/12/26 06:56:25 [HTTP] 200 |    1.511821ms |             ::1 | GET     /settings/hardware
+2025/12/26 06:56:25 [HTTP] 200 |     300.554µs |             ::1 | GET     /api/stations
+2025/12/26 06:56:27 [HTTP] 200 |    1.517441ms |             ::1 | GET     /settings/users
+2025/12/26 06:56:27 [HTTP] 200 |     661.835µs |             ::1 | GET     /api/users
+2025/12/26 06:56:27 [HTTP] 200 |  3.400842881s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:56:28 [HTTP] 200 |     320.312µs |             ::1 | GET     /api/stations
+2025/12/26 06:56:28 [HTTP] 200 |     308.093µs |             ::1 | GET     /api/users/1/assignments
+2025/12/26 06:56:29 [HTTP] 200 |    1.847407ms |             ::1 | GET     /weighing
+2025/12/26 06:56:29 [HTTP] 200 |      86.517µs |             ::1 | GET     /static/images/placeholder_truck.jpg
+2025/12/26 06:56:29 [HTTP] 200 |  2.200683086s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:56:31 [HTTP] 200 |  2.200810582s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:56:31 [HTTP] 200 |  2.200874915s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:58:23 Logger initialized
+2025/12/26 06:58:23 Using SQLite database (configured)...
+2025/12/26 06:58:23 Database connected successfully
+2025/12/26 06:58:23 Reloading Scale Configurations...
+2025/12/26 06:58:23 ANPR Service running in MOCK mode (No OpenCV detected)
+2025/12/26 06:58:23 StoneWeigh Server starting on :8000
+2025/12/26 06:58:35 [HTTP] 200 |    3.335404ms |             ::1 | GET     /login
+2025/12/26 06:58:35 [HTTP] 200 |   83.887264ms |             ::1 | POST    /login
+2025/12/26 06:58:35 [HTTP] 200 |    3.638527ms |             ::1 | GET     /dashboard
+2025/12/26 06:58:36 [HTTP] 200 |   17.545346ms |             ::1 | GET     /static/js/main.js
+2025/12/26 06:58:37 [HTTP] 200 |     1.65655ms |             ::1 | GET     /settings/hardware
+2025/12/26 06:58:37 [HTTP] 200 |  1.601285978s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:58:38 [HTTP] 200 |     456.721µs |             ::1 | GET     /api/stations
+2025/12/26 06:58:39 [HTTP] 200 |     3.67291ms |             ::1 | POST    /api/stations
+2025/12/26 06:58:39 Reloading Scale Configurations...
+2025/12/26 06:58:39 [HTTP] 200 |    4.229303ms |             ::1 | GET     /settings/hardware
+2025/12/26 06:58:39 [HTTP] 200 |    1.360069ms |             ::1 | GET     /api/stations
+2025/12/26 06:58:39 [HTTP] 200 |     446.752µs |             ::1 | GET     /api/stations
+2025/12/26 06:58:41 [HTTP] 200 |  3.400757346s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:59:08 [HTTP] 200 |    1.589645ms |             ::1 | GET     /login
+2025/12/26 06:59:09 [HTTP] 200 |   83.120919ms |             ::1 | POST    /login
+2025/12/26 06:59:09 [HTTP] 200 |    1.553354ms |             ::1 | GET     /dashboard
+2025/12/26 06:59:09 [HTTP] 200 |     526.619µs |             ::1 | GET     /static/js/main.js
+2025/12/26 06:59:11 [HTTP] 200 |    1.562606ms |             ::1 | GET     /settings/hardware
+2025/12/26 06:59:11 [HTTP] 200 |     756.494µs |             ::1 | GET     /api/stations
+2025/12/26 06:59:11 [HTTP] 200 |   1.80036399s |             ::1 | GET     /api/scales/stream
+2025/12/26 06:59:12 [HTTP] 200 |    3.948137ms |             ::1 | POST    /api/stations
+2025/12/26 06:59:12 Reloading Scale Configurations...
+2025/12/26 06:59:12 [HTTP] 200 |    1.276482ms |             ::1 | GET     /settings/hardware
+2025/12/26 06:59:12 [HTTP] 200 |     624.271µs |             ::1 | GET     /api/stations
+2025/12/26 06:59:12 [HTTP] 200 |     504.396µs |             ::1 | GET     /api/stations
+2025/12/26 06:59:14 [HTTP] 200 |  3.401112924s |             ::1 | GET     /api/scales/stream
+2025/12/26 07:00:06 [HTTP] 200 |    1.973044ms |             ::1 | GET     /login
+2025/12/26 07:00:07 [HTTP] 200 |   83.985542ms |             ::1 | POST    /login
+2025/12/26 07:00:07 [HTTP] 200 |    1.721701ms |             ::1 | GET     /dashboard
+2025/12/26 07:00:07 [HTTP] 200 |      150.31µs |             ::1 | GET     /static/js/main.js
+2025/12/26 07:00:09 [HTTP] 200 |    1.866861ms |             ::1 | GET     /settings/hardware
+2025/12/26 07:00:09 [HTTP] 200 |     678.791µs |             ::1 | GET     /api/stations
+2025/12/26 07:00:09 [HTTP] 200 |  1.801048474s |             ::1 | GET     /api/scales/stream
+2025/12/26 07:00:10 [HTTP] 200 |    1.457297ms |             ::1 | GET     /settings/users
+2025/12/26 07:00:10 [HTTP] 200 |  1.200460765s |             ::1 | GET     /api/scales/stream
+2025/12/26 07:00:10 [HTTP] 200 |     742.498µs |             ::1 | GET     /api/users
+2025/12/26 07:00:11 [HTTP] 200 |     562.445µs |             ::1 | GET     /api/stations
+2025/12/26 07:00:11 [HTTP] 200 |     306.699µs |             ::1 | GET     /api/users/1/assignments
+2025/12/26 07:00:12 [HTTP] 200 |    3.524301ms |             ::1 | GET     /weighing
+2025/12/26 07:00:12 [HTTP] 200 |      112.33µs |             ::1 | GET     /static/images/placeholder_truck.jpg
+2025/12/26 07:00:12 [HTTP] 200 |    2.2014626s |             ::1 | GET     /api/scales/stream
+2025/12/26 07:00:15 [HTTP] 200 |  2.200805901s |             ::1 | GET     /api/scales/stream
+2025/12/26 07:00:15 [HTTP] 200 |  2.200717342s |             ::1 | GET     /api/scales/stream
