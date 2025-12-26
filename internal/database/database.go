@@ -76,6 +76,7 @@ func Connect() {
 		&models.Vehicle{},
 		&models.WeighingRecord{},
 		&models.WeighingStation{},
+		&models.StationCamera{},
 		&models.UserStationAssignment{},
 	)
 }

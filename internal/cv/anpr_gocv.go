@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"gocv.io/x/gocv"
@@ -75,7 +76,16 @@ func (s *ANPRService) CaptureAndDetect(cameraSource string) (string, string, err
 	}
 
 	// Open Video Capture
-	webcam, err := gocv.OpenVideoCapture(cameraSource)
+	var webcam *gocv.VideoCapture
+	var err error
+
+	// Check if source is numeric (for USB Camera Index)
+	if idx, errConv := strconv.Atoi(cameraSource); errConv == nil {
+		webcam, err = gocv.OpenVideoCapture(idx)
+	} else {
+		webcam, err = gocv.OpenVideoCapture(cameraSource)
+	}
+
 	if err != nil {
 		return "", "", fmt.Errorf("failed to open video source: %v", err)
 	}

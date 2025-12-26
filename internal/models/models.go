@@ -13,6 +13,7 @@ type WeighingRecord struct {
 	ScaleID      uint      `json:"scale_id"`
 	PlateNumber  string    `gorm:"index" json:"plate_number"`
 	DriverName   string    `json:"driver_name"`
+	CompanyName  string    `json:"company_name"` // Owner/Company
 	ManagerName  string    `json:"manager_name"` // Name of the operator/manager
 	Product      string    `json:"product"`
 
@@ -32,13 +33,24 @@ type WeighingRecord struct {
 
 // WeighingStation represents a physical weighing station configuration
 // It combines Scale config and Camera config into one logical unit.
+type StationCamera struct {
+	gorm.Model
+	WeighingStationID uint            `json:"weighing_station_id"`
+	WeighingStation   WeighingStation `json:"-"` // Prevent circular JSON
+	Name              string          `json:"name"`
+	RTSPURL           string          `json:"rtsp_url"`
+}
+
 type WeighingStation struct {
 	gorm.Model
-	Name       string `json:"name"`        // e.g., "Main Gate"
-	ScalePort  string `json:"scale_port"`  // e.g., "COM3" or "/dev/ttyUSB0"
-	BaudRate   int    `json:"baud_rate"`   // e.g., 9600
-	CameraURL  string `json:"camera_url"`  // RTSP URL
-	Enabled    bool   `json:"enabled"`
+	Name       string          `json:"name"`        // e.g., "Main Gate"
+	ScalePort  string          `json:"scale_port"`  // e.g., "COM3" or "/dev/ttyUSB0"
+	BaudRate   int             `json:"baud_rate"`   // e.g., 9600
+	Cameras    []StationCamera `json:"cameras"`     // Multiple CCTVs
+	Enabled    bool            `json:"enabled"`
+
+	// Deprecated: Kept for migration, assume data moved to Cameras[0]
+	CameraURL string `json:"camera_url,omitempty"`
 }
 
 // Deprecated: Use WeighingStation instead. Kept for migration safety if needed,

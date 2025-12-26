@@ -64,7 +64,8 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', loadVehicles);
+// Trigger immediately for HTMX swaps
+loadVehicles();
 
 async function loadVehicles() {
     const res = await fetch('/api/vehicles');

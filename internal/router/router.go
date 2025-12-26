@@ -1,6 +1,8 @@
 package router
 
 import (
+	"encoding/json"
+	"html/template"
 	"os"
 
 	"github.com/gin-contrib/sessions"
@@ -32,7 +34,13 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	// Rate Limit: 20 requests/second, burst of 50
 	r.Use(middleware.RateLimiter(rate.Limit(20), 50))
 
-	// 4. Static Files
+	// 4. Static Files & Templates
+	r.SetFuncMap(template.FuncMap{
+		"json": func(v interface{}) template.JS {
+			a, _ := json.Marshal(v)
+			return template.JS(a)
+		},
+	})
 	r.Static("/static", "./web/static")
 	r.LoadHTMLGlob("web/templates/*")
 
@@ -57,6 +65,7 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 			api.POST("/transaction", server.SaveTransaction)
 			api.POST("/anpr/trigger", server.TriggerANPR)
 			api.GET("/scales/stream", server.StreamScaleData)
+			api.GET("/vehicles/details", server.GetVehicleDetails) // Allow operators to fetch details
 		}
 
 		// Admin Only Routes - Pages
