@@ -42,6 +42,8 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 		},
 	})
 	r.Static("/static", "./web/static")
+	// Fix for legacy/broken links pointing to /web/static
+	r.Static("/web/static", "./web/static")
 	r.LoadHTMLGlob("web/templates/*")
 
 	// 5. Public Routes
@@ -66,6 +68,7 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 			api.POST("/anpr/trigger", server.TriggerANPR)
 			api.GET("/scales/stream", server.StreamScaleData)
 			api.GET("/vehicles/details", server.GetVehicleDetails) // Allow operators to fetch details
+			api.GET("/vehicles/search", server.SearchVehicles)     // Autocomplete
 		}
 
 		// Admin Only Routes - Pages
