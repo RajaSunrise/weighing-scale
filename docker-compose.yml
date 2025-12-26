@@ -10,9 +10,10 @@ services:
       - DB_NAME=stoneweigh.db
       - ENABLE_DEMO_SCALE=true
     volumes:
-      - ./logs:/app/logs
-      - ./stoneweigh.db:/app/stoneweigh.db
-      - ./web/static/images:/app/web/static/images
+      - ./logs:/app/logs:z
+      - ./data:/app/data:z
+      - ./web/static/images:/app/web/static/images:z
+      - ./models:/app/models:z
     user: "0:0"
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]

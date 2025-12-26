@@ -29,7 +29,11 @@ func Connect() {
 	driver := strings.ToLower(os.Getenv("DB_DRIVER"))
 	if driver == "sqlite" {
 		log.Println("Using SQLite database (configured)...")
-		DB, err = gorm.Open(sqlite.Open("stoneweigh.db"), &gorm.Config{})
+		dbPath := os.Getenv("DB_PATH")
+		if dbPath == "" {
+			dbPath = "/app/data/stoneweigh.db"
+		}
+		DB, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 		if err != nil {
 			log.Fatalf("Failed to connect to SQLite: %v", err)
 		}

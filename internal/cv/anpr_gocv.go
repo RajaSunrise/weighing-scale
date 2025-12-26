@@ -28,10 +28,32 @@ func NewANPRService(modelPath string) *ANPRService {
 		return &ANPRService{IsLoaded: false}
 	}
 
+	// Check file size to detect placeholder models (< 1MB is likely a placeholder)
+	fileInfo, _ := os.Stat(modelPath)
+	if fileInfo.Size() < 1024*1024 {
+		log.Printf("Warning: Model file %s is too small (%d bytes). This appears to be a placeholder. ANPR will be disabled.", modelPath, fileInfo.Size())
+		return &ANPRService{IsLoaded: false}
+	}
+
 	// Attempt to load the model.
-	net := gocv.ReadNet(modelPath, "")
-	if net.Empty() {
-		log.Printf("Warning: Failed to load model %s. Ensure it is compatible with OpenCV DNN (or convert to ONNX).", modelPath)
+	// Note: ReadNet expects ONNX format, not .pt (PyTorch)
+	var net gocv.Net
+	var loadErr error
+
+	func() {
+		defer func() {
+			if r := recover(); r != nil {
+				loadErr = fmt.Errorf("panic during model load: %v", r)
+			}
+		}()
+		net = gocv.ReadNet(modelPath, "")
+		if net.Empty() {
+			loadErr = fmt.Errorf("model loaded but is empty")
+		}
+	}()
+
+	if loadErr != nil {
+		log.Printf("Warning: Failed to load model %s: %v. Ensure it is ONNX format compatible with OpenCV DNN.", modelPath, loadErr)
 		return &ANPRService{IsLoaded: false}
 	}
 

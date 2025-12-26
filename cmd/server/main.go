@@ -47,7 +47,7 @@ func main() {
 	}
 
 	// 3. Initialize CV
-	anpr := cv.NewANPRService("models/platdetection.pt")
+	anpr := cv.NewANPRService("models/platdetection.onnx")
 
 	// 4. Initialize Handlers
 	server := handlers.NewServer(db, hardware.Manager, anpr)

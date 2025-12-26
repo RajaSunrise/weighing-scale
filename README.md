@@ -101,7 +101,18 @@ Sekarang Anda dapat mengatur hardware langsung dari aplikasi!
 2. Masuk ke **Pengaturan > Konfigurasi Hardware**.
 3. Tambah Stasiun baru, masukkan Port Serial (contoh: `/dev/ttyUSB0` atau `COM3`) dan URL RTSP CCTV.
 
-### 3. Manajemen User & Akses
+### 3. ANPR Model Configuration
+Untuk menggunakan fitur deteksi plat nomor:
+1. Convert model PyTorch (.pt) ke format ONNX:
+   ```bash
+   pip3 install torch ultralytics onnx
+   python3 scripts/convert_yolo_to_onnx.py models/platdetection.pt
+   ```
+2. File ONNX akan tersimpan di `models/platdetection.onnx`
+3. Aplikasi akan otomatis menggunakan model jika file tersedia
+4. Tanpa model ONNX, ANPR akan dinonaktifkan tanpa error
+
+### 4. Manajemen User & Akses
 Anda dapat membatasi operator hanya bisa mengakses timbangan tertentu.
 1. Masuk ke **Pengaturan > Manajemen Pengguna**.
 2. Buat User baru (Role: Operator).

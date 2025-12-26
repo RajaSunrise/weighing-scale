@@ -50,14 +50,14 @@ func TestANPRDetection(t *testing.T) {
 	// Actually, `go test` sets the working directory to the package directory.
 	// So we are in `internal/cv/tests`.
 	// To reach root: `../../../`
-	modelPath := "../../../models/platdetection.pt"
+	modelPath := "../../../models/platdetection.onnx"
 
 	// Check if we are running from root (e.g. go test ./...) or from package.
 	// Best is to use absolute path or try both.
 	if _, err := os.Stat(modelPath); os.IsNotExist(err) {
 		// Try from root
-		if _, err := os.Stat("models/platdetection.pt"); err == nil {
-			modelPath = "models/platdetection.pt"
+		if _, err := os.Stat("models/platdetection.onnx"); err == nil {
+			modelPath = "models/platdetection.onnx"
 		}
 	}
 
