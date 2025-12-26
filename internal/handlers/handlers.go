@@ -89,10 +89,10 @@ func (s *Server) ShowWeighing(c *gin.Context) {
 	var allowedStations []models.WeighingStation
 
 	if role := session.Get("role"); role == "admin" {
-		s.DB.Where("enabled = ?", true).Find(&allowedStations)
+		s.DB.Preload("Cameras").Where("enabled = ?", true).Find(&allowedStations)
 	} else if uidVal != nil {
 		var assignments []models.UserStationAssignment
-		s.DB.Preload("WeighingStation").Where("user_id = ?", uidVal).Find(&assignments)
+		s.DB.Preload("WeighingStation.Cameras").Where("user_id = ?", uidVal).Find(&assignments)
 		for _, a := range assignments {
 			if a.WeighingStation.Enabled {
 				allowedStations = append(allowedStations, a.WeighingStation)
@@ -117,6 +117,7 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 		ScaleID     uint    `json:"scale_id"`
 		PlateNumber string  `json:"plate_number"`
 		DriverName  string  `json:"driver_name"`
+		Company     string  `json:"company"`
 		Product     string  `json:"product"`
 		Gross       float64 `json:"gross"`
 		Tare        float64 `json:"tare"`
@@ -141,6 +142,7 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 		ScaleID:      input.ScaleID,
 		PlateNumber:  input.PlateNumber,
 		DriverName:   input.DriverName,
+		CompanyName:  input.Company,
 		ManagerName:  managerName,
 		Product:      input.Product,
 		GrossWeight:  input.Gross,
@@ -178,14 +180,25 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 // TriggerANPR captures a frame and detects license plate
 func (s *Server) TriggerANPR(c *gin.Context) {
 	scaleID := c.Query("scale_id")
+	camID := c.Query("camera_id")
 
 	cameraURL := "0" // Default to webcam
 
-	// Lookup station if ID provided
-	if scaleID != "" {
+	// Priority 1: Specific Camera ID
+	if camID != "" {
+		var cam models.StationCamera
+		if err := s.DB.First(&cam, camID).Error; err == nil {
+			if cam.RTSPURL != "" {
+				cameraURL = cam.RTSPURL
+			}
+		}
+	} else if scaleID != "" {
+		// Priority 2: Fallback to first camera of station (Legacy/Default)
 		var station models.WeighingStation
-		if err := s.DB.First(&station, scaleID).Error; err == nil {
-			if station.CameraURL != "" {
+		if err := s.DB.Preload("Cameras").First(&station, scaleID).Error; err == nil {
+			if len(station.Cameras) > 0 {
+				cameraURL = station.Cameras[0].RTSPURL
+			} else if station.CameraURL != "" {
 				cameraURL = station.CameraURL
 			}
 		}

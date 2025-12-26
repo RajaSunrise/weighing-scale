@@ -42,9 +42,13 @@
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-text-secondary mb-1">URL CCTV (RTSP)</label>
-                <input type="text" name="camera_url" id="station-camera" class="w-full bg-background-dark border border-border-dark rounded px-3 py-2 text-white" placeholder="rtsp://admin:pass@ip:554/stream">
-                <p class="text-xs text-text-secondary mt-1">Kosongkan jika menggunakan Webcam default (USB)</p>
+                <label class="block text-xs font-bold text-text-secondary mb-1">Daftar Kamera CCTV</label>
+                <div id="camera-list" class="space-y-2 mb-2">
+                    <!-- Dynamic inputs -->
+                </div>
+                <button type="button" onclick="addCameraInput()" class="text-xs text-primary hover:text-primary-hover font-bold flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">add</span> Tambah Kamera
+                </button>
             </div>
 
             <div class="flex items-center gap-2 mt-2">
@@ -61,9 +65,8 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    loadStations();
-});
+// Trigger immediately for HTMX swaps
+loadStations();
 
 async function loadStations() {
     const res = await fetch('/api/stations');
@@ -74,7 +77,15 @@ async function loadStations() {
     stations.forEach(st => {
         const div = document.createElement('div');
         div.className = "bg-surface-dark border border-border-dark rounded-xl p-6 relative group hover:border-primary/50 transition-colors";
+        // Count cameras
+        const camCount = st.cameras ? st.cameras.length : 0;
+        const camText = camCount > 0 ? `${camCount} CCTV Connected` : (st.camera_url ? "Legacy Config" : "Default USB");
+
+        // Use a hidden textarea to store full JSON to avoid quoting issues in onclick
+        const jsonId = `json-station-${st.ID}`;
+
         div.innerHTML = `
+            <textarea id="${jsonId}" class="hidden">${JSON.stringify(st)}</textarea>
             <div class="flex justify-between items-start mb-4">
                 <div class="flex items-center gap-3">
                     <div class="p-3 bg-primary/10 text-primary rounded-lg">
@@ -86,7 +97,7 @@ async function loadStations() {
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick='editStation(${JSON.stringify(st)})' class="p-2 hover:bg-white/10 rounded text-text-secondary hover:text-white">
+                    <button onclick='editStationFromJSON("${jsonId}")' class="p-2 hover:bg-white/10 rounded text-text-secondary hover:text-white">
                         <span class="material-symbols-outlined text-sm">edit</span>
                     </button>
                     <button onclick="deleteStation(${st.ID})" class="p-2 hover:bg-red-500/10 rounded text-red-500">
@@ -102,7 +113,7 @@ async function loadStations() {
                 </div>
                 <div class="flex items-center justify-between text-sm p-3 bg-black/20 rounded border border-white/5">
                     <span class="text-text-secondary">Kamera</span>
-                    <span class="font-mono text-white truncate max-w-[200px]" title="${st.camera_url}">${st.camera_url || 'Default USB'}</span>
+                    <span class="font-mono text-white truncate max-w-[200px]">${camText}</span>
                 </div>
                 <div class="flex items-center justify-between text-sm pt-2">
                      <span class="text-text-secondary">Status</span>
@@ -119,9 +130,17 @@ async function loadStations() {
 function openStationModal() {
     document.getElementById('station-form').reset();
     document.getElementById('station-id').value = '';
+    document.getElementById('camera-list').innerHTML = ''; // Clear cameras
+    addCameraInput(); // Add one empty
     document.getElementById('modal-title').innerText = "Stasiun Baru";
     document.getElementById('station-modal').classList.remove('hidden');
     document.getElementById('station-modal').classList.add('flex');
+}
+
+function editStationFromJSON(jsonId) {
+    const raw = document.getElementById(jsonId).value;
+    const data = JSON.parse(raw);
+    editStation(data);
 }
 
 function editStation(data) {
@@ -129,12 +148,37 @@ function editStation(data) {
     document.getElementById('station-name').value = data.name;
     document.getElementById('station-port').value = data.scale_port;
     document.getElementById('station-baud').value = data.baud_rate;
-    document.getElementById('station-camera').value = data.camera_url;
     document.getElementById('station-enabled').checked = data.enabled;
+
+    // Load Cameras
+    const container = document.getElementById('camera-list');
+    container.innerHTML = '';
+
+    if (data.cameras && data.cameras.length > 0) {
+        data.cameras.forEach(cam => addCameraInput(cam.name, cam.rtsp_url));
+    } else if (data.camera_url) {
+        // Legacy support
+        addCameraInput("Default View", data.camera_url);
+    } else {
+        addCameraInput(); // Empty
+    }
 
     document.getElementById('modal-title').innerText = "Edit Stasiun";
     document.getElementById('station-modal').classList.remove('hidden');
     document.getElementById('station-modal').classList.add('flex');
+}
+
+function addCameraInput(name = "", url = "") {
+    const div = document.createElement('div');
+    div.className = "flex gap-2";
+    div.innerHTML = `
+        <input type="text" name="cam_name" value="${name}" placeholder="Nama (e.g. Depan)" class="w-1/3 bg-background-dark border border-border-dark rounded px-3 py-2 text-white text-xs">
+        <input type="text" name="cam_url" value="${url}" placeholder="RTSP URL" class="flex-1 bg-background-dark border border-border-dark rounded px-3 py-2 text-white text-xs">
+        <button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:bg-red-500/10 rounded p-1">
+            <span class="material-symbols-outlined text-sm">close</span>
+        </button>
+    `;
+    document.getElementById('camera-list').appendChild(div);
 }
 
 function closeStationModal() {
@@ -150,6 +194,19 @@ document.getElementById('station-form').addEventListener('submit', async (e) => 
     // Convert types
     data.baud_rate = parseInt(data.baud_rate);
     data.enabled = data.enabled === 'on';
+
+    // Collect cameras
+    data.cameras = [];
+    const names = document.getElementsByName('cam_name');
+    const urls = document.getElementsByName('cam_url');
+    for(let i=0; i<names.length; i++) {
+        if(urls[i].value.trim() !== "") {
+            data.cameras.push({
+                name: names[i].value.trim() || `Camera ${i+1}`,
+                rtsp_url: urls[i].value.trim()
+            });
+        }
+    }
 
     const id = document.getElementById('station-id').value;
 

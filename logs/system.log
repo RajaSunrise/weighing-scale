@@ -685,3 +685,34 @@
 2025/12/26 03:03:21 [HTTP] 404 |    1.180233ms |             ::1 | GET     /static/images/placeholder_truck.jpg
 2025/12/26 03:03:21 [HTTP] 200 |  1.601090388s |             ::1 | GET     /api/scales/stream
 2025/12/26 03:03:22 [HTTP] 200 |  401.095632ms |             ::1 | GET     /api/scales/stream
+2025/12/26 05:39:54 Logger initialized
+2025/12/26 05:39:54 Using SQLite database (configured)...
+2025/12/26 05:39:54 Database connected successfully
+2025/12/26 05:39:54 Admin user 'indraaja' seeded successfully
+2025/12/26 05:39:54 Reloading Scale Configurations...
+2025/12/26 05:39:54 ANPR Service running in MOCK mode (No OpenCV detected)
+2025/12/26 05:40:43 Logger initialized
+2025/12/26 05:40:43 Using SQLite database (configured)...
+2025/12/26 05:40:43 Database connected successfully
+2025/12/26 05:40:43 Reloading Scale Configurations...
+2025/12/26 05:40:43 ANPR Service running in MOCK mode (No OpenCV detected)
+2025/12/26 05:40:43 StoneWeigh Server starting on :8000
+2025/12/26 05:40:52 [HTTP] 200 |    3.661344ms |             ::1 | GET     /login
+2025/12/26 05:40:53 [HTTP] 200 |   83.231539ms |             ::1 | POST    /login
+2025/12/26 05:40:53 [HTTP] 200 |    1.942607ms |             ::1 | GET     /dashboard
+2025/12/26 05:40:53 [HTTP] 200 |   12.374754ms |             ::1 | GET     /static/js/main.js
+2025/12/26 05:40:55 [HTTP] 200 |    2.061511ms |             ::1 | GET     /weighing
+2025/12/26 05:40:55 [HTTP] 200 |     140.312µs |             ::1 | GET     /static/images/placeholder_truck.jpg
+2025/12/26 05:40:56 [HTTP] 200 |  1.802524647s |             ::1 | GET     /api/scales/stream
+2025/12/26 05:40:58 [HTTP] 200 |    2.587708ms |             ::1 | GET     /settings/hardware
+2025/12/26 05:40:59 [HTTP] 200 |     373.738µs |             ::1 | GET     /api/stations
+2025/12/26 05:40:59 [HTTP] 200 |  3.000807521s |             ::1 | GET     /api/scales/stream
+2025/12/26 05:41:01 [HTTP] 200 |  2.801396962s |             ::1 | GET     /api/scales/stream
+2025/12/26 05:44:24 [HTTP] 200 |     963.298µs |             ::1 | GET     /login
+2025/12/26 05:44:25 [HTTP] 200 |   82.955062ms |             ::1 | POST    /login
+2025/12/26 05:44:25 [HTTP] 200 |    3.600181ms |             ::1 | GET     /dashboard
+2025/12/26 05:44:25 [HTTP] 200 |     127.918µs |             ::1 | GET     /static/js/main.js
+2025/12/26 05:44:27 [HTTP] 200 |    1.608669ms |             ::1 | GET     /weighing
+2025/12/26 05:44:27 [HTTP] 200 |      92.128µs |             ::1 | GET     /static/images/placeholder_truck.jpg
+2025/12/26 05:44:27 [HTTP] 200 |  1.800908729s |             ::1 | GET     /api/scales/stream
+2025/12/26 05:44:29 [HTTP] 200 |  2.200963743s |             ::1 | GET     /api/scales/stream
