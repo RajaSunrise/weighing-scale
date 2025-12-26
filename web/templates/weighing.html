@@ -107,6 +107,12 @@
                                 <span class="material-symbols-outlined">camera_alt</span>
                             </button>
                         </div>
+                         <div class="flex items-center gap-2 mt-2">
+                            <label class="flex items-center gap-2 cursor-pointer select-none text-xs text-text-secondary">
+                                <input type="checkbox" id="auto-scan-toggle" class="w-3 h-3 rounded bg-background-dark border-border-dark text-primary focus:ring-primary">
+                                Auto-Scan (Live)
+                            </label>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
@@ -243,9 +249,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize SSE (Server Sent Events)
     initSSE();
 
+    // Auto Scan Loop
+    setInterval(() => {
+        if(document.getElementById('auto-scan-toggle').checked) {
+             triggerScan(true); // true = silent mode
+        }
+    }, 2000);
+
+    // Click Image to Scan
+    const cctvImg = document.getElementById('cctv-preview');
+    if(cctvImg) {
+        cctvImg.style.cursor = "pointer";
+        cctvImg.parentElement.addEventListener('click', () => triggerScan(false));
+    }
+
     // Form Submission
     document.getElementById('weighing-form').addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerText = "Memproses...";
 
         const scaleId = document.getElementById('active-scale-id').value;
         if (!scaleId) {
@@ -381,15 +405,18 @@ function switchCamera(url) {
     // For now we assume the "Scan" button uses this URL.
 }
 
-function triggerScan() {
+function triggerScan(silent = false) {
     if (!activeScaleId) {
-        alert("Pilih unit timbangan terlebih dahulu");
+        if (!silent) alert("Pilih unit timbangan terlebih dahulu");
         return;
     }
 
     const btn = document.querySelector('button[title="Scan Kamera"]');
-    const originalContent = btn.innerHTML;
-    btn.innerHTML = '<span class="loader w-4 h-4 border-2"></span>';
+    let originalContent = "";
+    if (!silent && btn) {
+        originalContent = btn.innerHTML;
+        btn.innerHTML = '<span class="loader w-4 h-4 border-2"></span>';
+    }
 
     // If we have a specific camera selected (future feature), pass it.
     // For now, pass scale_id.
@@ -399,30 +426,39 @@ function triggerScan() {
         urlParams += `&camera_id=${encodeURIComponent(camSelect.value)}`;
     }
 
-    captureWeight(urlParams).finally(() => {
-        btn.innerHTML = originalContent;
+    captureWeight(urlParams, silent).finally(() => {
+        if (!silent && btn) {
+             btn.innerHTML = originalContent;
+        }
     });
 }
 
-async function captureWeight(params) {
+async function captureWeight(params, silent) {
     try {
         const res = await fetch(`/api/anpr/trigger?${params}`, { method: 'POST' });
         const data = await res.json();
 
         if (data.status === 'success' || data.status === 'simulated') {
-            document.getElementById('plate_no').value = data.plate;
+            const plateInput = document.getElementById('plate_no');
+            // Only update if changed or empty
+            if (plateInput.value !== data.plate || silent) {
+                 if (silent && document.activeElement === plateInput && plateInput.value !== "") {
+                     // Don't overwrite if user is typing
+                 } else {
+                     plateInput.value = data.plate;
+                     document.getElementById('anpr-result').innerText = data.plate;
+                     fetchVehicleDetails(data.plate);
+                 }
+            }
             document.getElementById('cctv-preview').src = data.snapshot;
-            document.getElementById('anpr-result').innerText = data.plate;
-
-            // Auto-fetch details after scan
-            fetchVehicleDetails(data.plate);
         } else {
-            console.error("ANPR Failed");
-            document.getElementById('anpr-result').innerText = "ERROR";
+            if(!silent) document.getElementById('anpr-result').innerText = "ERROR";
         }
     } catch (e) {
-        console.error("Network error", e);
-        alert("Gagal terhubung ke kamera.");
+        if (!silent) {
+             console.error("Network error", e);
+             alert("Gagal terhubung ke kamera.");
+        }
     }
 }
 

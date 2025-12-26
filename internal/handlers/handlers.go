@@ -135,7 +135,8 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 	}
 
 	net := input.Gross - input.Tare
-	ticket := fmt.Sprintf("T-%d", time.Now().Unix())
+	// Use UnixNano to prevent collision on rapid submissions
+	ticket := fmt.Sprintf("T-%d", time.Now().UnixNano())
 
 	record := models.WeighingRecord{
 		TicketNumber: ticket,
