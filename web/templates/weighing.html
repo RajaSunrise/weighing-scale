@@ -48,7 +48,7 @@
 
                     <div class="grid grid-cols-2 gap-4">
                         <button onclick="selectScale({{ $station.ID }})" class="py-3 px-4 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg transition-colors flex justify-center items-center gap-2">
-                            <span class="material-symbols-outlined">camera_alt</span> Pilih & Timbang
+                            <span class="material-symbols-outlined">touch_app</span> Pilih Unit
                         </button>
                         <button class="py-3 px-4 bg-surface-dark border border-border-dark hover:bg-card-hover text-white font-medium rounded-lg transition-colors">
                             Tare / Nol
@@ -91,21 +91,27 @@
 
                     <div>
                         <label class="block text-xs font-bold text-text-secondary mb-1">Nomor Polisi</label>
-                        <input type="text" name="plate_no" id="plate_no" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary font-mono" placeholder="B 1234 XY">
+                        <div class="flex gap-2">
+                            <input type="text" name="plate_no" id="plate_no" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary font-mono uppercase" placeholder="B 1234 XY">
+                            <button type="button" onclick="triggerScan()" class="px-3 bg-primary/20 text-primary hover:bg-primary hover:text-white border border-primary/20 rounded-lg transition-colors" title="Scan Kamera">
+                                <span class="material-symbols-outlined">camera_alt</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                              <label class="block text-xs font-bold text-text-secondary mb-1">Nama Supir</label>
-                            <input type="text" name="driver" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary" placeholder="Nama">
+                            <input type="text" name="driver" id="driver_name" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary" placeholder="Nama">
                         </div>
                         <div>
                              <label class="block text-xs font-bold text-text-secondary mb-1">Muatan / Produk</label>
-                             <select name="product" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary appearance-none">
+                             <select name="product" id="product_select" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary appearance-none">
                                 <option>Batu Kerikil</option>
                                 <option>Pasir</option>
                                 <option>Semen</option>
                                 <option>Batubara</option>
+                                <option>Lainnya</option>
                              </select>
                         </div>
                     </div>
@@ -159,22 +165,44 @@ function selectScale(id) {
     });
     const card = document.querySelector(`.scale-card[data-id="${id}"]`);
     if(card) card.classList.add('ring-2', 'ring-primary');
+}
 
-    // Trigger ANPR (simulated for now, or based on camera url)
-    captureWeight(id);
+function triggerScan() {
+    if (!activeScaleId) {
+        alert("Pilih unit timbangan terlebih dahulu");
+        return;
+    }
+
+    // Add visual loading state to button if desired
+    const btn = document.querySelector('button[title="Scan Kamera"]');
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = '<span class="loader w-4 h-4 border-2"></span>';
+
+    captureWeight(activeScaleId).finally(() => {
+        btn.innerHTML = originalContent;
+    });
 }
 
 async function captureWeight(scaleId) {
-    const res = await fetch(`/api/anpr/trigger?scale_id=${scaleId}`, { method: 'POST' });
-    const data = await res.json();
+    try {
+        const res = await fetch(`/api/anpr/trigger?scale_id=${scaleId}`, { method: 'POST' });
+        const data = await res.json();
 
-    if (data.status === 'success' || data.status === 'simulated') {
-        document.getElementById('plate_no').value = data.plate;
-        document.getElementById('cctv-preview').src = data.snapshot;
-        document.getElementById('anpr-result').innerText = data.plate;
-    } else {
-        console.error("ANPR Failed");
-        document.getElementById('anpr-result').innerText = "ERROR";
+        if (data.status === 'success' || data.status === 'simulated') {
+            document.getElementById('plate_no').value = data.plate;
+            document.getElementById('cctv-preview').src = data.snapshot;
+            document.getElementById('anpr-result').innerText = data.plate;
+
+            // If the mock/real service returns driver info (it might in future), fill it here.
+            // Currently backend only returns plate & snapshot.
+            // If the user manually types, they can just type over it.
+        } else {
+            console.error("ANPR Failed");
+            document.getElementById('anpr-result').innerText = "ERROR";
+        }
+    } catch (e) {
+        console.error("Network error", e);
+        alert("Gagal terhubung ke kamera.");
     }
 }
 </script>

@@ -4,7 +4,9 @@ package cv
 
 import (
 	"log"
+	"math/rand"
 	"strings"
+	"time"
 )
 
 // ANPRService handles license plate detection (Mock Version)
@@ -15,6 +17,7 @@ type ANPRService struct {
 
 func NewANPRService(modelPath string) *ANPRService {
 	log.Printf("ANPR Service running in MOCK mode (No OpenCV detected)")
+	rand.Seed(time.Now().UnixNano())
 	return &ANPRService{
 		IsLoaded:  true,
 		ModelPath: modelPath,
@@ -37,6 +40,17 @@ func (s *ANPRService) CaptureAndDetect(cameraSource string) (string, string, err
 		return "K 8324 QD", "/static/images/placeholder_truck.jpg", nil
 	}
 
-	// Default simulation
-	return "B 1234 MOCK", "/static/images/placeholder_truck.jpg", nil
+	// Randomized Realistic Data for "Simulated" feel
+	prefixes := []string{"B", "D", "F", "A", "H"}
+	suffixes := []string{"UA", "XY", "BC", "OM", "PR"}
+
+	// Generate random plate
+	prefix := prefixes[rand.Intn(len(prefixes))]
+	number := rand.Intn(8999) + 1000
+	suffix := suffixes[rand.Intn(len(suffixes))]
+
+	plate := prefix + " " + string(rune('0'+(number/1000)%10)) + string(rune('0'+(number/100)%10)) + string(rune('0'+(number/10)%10)) + string(rune('0'+number%10)) + " " + suffix
+
+	// Return the simulated plate
+	return plate, "/static/images/placeholder_truck.jpg", nil
 }
