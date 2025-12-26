@@ -100,8 +100,9 @@
 
                     <div>
                         <label class="block text-xs font-bold text-text-secondary mb-1">Nomor Polisi</label>
-                        <div class="flex gap-2">
-                            <input type="text" name="plate_no" id="plate_no" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary font-mono uppercase" placeholder="B 1234 XY">
+                        <div class="flex gap-2 relative">
+                            <input type="text" name="plate_no" id="plate_no" list="plate-suggestions" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary font-mono uppercase" placeholder="B 1234 XY" autocomplete="off">
+                            <datalist id="plate-suggestions"></datalist>
                             <button type="button" onclick="triggerScan()" class="px-3 bg-primary/20 text-primary hover:bg-primary hover:text-white border border-primary/20 rounded-lg transition-colors" title="Scan Kamera">
                                 <span class="material-symbols-outlined">camera_alt</span>
                             </button>
@@ -186,8 +187,33 @@ document.addEventListener('DOMContentLoaded', () => {
         selectScale(cards[0].dataset.id);
     }
 
-    // Auto-fill logic
+    // Auto-fill logic & Autocomplete
     const plateInput = document.getElementById('plate_no');
+
+    // Search suggestions
+    plateInput.addEventListener('input', async (e) => {
+        const query = e.target.value;
+        if (query.length > 1) {
+            try {
+                const res = await fetch(`/api/vehicles/search?q=${encodeURIComponent(query)}`);
+                if (res.ok) {
+                    const vehicles = await res.json();
+                    const datalist = document.getElementById('plate-suggestions');
+                    datalist.innerHTML = '';
+                    vehicles.forEach(v => {
+                        const opt = document.createElement('option');
+                        // Server returns Go struct with json tags.
+                        // Assuming models.Vehicle has `json:"plate_number"`
+                        opt.value = v.plate_number;
+                        datalist.appendChild(opt);
+                    });
+                }
+            } catch(err) {
+                // ignore
+            }
+        }
+    });
+
     plateInput.addEventListener('change', async () => {
         const plate = plateInput.value;
         if(plate.length > 3) {
@@ -203,6 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             input.classList.remove('hidden');
             display.classList.add('hidden');
             input.value = parseFloat(display.innerText.replace(' kg','')) || 0;
+            input.focus();
             updateCalculations();
         } else {
             input.classList.add('hidden');

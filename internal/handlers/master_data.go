@@ -97,3 +97,18 @@ func (s *Server) GetVehicleDetails(c *gin.Context) {
 
 	c.JSON(http.StatusOK, vehicle)
 }
+
+// SearchVehicles performs a fuzzy search for autocomplete
+func (s *Server) SearchVehicles(c *gin.Context) {
+	query := c.Query("q")
+	if len(query) < 2 {
+		c.JSON(http.StatusOK, []string{})
+		return
+	}
+
+	var vehicles []models.Vehicle
+	// Simple fuzzy search
+	s.DB.Where("plate_number LIKE ?", "%"+query+"%").Limit(10).Find(&vehicles)
+
+	c.JSON(http.StatusOK, vehicles)
+}
