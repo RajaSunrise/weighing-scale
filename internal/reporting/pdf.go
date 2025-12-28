@@ -93,6 +93,9 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 
 	// Helper to print label: value
 	printRow := func(label, value string, xOffset float64) {
+		if value == "" {
+			value = "-"
+		}
 		pdf.SetX(xOffset)
 		pdf.SetFont("Arial", "B", 10)
 		pdf.Cell(35, 6, label)
@@ -189,6 +192,9 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	if _, err := os.Stat("web/static/reports"); os.IsNotExist(err) {
 		os.MkdirAll("web/static/reports", 0755)
 	}
+
+	// Auto-print
+	pdf.SetJavascript("this.print(true);")
 
 	filename := fmt.Sprintf("web/static/reports/inv_%s.pdf", record.TicketNumber)
 	err := pdf.OutputFileAndClose(filename)
