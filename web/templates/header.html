@@ -49,6 +49,10 @@
         /* Blink animation */
         .blink { animation: blinker 1.5s linear infinite; }
         @keyframes blinker { 50% { opacity: 0; } }
+
+        @media print {
+            aside, nav, .no-print { display: none !important; }
+        }
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white antialiased h-screen flex overflow-hidden" hx-boost="true">

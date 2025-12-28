@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"os"
+	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -47,6 +48,12 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	r.LoadHTMLGlob("web/templates/*")
 
 	// 5. Public Routes
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "ok",
+			"time":   time.Now().Format(time.RFC3339),
+		})
+	})
 	r.GET("/login", server.ShowLogin)
 	r.POST("/login", server.Login)
 	r.GET("/logout", server.Logout)

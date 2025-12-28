@@ -30,13 +30,14 @@
         @media print {
             @page {
                 size: landscape;
-                margin: 10mm;
+                margin: 0;
             }
             body {
                 background-color: white !important;
                 color: black !important;
+                margin: 1cm;
             }
-            header, nav, aside, .no-print {
+            header, nav, aside, form, .no-print {
                 display: none !important;
             }
             /* Reset Layout */
@@ -58,14 +59,15 @@
                 border-collapse: collapse;
             }
             th, td {
-                border: 1px solid #ddd !important;
-                padding: 4px !important;
-                font-size: 10pt !important;
+                border: 1px solid #000 !important;
+                padding: 6px !important;
+                font-size: 11pt !important;
                 color: black !important;
             }
             thead {
-                background-color: #f0f0f0 !important;
+                background-color: #eee !important;
                 color: black !important;
+                font-weight: bold;
                 display: table-header-group;
             }
             tr {
@@ -75,8 +77,31 @@
             th:last-child, td:last-child {
                 display: none !important;
             }
+            /* Title for Print */
+            .print-title {
+                display: block !important;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+            .print-title h1 {
+                font-size: 18pt;
+                font-weight: bold;
+                margin: 0;
+            }
+            .print-title p {
+                font-size: 10pt;
+                margin: 5px 0 0;
+            }
+        }
+        .print-title {
+            display: none;
         }
     </style>
+
+    <div class="print-title">
+        <h1>LAPORAN TRANSAKSI PENIMBANGAN</h1>
+        <p>Periode: {{ .StartDate }} s/d {{ .EndDate }}</p>
+    </div>
 
     <!-- Report Table -->
     <div class="bg-surface-dark border border-border-dark rounded-xl flex-1 overflow-hidden flex flex-col">
@@ -123,6 +148,13 @@
                     </tr>
                     {{ end }}
                 </tbody>
+                <tfoot>
+                    <tr class="bg-card-dark font-bold text-white border-t-2 border-border-dark">
+                        <td colspan="7" class="px-6 py-4 text-right">TOTAL BERAT BERSIH</td>
+                        <td class="px-6 py-4 text-right font-mono text-success">{{ printf "%.0f" .TotalNetWeight }}</td>
+                        <td class="px-6 py-4"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
