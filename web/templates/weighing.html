@@ -102,14 +102,15 @@
                         <label class="block text-xs font-bold text-text-secondary mb-1">Nomor Polisi</label>
                         <div class="flex gap-2 relative">
                             <div class="relative flex-1">
-                                <input type="text" name="plate_no" id="plate_no" list="plate-suggestions" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 pr-10 text-white focus:outline-none focus:border-primary font-mono uppercase" placeholder="Ketik atau scan..." autocomplete="off">
-                                <span id="plate-status-icon" class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary text-sm"></span>
-                                <datalist id="plate-suggestions"></datalist>
+                                <div class="relative">
+                                     <input type="text" name="plate_no" id="plate_no" class="w-full bg-background-dark border border-border-dark rounded-lg pl-4 pr-12 py-2.5 text-white focus:outline-none focus:border-primary font-mono uppercase" placeholder="Ketik Nopol..." autocomplete="off">
+                                     <button type="button" onclick="triggerScan()" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-text-secondary hover:text-primary transition-colors" title="Scan Kamera">
+                                        <span class="material-symbols-outlined">camera_alt</span>
+                                     </button>
+                                </div>
+                                <span id="plate-status-icon" class="absolute right-14 top-1/2 -translate-y-1/2 text-text-secondary text-sm"></span>
                                 <div id="suggestions-dropdown" class="absolute left-0 right-0 mt-1 bg-surface-dark border-2 border-primary rounded-lg shadow-xl hidden max-h-48 overflow-y-auto z-[100]"></div>
                             </div>
-                            <button type="button" onclick="triggerScan()" class="px-3 bg-primary/20 text-primary hover:bg-primary hover:text-white border border-primary/20 rounded-lg transition-colors" title="Scan Kamera">
-                                <span class="material-symbols-outlined">camera_alt</span>
-                            </button>
                         </div>
                         <div id="plate-info" class="text-xs mt-1 text-text-secondary hidden"></div>
                          <div class="flex items-center gap-2 mt-2">
@@ -148,13 +149,14 @@
                                 <span class="text-text-secondary">Berat Kotor (Gross)</span>
                                 <label class="flex items-center gap-1 cursor-pointer select-none">
                                     <input type="checkbox" id="manual-weight-toggle" class="w-3 h-3 rounded bg-background-dark border-border-dark text-primary focus:ring-primary">
-                                    <span class="text-[10px] text-primary uppercase font-bold">Manual</span>
+                                    <span class="text-[10px] text-primary uppercase font-bold">Input Manual</span>
                                 </label>
                             </div>
-                            <!-- Input hidden by default, visible when manual -->
                             <div class="flex items-center justify-end">
-                                <input type="number" id="input-gross" class="hidden w-24 bg-background-dark border border-border-dark rounded px-2 py-1 text-right text-white font-mono text-sm mr-2" step="1" min="0">
-                                <span class="font-mono text-white" id="val-gross">0 kg</span>
+                                <div class="relative">
+                                    <input type="number" id="input-gross" class="w-32 bg-background-dark border border-border-dark rounded px-2 py-1 text-right text-white font-mono text-sm mr-2 focus:outline-none focus:border-primary transition-colors read-only:opacity-75 read-only:cursor-not-allowed" step="1" min="0" readonly value="0">
+                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary text-xs pointer-events-none">kg</span>
+                                </div>
                             </div>
                         </div>
                          <div class="flex justify-between text-sm">
@@ -232,45 +234,42 @@ document.addEventListener('DOMContentLoaded', () => {
     // Search suggestions
     if (plateInput) {
         plateInput.addEventListener('input', async (e) => {
-        const query = e.target.value.trim();
-        console.log('Plate input changed:', query, 'length:', query.length);
+        const query = e.target.value; // Don't trim immediately to allow spaces if needed, but for search usually trim
+        const cleanQuery = query.trim();
+        console.log('Plate input changed:', cleanQuery, 'length:', cleanQuery.length);
+
+        // Hide dropdown if empty
+        const dropdown = document.getElementById('suggestions-dropdown');
+        if (cleanQuery.length === 0) {
+             if (dropdown) dropdown.classList.add('hidden');
+             const statusIcon = document.getElementById('plate-status-icon');
+             if (statusIcon) statusIcon.innerHTML = '';
+             return;
+        }
 
         // Search immediately on 1+ character (no debounce for better UX)
-        if (query.length >= 1) {
+        if (cleanQuery.length >= 1) {
             try {
                 // Show loading indicator
                 const statusIcon = document.getElementById('plate-status-icon');
                 if (statusIcon) {
-                    statusIcon.innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span>';
+                    statusIcon.innerHTML = '<span class="material-symbols-outlined animate-spin text-primary">refresh</span>';
                 }
 
-                console.log('Fetching vehicles for:', query);
-                const res = await fetch(`/api/vehicles/search?q=${encodeURIComponent(query)}`, {
+                console.log('Fetching vehicles for:', cleanQuery);
+                const res = await fetch(`/api/vehicles/search?q=${encodeURIComponent(cleanQuery)}`, {
                     method: 'GET',
                     credentials: 'same-origin'
                 });
-                console.log('Response status:', res.status, 'ok:', res.ok);
+
+                // Clear loading
+                if (statusIcon) statusIcon.innerHTML = '';
 
                 if (res.ok) {
                     const vehicles = await res.json();
                     console.log('Found vehicles:', vehicles, 'count:', vehicles.length);
 
-                    // Update datalist for browser native autocomplete
-                    const datalist = document.getElementById('plate-suggestions');
-                    if (datalist) {
-                        datalist.innerHTML = '';
-                        vehicles.forEach(v => {
-                            const opt = document.createElement('option');
-                            opt.value = v.plate_number;
-                            datalist.appendChild(opt);
-                        });
-                        console.log('Added', vehicles.length, 'suggestions to datalist');
-                    } else {
-                        console.error('datalist element not found!');
-                    }
-
-                    // Also show visual dropdown
-                    const dropdown = document.getElementById('suggestions-dropdown');
+                    // Update dropdown
                     if (dropdown) {
                         dropdown.innerHTML = '';
                         if (vehicles.length > 0) {
@@ -278,14 +277,20 @@ document.addEventListener('DOMContentLoaded', () => {
                             console.log('Showing dropdown with', vehicles.length, 'items');
                             vehicles.forEach(v => {
                                 const item = document.createElement('div');
-                                item.className = 'px-4 py-3 hover:bg-primary hover:text-white cursor-pointer text-sm text-white border-b border-border-dark last:border-0 transition-colors font-mono';
-                                item.innerHTML = `<div class="flex items-center justify-between">
+                                item.className = 'px-4 py-3 bg-surface-dark hover:bg-primary hover:text-white cursor-pointer text-sm text-white border-b border-border-dark last:border-0 transition-colors font-mono';
+                                item.innerHTML = `<div class="flex items-center justify-between pointer-events-none">
                                     <span class="font-bold text-lg">${v.plate_number}</span>
                                     <span class="text-xs text-text-secondary">${v.driver_name || ''}</span>
                                 </div>`;
-                                item.onclick = () => {
-                                    document.getElementById('plate_no').value = v.plate_number;
+                                item.onclick = (ev) => {
+                                    // Prevent bubbling issues
+                                    ev.preventDefault();
+                                    ev.stopPropagation();
+
+                                    const input = document.getElementById('plate_no');
+                                    input.value = v.plate_number;
                                     dropdown.classList.add('hidden');
+                                    // Trigger input event to clear validation/fetch details
                                     fetchVehicleDetails(v.plate_number);
                                 };
                                 dropdown.appendChild(item);
@@ -295,19 +300,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 } else if (res.status === 302 || res.status === 401) {
-                    console.error('Not authenticated - redirect to login');
-                    alert('Session expired. Please login again.');
-                    window.location.href = '/login';
-                } else {
-                    console.error('Search failed with status:', res.status);
+                    // console.error('Not authenticated');
+                    // optional: redirect
                 }
             } catch(err) {
                 console.error('Search error:', err);
-                // Hide loading indicator on error
-                const statusIcon = document.getElementById('plate-status-icon');
-                if (statusIcon) {
-                    statusIcon.innerHTML = '';
-                }
             }
         }
     });
@@ -335,39 +332,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Manual Weight Toggle
     const manualToggle = document.getElementById('manual-weight-toggle');
-    if (manualToggle) {
-        // Remove any existing listeners
+    const grossInput = document.getElementById('input-gross');
+
+    if (manualToggle && grossInput) {
+        // Remove any existing listeners by cloning
         const newToggle = manualToggle.cloneNode(true);
         manualToggle.parentNode.replaceChild(newToggle, manualToggle);
 
         newToggle.addEventListener('change', (e) => {
-            const input = document.getElementById('input-gross');
-            const display = document.getElementById('val-gross');
-            if (!input || !display || !e.target) {
-                console.error('Input or display element not found!');
-                return;
-            }
             if (e.target.checked) {
-                input.classList.remove('hidden');
-                display.classList.add('hidden');
-                const grossValue = parseFloat(display.innerText.replace(' kg','').trim()) || 0;
-                input.value = grossValue;
-                input.focus();
-                updateCalculations();
-                console.log('Manual mode enabled, gross from display:', grossValue, 'input value:', input.value);
+                // Manual Mode
+                grossInput.removeAttribute('readonly');
+                grossInput.focus();
+                grossInput.select();
+                console.log('Manual mode enabled');
             } else {
-                input.classList.add('hidden');
-                display.classList.remove('hidden');
+                // Auto Mode
+                grossInput.setAttribute('readonly', true);
                 console.log('Manual mode disabled');
-                // Revert to stream value (handled by SSE listener)
+                // Value will be updated by SSE next tick
             }
+            updateCalculations();
         });
-    }
 
-    document.getElementById('input-gross').addEventListener('input', (e) => {
-        console.log('Manual gross input changed:', e.target.value);
-        updateCalculations();
-    });
+        grossInput.addEventListener('input', (e) => {
+            updateCalculations();
+        });
+
+        // Restore reference for other functions
+        // Note: ID lookup works fine, but local var refs need update if used?
+        // Actually, replacing the node breaks local var references if they were cached.
+        // But here we rely on getElementById inside updateCalculations, so it is safe.
+    }
 
     // Initialize SSE (Server Sent Events)
     initSSE();
@@ -705,27 +701,16 @@ async function captureWeight(params, silent) {
 }
 
 function updateCalculations() {
-    let gross = 0;
     const manualToggle = document.getElementById('manual-weight-toggle');
     const inputGross = document.getElementById('input-gross');
-    const valGross = document.getElementById('val-gross');
     const valTare = document.getElementById('val-tare');
     const valNet = document.getElementById('val-net');
 
-    if (!manualToggle || !inputGross || !valGross || !valTare || !valNet) {
-        return; // Elements not ready
-    }
+    if (!manualToggle || !inputGross || !valTare || !valNet) return;
 
-    const isManual = manualToggle.checked;
-
-    if (isManual) {
-        gross = parseFloat(inputGross.value) || 0;
-    } else {
-        // This should be updated by SSE logic in real-time
-        const grossText = valGross.innerText.replace(' kg','');
-        gross = parseFloat(grossText) || 0;
-    }
-
+    // In both manual and auto, the value comes from input-gross
+    // In auto, SSE updates input-gross.value
+    const gross = parseFloat(inputGross.value) || 0;
     const tare = parseFloat(valTare.innerText.replace(' kg','')) || 0;
     const net = gross - tare;
 
@@ -745,8 +730,13 @@ function initSSE() {
         const display = document.getElementById(`weight-display-${scaleId}`);
         const status = document.getElementById(`status-scale-${scaleId}`);
 
+        let finalWeight = weight;
+        if (!connected) {
+             finalWeight = 0; // Force 0 if disconnected
+        }
+
         if (display) {
-            display.innerText = weight; // .padStart(5, '0');
+            display.innerText = finalWeight;
         }
         if (status) {
             if (connected) {
@@ -761,9 +751,9 @@ function initSSE() {
         // If active scale, update form fields if NOT manual
         if (activeScaleId == scaleId) {
             const manualToggle = document.getElementById('manual-weight-toggle');
-            const valGross = document.getElementById('val-gross');
-            if (manualToggle && valGross && !manualToggle.checked) {
-                valGross.innerText = weight + " kg";
+            const inputGross = document.getElementById('input-gross');
+            if (manualToggle && inputGross && !manualToggle.checked) {
+                inputGross.value = finalWeight;
                 updateCalculations();
             }
         }
