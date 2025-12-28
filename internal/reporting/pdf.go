@@ -170,12 +170,20 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	pdf.SetY(ySig + 40)
 	pdf.SetFont("Arial", "B", 10)
 
+	dName := record.DriverName
+	if dName == "" {
+		dName = "-"
+	}
 	pdf.SetX(20)
-	pdf.Cell(80, 5, "( "+record.DriverName+" )")
+	pdf.Cell(80, 5, "( "+dName+" )")
 	pdf.Line(20, ySig+45, 80, ySig+45)
 
+	mName := record.ManagerName
+	if mName == "" {
+		mName = "-"
+	}
 	pdf.SetX(120)
-	pdf.Cell(80, 5, "( "+record.ManagerName+" )")
+	pdf.Cell(80, 5, "( "+mName+" )")
 	pdf.Line(120, ySig+45, 180, ySig+45)
 
 	// --- Footer ---
