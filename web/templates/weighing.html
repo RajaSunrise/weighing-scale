@@ -101,16 +101,11 @@
                     <div>
                         <label class="block text-xs font-bold text-text-secondary mb-1">Nomor Polisi</label>
                         <div class="flex gap-2 relative">
-                            <div class="relative flex-1">
-                                <div class="relative">
-                                     <input type="text" name="plate_no" id="plate_no" class="w-full bg-background-dark border border-border-dark rounded-lg pl-4 pr-12 py-2.5 text-white focus:outline-none focus:border-primary font-mono uppercase" placeholder="Ketik Nopol..." autocomplete="off">
-                                     <button type="button" onclick="triggerScan()" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-text-secondary hover:text-primary transition-colors" title="Scan Kamera">
-                                        <span class="material-symbols-outlined">camera_alt</span>
-                                     </button>
-                                </div>
-                                <span id="plate-status-icon" class="absolute right-14 top-1/2 -translate-y-1/2 text-text-secondary text-sm"></span>
-                                <div id="suggestions-dropdown" class="absolute left-0 right-0 mt-1 bg-surface-dark border-2 border-primary rounded-lg shadow-xl hidden max-h-48 overflow-y-auto z-[100]"></div>
-                            </div>
+                            <input type="text" name="plate_no" id="plate_no" list="plate-suggestions" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary font-mono uppercase" placeholder="B 1234 XY" autocomplete="off">
+                            <datalist id="plate-suggestions"></datalist>
+                            <button type="button" onclick="triggerScan()" class="px-3 bg-primary/20 text-primary hover:bg-primary hover:text-white border border-primary/20 rounded-lg transition-colors" title="Scan Kamera">
+                                <span class="material-symbols-outlined">camera_alt</span>
+                            </button>
                         </div>
                         <div id="plate-info" class="text-xs mt-1 text-text-secondary hidden"></div>
                          <div class="flex items-center gap-2 mt-2">
@@ -180,28 +175,19 @@
 </div>
 
 <script>
-// Prevent double initialization
-if (window.weighingScriptLoaded) {
-    console.log('Weighing script already loaded, skipping initialization');
-} else {
-    window.weighingScriptLoaded = true;
-    console.log('Initializing weighing script...');
-
 // Main JS will handle SSE
 // Here we just handle UI state for selection
 let activeScaleId = null;
 let currentCameraUrl = "";
 let stationsData = {}; // Store full data
-let isSubmitting = false; // Prevent double submit
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Populate stationsData from rendered HTML
-    // A bit hacky, but avoids another fetch. Or better, fetch logic.
-    // For now, let's rely on the template loop or fetch again if needed.
-    // Actually, we need the full Camera structs which are not in dataset attributes easily.
-    // Let's assume we can fetch station details or store them in a hidden JSON.
-    // However, the cleanest way without refetching is using the rendered template loop to output a JS object.
-
+function initWeighingPage() {
+    const form = document.getElementById('weighing-form');
+    if (!form || form.getAttribute('data-initialized') === 'true') {
+        return;
+    }
+    form.setAttribute('data-initialized', 'true');
+    console.log('Initializing weighing script...');
     const cards = document.querySelectorAll('.scale-card');
     if (cards.length > 0) {
         selectScale(cards[0].dataset.id);
@@ -209,160 +195,78 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Auto-fill logic & Autocomplete
     const plateInput = document.getElementById('plate_no');
-    const dropdown = document.getElementById('suggestions-dropdown');
-
-    if (!plateInput) {
-        console.error('ERROR: plate_no input not found!');
-    } else {
-        console.log('plate_no input found successfully');
-    }
-
-    if (!dropdown) {
-        console.error('ERROR: suggestions-dropdown not found!');
-    }
-
-    let searchTimeout = null;
-
-    // Hide dropdown when clicking outside
-    document.addEventListener('click', (e) => {
-        if (dropdown && !dropdown.contains(e.target) && e.target !== plateInput) {
-            dropdown.classList.add('hidden');
-        }
-    });
 
     // Search suggestions
-    if (plateInput) {
+    if(plateInput) {
         plateInput.addEventListener('input', async (e) => {
-        const query = e.target.value.trim();
-        console.log('Plate input changed:', query, 'length:', query.length);
-
-        // Search immediately on 1+ character (no debounce for better UX)
-        if (query.length >= 1) {
-            try {
-                // Show loading indicator
-                const statusIcon = document.getElementById('plate-status-icon');
-                if (statusIcon) {
-                    statusIcon.innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span>';
-                }
-
-                console.log('Fetching vehicles for:', query);
-                const res = await fetch(`/api/vehicles/search?q=${encodeURIComponent(query)}`, {
-                    method: 'GET',
-                    credentials: 'same-origin'
-                });
-                console.log('Response status:', res.status, 'ok:', res.ok);
-
-                if (res.ok) {
-                    const vehicles = await res.json();
-                    console.log('Found vehicles:', vehicles, 'count:', vehicles.length);
-
-
-                    // Also show visual dropdown
-                    const dropdown = document.getElementById('suggestions-dropdown');
-                    if (dropdown) {
-                        dropdown.innerHTML = '';
-                        if (vehicles.length > 0) {
-                            dropdown.classList.remove('hidden');
-                            console.log('Showing dropdown with', vehicles.length, 'items');
-                            vehicles.forEach(v => {
-                                const item = document.createElement('div');
-                                item.className = 'px-4 py-3 hover:bg-primary hover:text-white cursor-pointer text-sm text-white border-b border-border-dark last:border-0 transition-colors font-mono';
-                                item.innerHTML = `<div class="flex items-center justify-between">
-                                    <span class="font-bold text-lg">${v.plate_number}</span>
-                                    <span class="text-xs text-text-secondary">${v.driver_name || ''}</span>
-                                </div>`;
-                                item.onclick = () => {
-                                    document.getElementById('plate_no').value = v.plate_number;
-                                    dropdown.classList.add('hidden');
-                                    fetchVehicleDetails(v.plate_number);
-                                };
-                                dropdown.appendChild(item);
-                            });
-                        } else {
-                            dropdown.classList.add('hidden');
-                        }
+            const query = e.target.value.trim();
+            // Start searching from 1 char
+            if (query.length >= 1) {
+                try {
+                    const res = await fetch(`/api/vehicles/search?q=${encodeURIComponent(query)}`);
+                    if (res.ok) {
+                        const vehicles = await res.json();
+                        const datalist = document.getElementById('plate-suggestions');
+                        datalist.innerHTML = '';
+                        vehicles.forEach(v => {
+                            const opt = document.createElement('option');
+                            opt.value = v.plate_number;
+                            // Optional: add driver name as label if browser supports it
+                            // opt.label = v.driver_name;
+                            datalist.appendChild(opt);
+                        });
                     }
-                } else if (res.status === 302 || res.status === 401) {
-                    console.error('Not authenticated - redirect to login');
-                    alert('Session expired. Please login again.');
-                    window.location.href = '/login';
-                } else {
-                    console.error('Search failed with status:', res.status);
-                }
-            } catch(err) {
-                console.error('Search error:', err);
-                // Hide loading indicator on error
-                const statusIcon = document.getElementById('plate-status-icon');
-                if (statusIcon) {
-                    statusIcon.innerHTML = '';
+                } catch(err) {
+                    console.error("Search error", err);
                 }
             }
-        }
-    });
+        });
 
-    // Focus handler
-    plateInput.addEventListener('focus', () => {
-        const value = plateInput.value.trim();
-        if (value.length >= 1) {
-            // Trigger search on focus if there's content
-            const event = new Event('input');
-            plateInput.dispatchEvent(event);
-        }
-    });
-    } // End if (plateInput) for event listeners
-        const plate = plateInput.value.trim();
-        console.log('Plate input changed, value:', plate);
-        if(plate.length >= 3) {
-            fetchVehicleDetails(plate);
-        } else {
-            // Clear status when cleared
-            document.getElementById('plate-status-icon').innerHTML = '';
-            document.getElementById('plate-info').classList.add('hidden');
-        }
-    });
-
-    // Manual Weight Toggle
-    const manualToggle = document.getElementById('manual-weight-toggle');
-    if (manualToggle) {
-        // Remove any existing listeners
-        const newToggle = manualToggle.cloneNode(true);
-        manualToggle.parentNode.replaceChild(newToggle, manualToggle);
-
-        newToggle.addEventListener('change', (e) => {
-            const input = document.getElementById('input-gross');
-            const display = document.getElementById('val-gross');
-            if (!input || !display || !e.target) {
-                console.error('Input or display element not found!');
-                return;
-            }
-            if (e.target.checked) {
-                input.classList.remove('hidden');
-                display.classList.add('hidden');
-                const grossValue = parseFloat(display.innerText.replace(' kg','').trim()) || 0;
-                input.value = grossValue;
-                input.focus();
-                updateCalculations();
-                console.log('Manual mode enabled, gross from display:', grossValue, 'input value:', input.value);
-            } else {
-                input.classList.add('hidden');
-                display.classList.remove('hidden');
-                console.log('Manual mode disabled');
-                // Revert to stream value (handled by SSE listener)
+        plateInput.addEventListener('change', async () => {
+            const plate = plateInput.value;
+            if(plate.length > 3) {
+                fetchVehicleDetails(plate);
             }
         });
     }
 
-    document.getElementById('input-gross').addEventListener('input', (e) => {
-        console.log('Manual gross input changed:', e.target.value);
-        updateCalculations();
-    });
+    // Manual Weight Toggle
+    const manualToggle = document.getElementById('manual-weight-toggle');
+    if (manualToggle) {
+        manualToggle.addEventListener('change', (e) => {
+            const input = document.getElementById('input-gross');
+            const display = document.getElementById('val-gross');
+            if (e.target.checked) {
+                input.classList.remove('hidden');
+                display.classList.add('hidden');
+
+                // Copy current value to input
+                const currentVal = parseFloat(display.innerText.replace(' kg','')) || 0;
+                input.value = currentVal;
+
+                input.focus();
+                input.select();
+                updateCalculations();
+            } else {
+                input.classList.add('hidden');
+                display.classList.remove('hidden');
+                // Revert to stream value (will be updated by SSE)
+            }
+        });
+    }
+
+    const grossInput = document.getElementById('input-gross');
+    if (grossInput) {
+        grossInput.addEventListener('input', updateCalculations);
+    }
 
     // Initialize SSE (Server Sent Events)
     initSSE();
 
     // Auto Scan Loop
     setInterval(() => {
-        if(document.getElementById('auto-scan-toggle').checked) {
+        const toggle = document.getElementById('auto-scan-toggle');
+        if(toggle && toggle.checked) {
              triggerScan(true); // true = silent mode
         }
     }, 2000);
@@ -374,208 +278,125 @@ document.addEventListener('DOMContentLoaded', () => {
         cctvImg.parentElement.addEventListener('click', () => triggerScan(false));
     }
 
-    // Form Submission - Make sure only one listener
-    const form = document.getElementById('weighing-form');
-    if (form) {
-        // Remove any existing submit handlers
-        form.onsubmit = null;
-
-        // Add new handler
+    // Form Submission
+    if(form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            e.stopPropagation();
 
-            console.log('=== FORM SUBMIT STARTED ===');
-            console.log('isSubmitting:', isSubmitting);
-
-            // Prevent double submit
-            if (isSubmitting) {
-                console.log('Form already submitting, IGNORING duplicate request');
+            // Check double submission using data attribute
+            if (form.dataset.submitting === 'true') {
+                console.log('Form submission already in progress.');
                 return;
             }
-            isSubmitting = true;
+            form.dataset.submitting = 'true';
 
             const btn = document.getElementById('submit-btn');
-            if (!btn) {
-                console.error('Submit button not found!');
-                isSubmitting = false;
-                return;
-            }
             btn.disabled = true;
             btn.innerText = "Memproses...";
 
             const scaleId = document.getElementById('active-scale-id').value;
-        if (!scaleId) {
-            alert("Pilih unit timbangan dulu");
-            return;
-        }
-
-        // Get form values BEFORE any potential reset
-        const plateNoInput = document.getElementById('plate_no');
-        const driverInput = document.getElementById('driver_name');
-        const companyInput = document.getElementById('company_name');
-        const productSelect = document.getElementById('product_select');
-
-        const plateNo = plateNoInput.value.trim();
-        const driverName = driverInput.value.trim();
-        const companyName = companyInput.value.trim();
-        const product = productSelect.value;
-
-        console.log('Form values extracted:');
-        console.log('  plate_no:', plateNo, '(length:', plateNo.length, ')');
-        console.log('  driver_name:', driverName, '(length:', driverName.length, ')');
-        console.log('  company:', companyName);
-        console.log('  product:', product);
-
-        // Determine Gross Weight
-        let gross = 0;
-        const isManual = document.getElementById('manual-weight-toggle').checked;
-        console.log('Manual mode:', isManual);
-
-        if (isManual) {
-            const grossInput = document.getElementById('input-gross');
-            if (!grossInput) {
-                console.error('Manual gross input not found!');
-                alert('Error: Input berat kotor manual tidak ditemukan');
+            if (!scaleId) {
+                alert("Pilih unit timbangan dulu");
+                form.dataset.submitting = 'false';
                 btn.disabled = false;
-                btn.innerText = "Simpan & Cetak Tiket";
                 return;
             }
-            gross = parseFloat(grossInput.value) || 0;
-            console.log('  Gross from manual input:', grossInput.value, 'parsed:', gross);
-        } else {
-            const grossText = document.getElementById('val-gross').innerText.replace(' kg','').trim();
-            gross = parseFloat(grossText) || 0;
-            console.log('  Gross from display:', grossText, 'parsed:', gross);
-        }
 
-        const tareText = document.getElementById('val-tare').innerText.replace(' kg','').trim();
-        const tare = parseFloat(tareText) || 0;
-        console.log('  Tare from display:', tareText, 'parsed:', tare);
-
-        const net = gross - tare;
-        console.log('  Calculated net:', net);
-
-        const data = {
-            scale_id: parseInt(scaleId),
-            plate_number: plateNo,
-            driver_name: driverName,
-            company: companyName,
-            product: product,
-            gross: gross,
-            tare: tare
-        };
-
-        console.log("Final data to submit:", data);
-        console.log('=== SENDING REQUEST ===');
-
-        try {
-            console.log('Fetching /api/transaction...');
-            const res = await fetch('/api/transaction', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            console.log('Response status:', res.status);
-            const result = await res.json();
-            console.log('Response data:', result);
-
-            if (res.ok) {
-                console.log('=== TRANSACTION SUCCESS ===');
-                alert(`Transaksi Berhasil! Tiket: ${result.ticket}`);
-                // Open Invoice
-                window.open(result.invoice, '_blank');
-        // Reset form AFTER getting invoice path (but preserve scale_id)
-        const scaleIdValue = document.getElementById('active-scale-id').value;
-        e.target.reset();
-        document.getElementById('active-scale-id').value = scaleIdValue;
-
-        // Reset UI elements
-        const valGross = document.getElementById('val-gross');
-        const valTare = document.getElementById('val-tare');
-        const valNet = document.getElementById('val-net');
-        const manualToggle = document.getElementById('manual-weight-toggle');
-        const inputGross = document.getElementById('input-gross');
-
-        if (valGross) valGross.innerText = "0 kg";
-        if (valTare) valTare.innerText = "0 kg";
-        if (valNet) valNet.innerText = "0 kg";
-        if (manualToggle) manualToggle.checked = false;
-        if (inputGross) {
-            inputGross.classList.add('hidden');
-            inputGross.value = '';
-        }
-        if (valGross) valGross.classList.remove('hidden');
-                btn.disabled = false;
-                btn.innerText = "Simpan & Cetak Tiket";
-                isSubmitting = false;
-                console.log('=== FORM RESET COMPLETE ===');
+            // Determine Gross Weight
+            let gross = 0;
+            const isManual = document.getElementById('manual-weight-toggle').checked;
+            if (isManual) {
+                gross = parseFloat(document.getElementById('input-gross').value) || 0;
             } else {
-                console.log('=== TRANSACTION FAILED ===');
-                alert("Gagal: " + (result.error || "Unknown error"));
+                const grossText = document.getElementById('val-gross').innerText.replace(' kg','');
+                gross = parseFloat(grossText) || 0;
+            }
+
+            const tare = parseFloat(document.getElementById('val-tare').innerText.replace(' kg','')) || 0;
+
+            const data = {
+                scale_id: parseInt(scaleId),
+                plate_number: document.getElementById('plate_no').value,
+                driver_name: document.getElementById('driver_name').value,
+                company: document.getElementById('company_name').value,
+                product: document.getElementById('product_select').value,
+                gross: gross,
+                tare: tare
+            };
+
+            try {
+                const res = await fetch('/api/transaction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+
+                if (res.ok) {
+                    alert(`Transaksi Berhasil! Tiket: ${result.ticket}`);
+                    window.open(result.invoice, '_blank');
+
+                    // Reset UI
+                    e.target.reset();
+                    // Restore active scale ID
+                    document.getElementById('active-scale-id').value = scaleId;
+
+                    document.getElementById('val-gross').innerText = "0 kg";
+                    document.getElementById('val-tare').innerText = "0 kg";
+                    document.getElementById('val-net').innerText = "0 kg";
+                    document.getElementById('manual-weight-toggle').checked = false;
+                    document.getElementById('input-gross').classList.add('hidden');
+                    document.getElementById('val-gross').classList.remove('hidden');
+                } else {
+                    alert("Gagal: " + (result.error || "Unknown error"));
+                }
+            } catch(err) {
+                console.error(err);
+                alert("Terjadi kesalahan sistem");
+            } finally {
                 btn.disabled = false;
                 btn.innerText = "Simpan & Cetak Tiket";
-                isSubmitting = false;
+                form.dataset.submitting = 'false';
             }
-        } catch(err) {
-            console.error('=== TRANSACTION ERROR ===', err);
-            alert("Terjadi kesalahan sistem");
-            btn.disabled = false;
-            btn.innerText = "Simpan & Cetak Tiket";
-            isSubmitting = false;
-        }
-        console.log('=== FORM SUBMIT ENDED ===');
-    });
+        });
     }
-});
+}
+
+// Initialize on load
+if (document.readyState !== 'loading') {
+    initWeighingPage();
+} else {
+    document.addEventListener('DOMContentLoaded', initWeighingPage);
+}
 
 // Helper to fetch details
 async function fetchVehicleDetails(plate) {
-    console.log('Fetching vehicle details for plate:', plate);
-    const statusIcon = document.getElementById('plate-status-icon');
-    const infoDiv = document.getElementById('plate-info');
-
-    statusIcon.innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span>';
-
+    const statusIcon = document.getElementById('plate-info');
     try {
         const res = await fetch(`/api/vehicles/details?plate=${encodeURIComponent(plate)}`);
         if (res.ok) {
             const data = await res.json();
-            console.log('Vehicle details response:', data);
+            document.getElementById('driver_name').value = data.driver_name || '';
+            document.getElementById('company_name').value = data.owner_company || '';
 
-            // Show found status
-            statusIcon.innerHTML = '<span class="material-symbols-outlined text-success">check_circle</span>';
-            infoDiv.classList.remove('hidden');
-            infoDiv.innerHTML = `<span class="text-success">Kendaraan terdaftar</span> • ${data.driver_name || '-'} • ${data.owner_company || '-'}`;
-
-            // Auto-fill fields
-            const driverInput = document.getElementById('driver_name');
-            const companyInput = document.getElementById('company_name');
-
-            if (driverInput) {
-                driverInput.value = data.driver_name || '';
-                console.log('Driver name set to:', driverInput.value);
-            }
-            if (companyInput) {
-                companyInput.value = data.owner_company || '';
-                console.log('Company set to:', companyInput.value);
+            if(statusIcon) {
+                statusIcon.classList.remove('hidden');
+                statusIcon.innerHTML = `<span class="text-success">Data ditemukan: ${data.driver_name}</span>`;
             }
 
             // Auto-fill Tare
             if (data.default_tare && data.default_tare > 0) {
                  document.getElementById('val-tare').innerText = data.default_tare + " kg";
-                 console.log('Tare set to:', data.default_tare);
                  updateCalculations();
             }
         } else {
-            console.log('Vehicle not found, status:', res.status);
-            statusIcon.innerHTML = '<span class="material-symbols-outlined text-warning">help</span>';
-            infoDiv.classList.remove('hidden');
-            infoDiv.innerHTML = '<span class="text-warning">Kendaraan tidak terdaftar</span>';
+            if(statusIcon) {
+                statusIcon.classList.remove('hidden');
+                statusIcon.innerHTML = `<span class="text-text-secondary">Data baru</span>`;
+            }
         }
     } catch (e) {
-        console.error("Error fetching vehicle details:", e);
-        statusIcon.innerHTML = '<span class="material-symbols-outlined text-error">error</span>';
+        console.log("Vehicle not found");
     }
 }
 
@@ -590,24 +411,23 @@ async function selectScale(id) {
     const card = document.querySelector(`.scale-card[data-id="${id}"]`);
     if(card) {
         card.classList.add('ring-2', 'ring-primary');
-
-        // Fetch station details to get cameras
-        // Since we didn't inject the full JSON in template for weighing, we do a quick fetch
-        // Or we can rely on the existing legacy 'data-camera' if fetch fails.
         updateCameraSelector(id);
     }
 }
 
 async function updateCameraSelector(stationId) {
     const selector = document.getElementById('camera-select');
+    if(!selector) return;
+
     selector.innerHTML = '';
     selector.classList.add('hidden');
 
     try {
-        const raw = document.getElementById(`station-data-${stationId}`).value;
-        const station = JSON.parse(raw);
+        const rawElement = document.getElementById(`station-data-${stationId}`);
+        if(!rawElement) return;
 
-        // We use ID as value now for security, not raw URL
+        const station = JSON.parse(rawElement.value);
+
         if (station.cameras && station.cameras.length > 0) {
             selector.classList.remove('hidden');
             station.cameras.forEach(cam => {
@@ -617,8 +437,6 @@ async function updateCameraSelector(stationId) {
                 selector.appendChild(opt);
             });
         } else if (station.camera_url) {
-             // Legacy, no ID for this string field.
-             // We can pass empty value to trigger scale_id default
              const opt = document.createElement('option');
              opt.value = "";
              opt.text = "Main Camera (Legacy)";
@@ -631,8 +449,6 @@ async function updateCameraSelector(stationId) {
 
 function switchCamera(url) {
     // Just updates the selection for next scan.
-    // Real streaming preview might require backend proxy if RTSP.
-    // For now we assume the "Scan" button uses this URL.
 }
 
 function triggerScan(silent = false) {
@@ -648,8 +464,6 @@ function triggerScan(silent = false) {
         btn.innerHTML = '<span class="loader w-4 h-4 border-2"></span>';
     }
 
-    // If we have a specific camera selected (future feature), pass it.
-    // For now, pass scale_id.
     let urlParams = `scale_id=${activeScaleId}`;
     const camSelect = document.getElementById('camera-select');
     if (camSelect && !camSelect.classList.contains('hidden') && camSelect.value) {
@@ -670,7 +484,6 @@ async function captureWeight(params, silent) {
 
         if (data.status === 'success' || data.status === 'simulated') {
             const plateInput = document.getElementById('plate_no');
-            // Only update if changed or empty
             if (plateInput.value !== data.plate || silent) {
                  if (silent && document.activeElement === plateInput && plateInput.value !== "") {
                      // Don't overwrite if user is typing
@@ -695,33 +508,29 @@ async function captureWeight(params, silent) {
 function updateCalculations() {
     let gross = 0;
     const manualToggle = document.getElementById('manual-weight-toggle');
-    const inputGross = document.getElementById('input-gross');
-    const valGross = document.getElementById('val-gross');
-    const valTare = document.getElementById('val-tare');
-    const valNet = document.getElementById('val-net');
-
-    if (!manualToggle || !inputGross || !valGross || !valTare || !valNet) {
-        return; // Elements not ready
-    }
+    if (!manualToggle) return;
 
     const isManual = manualToggle.checked;
 
     if (isManual) {
-        gross = parseFloat(inputGross.value) || 0;
+        gross = parseFloat(document.getElementById('input-gross').value) || 0;
     } else {
-        // This should be updated by SSE logic in real-time
-        const grossText = valGross.innerText.replace(' kg','');
+        const grossText = document.getElementById('val-gross').innerText.replace(' kg','');
         gross = parseFloat(grossText) || 0;
     }
 
-    const tare = parseFloat(valTare.innerText.replace(' kg','')) || 0;
+    const tare = parseFloat(document.getElementById('val-tare').innerText.replace(' kg','')) || 0;
     const net = gross - tare;
 
-    valNet.innerText = net + " kg";
+    document.getElementById('val-net').innerText = net + " kg";
 }
 
 function initSSE() {
+    if (window.currentScaleEventSource) {
+        window.currentScaleEventSource.close();
+    }
     const evtSource = new EventSource("/api/scales/stream");
+    window.currentScaleEventSource = evtSource;
 
     evtSource.onmessage = function(event) {
         const data = JSON.parse(event.data);
@@ -733,10 +542,8 @@ function initSSE() {
         const display = document.getElementById(`weight-display-${scaleId}`);
         const status = document.getElementById(`status-scale-${scaleId}`);
 
-        let finalWeight = weight;
-        if (!connected) {
-             finalWeight = 0; // Force 0 if disconnected
-        }
+        // Force 0 if disconnected
+        let finalWeight = connected ? weight : 0;
 
         if (display) {
             display.innerText = finalWeight;
@@ -754,9 +561,8 @@ function initSSE() {
         // If active scale, update form fields if NOT manual
         if (activeScaleId == scaleId) {
             const manualToggle = document.getElementById('manual-weight-toggle');
-            const valGross = document.getElementById('val-gross');
-            if (manualToggle && valGross && !manualToggle.checked) {
-                valGross.innerText = finalWeight + " kg";
+            if (manualToggle && !manualToggle.checked) {
+                document.getElementById('val-gross').innerText = finalWeight + " kg";
                 updateCalculations();
             }
         }
@@ -765,6 +571,7 @@ function initSSE() {
     evtSource.onerror = function(err) {
         console.error("EventSource failed:", err);
     };
+}
 }
 </script>
 
