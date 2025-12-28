@@ -102,14 +102,15 @@
                         <label class="block text-xs font-bold text-text-secondary mb-1">Nomor Polisi</label>
                         <div class="flex gap-2 relative">
                             <div class="relative flex-1">
-                                <input type="text" name="plate_no" id="plate_no" list="plate-suggestions" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2.5 pr-10 text-white focus:outline-none focus:border-primary font-mono uppercase" placeholder="Ketik atau scan..." autocomplete="off">
-                                <span id="plate-status-icon" class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary text-sm"></span>
-                                <datalist id="plate-suggestions"></datalist>
+                                <div class="relative">
+                                     <input type="text" name="plate_no" id="plate_no" class="w-full bg-background-dark border border-border-dark rounded-lg pl-4 pr-12 py-2.5 text-white focus:outline-none focus:border-primary font-mono uppercase" placeholder="Ketik Nopol..." autocomplete="off">
+                                     <button type="button" onclick="triggerScan()" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-text-secondary hover:text-primary transition-colors" title="Scan Kamera">
+                                        <span class="material-symbols-outlined">camera_alt</span>
+                                     </button>
+                                </div>
+                                <span id="plate-status-icon" class="absolute right-14 top-1/2 -translate-y-1/2 text-text-secondary text-sm"></span>
                                 <div id="suggestions-dropdown" class="absolute left-0 right-0 mt-1 bg-surface-dark border-2 border-primary rounded-lg shadow-xl hidden max-h-48 overflow-y-auto z-[100]"></div>
                             </div>
-                            <button type="button" onclick="triggerScan()" class="px-3 bg-primary/20 text-primary hover:bg-primary hover:text-white border border-primary/20 rounded-lg transition-colors" title="Scan Kamera">
-                                <span class="material-symbols-outlined">camera_alt</span>
-                            </button>
                         </div>
                         <div id="plate-info" class="text-xs mt-1 text-text-secondary hidden"></div>
                          <div class="flex items-center gap-2 mt-2">
@@ -255,19 +256,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const vehicles = await res.json();
                     console.log('Found vehicles:', vehicles, 'count:', vehicles.length);
 
-                    // Update datalist for browser native autocomplete
-                    const datalist = document.getElementById('plate-suggestions');
-                    if (datalist) {
-                        datalist.innerHTML = '';
-                        vehicles.forEach(v => {
-                            const opt = document.createElement('option');
-                            opt.value = v.plate_number;
-                            datalist.appendChild(opt);
-                        });
-                        console.log('Added', vehicles.length, 'suggestions to datalist');
-                    } else {
-                        console.error('datalist element not found!');
-                    }
 
                     // Also show visual dropdown
                     const dropdown = document.getElementById('suggestions-dropdown');
@@ -745,8 +733,13 @@ function initSSE() {
         const display = document.getElementById(`weight-display-${scaleId}`);
         const status = document.getElementById(`status-scale-${scaleId}`);
 
+        let finalWeight = weight;
+        if (!connected) {
+             finalWeight = 0; // Force 0 if disconnected
+        }
+
         if (display) {
-            display.innerText = weight; // .padStart(5, '0');
+            display.innerText = finalWeight;
         }
         if (status) {
             if (connected) {
@@ -763,7 +756,7 @@ function initSSE() {
             const manualToggle = document.getElementById('manual-weight-toggle');
             const valGross = document.getElementById('val-gross');
             if (manualToggle && valGross && !manualToggle.checked) {
-                valGross.innerText = weight + " kg";
+                valGross.innerText = finalWeight + " kg";
                 updateCalculations();
             }
         }
