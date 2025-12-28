@@ -175,19 +175,21 @@
 </div>
 
 <script>
+// Prevent double initialization
+if (window.weighingScriptLoaded) {
+    console.log('Weighing script already loaded, skipping initialization');
+} else {
+    window.weighingScriptLoaded = true;
+    console.log('Initializing weighing script...');
+
 // Main JS will handle SSE
 // Here we just handle UI state for selection
 let activeScaleId = null;
 let currentCameraUrl = "";
 let stationsData = {}; // Store full data
+let isSubmitting = false;
 
-function initWeighingPage() {
-    const form = document.getElementById('weighing-form');
-    if (!form || form.getAttribute('data-initialized') === 'true') {
-        return;
-    }
-    form.setAttribute('data-initialized', 'true');
-    console.log('Initializing weighing script...');
+document.addEventListener('DOMContentLoaded', () => {
     const cards = document.querySelectorAll('.scale-card');
     if (cards.length > 0) {
         selectScale(cards[0].dataset.id);
@@ -212,7 +214,7 @@ function initWeighingPage() {
                             const opt = document.createElement('option');
                             opt.value = v.plate_number;
                             // Optional: add driver name as label if browser supports it
-                            // opt.label = v.driver_name;
+                            // opt.label = v.driver_name; 
                             datalist.appendChild(opt);
                         });
                     }
@@ -239,11 +241,11 @@ function initWeighingPage() {
             if (e.target.checked) {
                 input.classList.remove('hidden');
                 display.classList.add('hidden');
-
+                
                 // Copy current value to input
                 const currentVal = parseFloat(display.innerText.replace(' kg','')) || 0;
                 input.value = currentVal;
-
+                
                 input.focus();
                 input.select();
                 updateCalculations();
@@ -279,16 +281,12 @@ function initWeighingPage() {
     }
 
     // Form Submission
+    const form = document.getElementById('weighing-form');
     if(form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-
-            // Check double submission using data attribute
-            if (form.dataset.submitting === 'true') {
-                console.log('Form submission already in progress.');
-                return;
-            }
-            form.dataset.submitting = 'true';
+            if (isSubmitting) return;
+            isSubmitting = true;
 
             const btn = document.getElementById('submit-btn');
             btn.disabled = true;
@@ -297,7 +295,7 @@ function initWeighingPage() {
             const scaleId = document.getElementById('active-scale-id').value;
             if (!scaleId) {
                 alert("Pilih unit timbangan dulu");
-                form.dataset.submitting = 'false';
+                isSubmitting = false;
                 btn.disabled = false;
                 return;
             }
@@ -335,12 +333,12 @@ function initWeighingPage() {
                 if (res.ok) {
                     alert(`Transaksi Berhasil! Tiket: ${result.ticket}`);
                     window.open(result.invoice, '_blank');
-
+                    
                     // Reset UI
                     e.target.reset();
                     // Restore active scale ID
                     document.getElementById('active-scale-id').value = scaleId;
-
+                    
                     document.getElementById('val-gross').innerText = "0 kg";
                     document.getElementById('val-tare').innerText = "0 kg";
                     document.getElementById('val-net').innerText = "0 kg";
@@ -356,18 +354,11 @@ function initWeighingPage() {
             } finally {
                 btn.disabled = false;
                 btn.innerText = "Simpan & Cetak Tiket";
-                form.dataset.submitting = 'false';
+                isSubmitting = false;
             }
         });
     }
-}
-
-// Initialize on load
-if (document.readyState !== 'loading') {
-    initWeighingPage();
-} else {
-    document.addEventListener('DOMContentLoaded', initWeighingPage);
-}
+});
 
 // Helper to fetch details
 async function fetchVehicleDetails(plate) {
@@ -378,7 +369,7 @@ async function fetchVehicleDetails(plate) {
             const data = await res.json();
             document.getElementById('driver_name').value = data.driver_name || '';
             document.getElementById('company_name').value = data.owner_company || '';
-
+            
             if(statusIcon) {
                 statusIcon.classList.remove('hidden');
                 statusIcon.innerHTML = `<span class="text-success">Data ditemukan: ${data.driver_name}</span>`;
@@ -418,14 +409,14 @@ async function selectScale(id) {
 async function updateCameraSelector(stationId) {
     const selector = document.getElementById('camera-select');
     if(!selector) return;
-
+    
     selector.innerHTML = '';
     selector.classList.add('hidden');
 
     try {
         const rawElement = document.getElementById(`station-data-${stationId}`);
         if(!rawElement) return;
-
+        
         const station = JSON.parse(rawElement.value);
 
         if (station.cameras && station.cameras.length > 0) {
@@ -509,7 +500,7 @@ function updateCalculations() {
     let gross = 0;
     const manualToggle = document.getElementById('manual-weight-toggle');
     if (!manualToggle) return;
-
+    
     const isManual = manualToggle.checked;
 
     if (isManual) {
@@ -526,11 +517,7 @@ function updateCalculations() {
 }
 
 function initSSE() {
-    if (window.currentScaleEventSource) {
-        window.currentScaleEventSource.close();
-    }
     const evtSource = new EventSource("/api/scales/stream");
-    window.currentScaleEventSource = evtSource;
 
     evtSource.onmessage = function(event) {
         const data = JSON.parse(event.data);
@@ -541,7 +528,7 @@ function initSSE() {
         // Update card
         const display = document.getElementById(`weight-display-${scaleId}`);
         const status = document.getElementById(`status-scale-${scaleId}`);
-
+        
         // Force 0 if disconnected
         let finalWeight = connected ? weight : 0;
 
