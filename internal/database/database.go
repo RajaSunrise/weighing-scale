@@ -31,7 +31,7 @@ func Connect() {
 		log.Println("Using SQLite database (configured)...")
 		dbPath := os.Getenv("DB_PATH")
 		if dbPath == "" {
-			dbPath = "/app/data/stoneweigh.db"
+			dbPath = "stoneweigh.db"
 		}
 		DB, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 		if err != nil {

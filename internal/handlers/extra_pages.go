@@ -48,14 +48,25 @@ func (s *Server) ShowReports(c *gin.Context) {
 	var records []models.WeighingRecord
 	s.DB.Where("weighed_at BETWEEN ? AND ?", start, end).Order("weighed_at desc").Find(&records)
 
+	// Calculate TotalNetWeight
+	type Result struct {
+		Total float64
+	}
+	var res Result
+	s.DB.Model(&models.WeighingRecord{}).
+		Select("sum(net_weight) as total").
+		Where("weighed_at BETWEEN ? AND ?", start, end).
+		Scan(&res)
+
 	c.HTML(http.StatusOK, "reports.html", gin.H{
-		"title":       "Laporan",
-		"active":      "reports",
-		"showNav":     true,
-		"CurrentUser": fullName,
-		"Records":     records,
-		"StartDate":   start.Format("2006-01-02"),
-		"EndDate":     end.Format("2006-01-02"),
+		"title":          "Laporan",
+		"active":         "reports",
+		"showNav":        true,
+		"CurrentUser":    fullName,
+		"Records":        records,
+		"TotalNetWeight": res.Total,
+		"StartDate":      start.Format("2006-01-02"),
+		"EndDate":        end.Format("2006-01-02"),
 	})
 }
 

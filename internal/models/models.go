@@ -53,8 +53,6 @@ type WeighingStation struct {
 	CameraURL string `json:"camera_url,omitempty"`
 }
 
-// Deprecated: Use WeighingStation instead. Kept for migration safety if needed,
-// but we will likely migrate data to WeighingStation.
 type ScaleConfig struct {
 	gorm.Model
 	Name       string `json:"name"`

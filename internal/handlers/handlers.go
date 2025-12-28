@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -128,6 +129,9 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 		return
 	}
 
+	log.Printf("Transaction Data - Plate: %s, Driver: %s, Company: %s, Product: %s, Gross: %.2f, Tare: %.2f",
+		input.PlateNumber, input.DriverName, input.Company, input.Product, input.Gross, input.Tare)
+
 	session := sessions.Default(c)
 	managerName := "Unknown"
 	if val := session.Get("username"); val != nil {
@@ -209,9 +213,9 @@ func (s *Server) TriggerANPR(c *gin.Context) {
 	if err != nil {
 		// Fallback for demo/simulation if no camera
 		c.JSON(http.StatusOK, gin.H{
-			"plate": "B 1234 DEMO",
+			"plate":    "B 1234 DEMO",
 			"snapshot": "/static/images/placeholder_truck.jpg",
-			"status": "simulated",
+			"status":   "simulated",
 		})
 		return
 	}
@@ -255,8 +259,8 @@ func (s *Server) StreamScaleData(c *gin.Context) {
 				// Only send data if allowed
 				if role == "admin" || allowedIDs[id] {
 					c.SSEvent("message", gin.H{
-						"scale_id": id,
-						"weight":   scale.LastWeight,
+						"scale_id":  id,
+						"weight":    scale.LastWeight,
 						"connected": scale.Connected,
 					})
 				}

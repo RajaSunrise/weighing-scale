@@ -3,4 +3,5 @@ stoneweigh.db
 *.log
 server.pid
 web/static/reports/*.pdf
-*.onnx
+
+.ruff_cache/

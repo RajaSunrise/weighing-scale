@@ -1,6 +1,6 @@
 FROM golang:alpine
 
-RUN apk add --no-cache \
+RUN apk add  \
     opencv-dev \
     tesseract-ocr \
     tesseract-ocr-data-eng \

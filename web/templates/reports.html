@@ -36,7 +36,10 @@
                 background-color: white !important;
                 color: black !important;
             }
-            header, nav, aside, .no-print {
+            header, nav, aside, .no-print, .no-print-sidebar {
+                display: none !important;
+            }
+            .logo-brand, .logo-user {
                 display: none !important;
             }
             /* Reset Layout */
@@ -120,6 +123,14 @@
                             <span class="material-symbols-outlined text-4xl mb-2">inbox</span>
                             <p>Tidak ada data ditemukan untuk periode ini.</p>
                         </td>
+                    </tr>
+                    {{ end }}
+                    <!-- Total Row -->
+                    {{ if gt (len .Records) 0 }}
+                    <tr class="bg-card-dark font-bold border-t-2 border-primary">
+                        <td colspan="7" class="px-6 py-4 text-right text-white">TOTAL NETTO (kg)</td>
+                        <td class="px-6 py-4 text-right font-mono text-primary text-lg">{{ printf "%.0f" .TotalNetWeight }}</td>
+                        <td class="px-6 py-4"></td>
                     </tr>
                     {{ end }}
                 </tbody>

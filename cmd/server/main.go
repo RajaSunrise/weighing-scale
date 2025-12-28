@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
@@ -18,6 +19,12 @@ import (
 )
 
 func main() {
+	// Set timezone to Asia/Jakarta
+	if tz, err := time.LoadLocation("Asia/Jakarta"); err == nil {
+		time.Local = tz
+		log.Println("Timezone set to Asia/Jakarta")
+	}
+
 	// Initialize Logger
 	logger.Init()
 

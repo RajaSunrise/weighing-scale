@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -100,15 +102,24 @@ func (s *Server) GetVehicleDetails(c *gin.Context) {
 
 // SearchVehicles performs a fuzzy search for autocomplete
 func (s *Server) SearchVehicles(c *gin.Context) {
-	query := c.Query("q")
-	if len(query) < 2 {
-		c.JSON(http.StatusOK, []string{})
+	query := strings.ToUpper(strings.TrimSpace(c.Query("q")))
+	log.Printf("SearchVehicles called with query: '%s' (length: %d)", query, len(query))
+
+	// Return empty array for empty query to prevent returning all vehicles
+	if len(query) < 1 {
+		c.JSON(http.StatusOK, []models.Vehicle{})
 		return
 	}
 
 	var vehicles []models.Vehicle
-	// Simple fuzzy search
-	s.DB.Where("plate_number LIKE ?", "%"+query+"%").Limit(10).Find(&vehicles)
+	// Simple fuzzy search - case insensitive (already uppercased)
+	err := s.DB.Where("plate_number LIKE ?", "%"+query+"%").Limit(10).Find(&vehicles).Error
+	if err != nil {
+		log.Printf("SearchVehicles error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Search failed"})
+		return
+	}
 
+	log.Printf("SearchVehicles found %d vehicles", len(vehicles))
 	c.JSON(http.StatusOK, vehicles)
 }

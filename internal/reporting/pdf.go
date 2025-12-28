@@ -2,6 +2,7 @@ package reporting
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -20,6 +21,15 @@ func dateToIndonesian(t time.Time) string {
 
 // GenerateInvoice creates a PDF invoice for a weighing transaction (Indonesian & Modern)
 func GenerateInvoice(record models.WeighingRecord) (string, error) {
+	log.Printf("Generating PDF for ticket %s", record.TicketNumber)
+	log.Printf("  - PlateNumber: '%s'", record.PlateNumber)
+	log.Printf("  - DriverName: '%s'", record.DriverName)
+	log.Printf("  - CompanyName: '%s'", record.CompanyName)
+	log.Printf("  - Product: '%s'", record.Product)
+	log.Printf("  - GrossWeight: %.2f", record.GrossWeight)
+	log.Printf("  - TareWeight: %.2f", record.TareWeight)
+	log.Printf("  - NetWeight: %.2f", record.NetWeight)
+
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 
@@ -36,7 +46,7 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	pdf.SetFont("Arial", "B", 24)
 	pdf.SetTextColor(255, 255, 255) // White
 	pdf.SetXY(10, 8)
-	pdf.Cell(0, 10, "STONEWEIGH INDONESIA")
+	pdf.Cell(0, 10, "Timbang Batu Lombok")
 
 	pdf.SetFont("Arial", "", 10)
 	pdf.SetTextColor(255, 255, 255)
@@ -47,9 +57,9 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	pdf.SetY(40)
 	pdf.SetTextColor(51, 51, 51)
 	pdf.SetFont("Arial", "", 10)
-	pdf.Cell(0, 5, "Jalan Tambang Raya No. 123, Jakarta Selatan")
+	pdf.Cell(0, 5, "Jalan Tambang Raya No. 123, Lombok Barat")
 	pdf.Ln(5)
-	pdf.Cell(0, 5, "Telp: (021) 555-0123 | Email: info@stoneweigh.id")
+	pdf.Cell(0, 5, "Telp: 087805815285 | Email: indraaryadi@gmail.com")
 	pdf.Ln(10)
 
 	// Divider Line
@@ -100,16 +110,38 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 		pdf.Cell(55, 6, ": "+value)
 	}
 
+	// Get values with defaults
+	plate := record.PlateNumber
+	if plate == "" || len(plate) == 0 {
+		plate = "-"
+	}
+	driver := record.DriverName
+	if driver == "" || len(driver) == 0 {
+		driver = "-"
+	}
+	company := record.CompanyName
+	if company == "" {
+		company = "-"
+	}
+	manager := record.ManagerName
+	if manager == "" {
+		manager = "-"
+	}
+	product := record.Product
+	if product == "" {
+		product = "-"
+	}
+
 	// Left Column
-	printRow("Nomor Polisi", record.PlateNumber, 10)
-	printRow("Supir", record.DriverName, 110)
+	printRow("Nomor Polisi", plate, 10)
+	printRow("Supir", driver, 110)
 	pdf.Ln(8)
 
-	printRow("Perusahaan", record.CompanyName, 10)
-	printRow("Operator", record.ManagerName, 110)
+	printRow("Perusahaan", company, 10)
+	printRow("Operator", manager, 110)
 	pdf.Ln(8)
 
-	printRow("Jenis Muatan", record.Product, 10)
+	printRow("Jenis Muatan", product, 10)
 	printRow("Status", record.Status, 110)
 	pdf.Ln(15)
 
@@ -135,13 +167,26 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	pdf.SetTextColor(51, 51, 51)
 	pdf.SetFont("Courier", "B", 14)
 
+	grossStr := fmt.Sprintf("%.0f", record.GrossWeight)
+	if record.GrossWeight == 0 {
+		grossStr = "0"
+	}
+	tareStr := fmt.Sprintf("%.0f", record.TareWeight)
+	if record.TareWeight == 0 {
+		tareStr = "0"
+	}
+	netStr := fmt.Sprintf("%.0f", record.NetWeight)
+	if record.NetWeight == 0 {
+		netStr = "0"
+	}
+
 	// Gross
-	pdf.CellFormat(63, 15, fmt.Sprintf("%.0f", record.GrossWeight), "1", 0, "C", false, 0, "")
+	pdf.CellFormat(63, 15, grossStr, "1", 0, "C", false, 0, "")
 	// Tare
-	pdf.CellFormat(63, 15, fmt.Sprintf("%.0f", record.TareWeight), "1", 0, "C", false, 0, "")
+	pdf.CellFormat(63, 15, tareStr, "1", 0, "C", false, 0, "")
 	// Net (Green Text)
 	pdf.SetTextColor(0, 150, 0)
-	pdf.CellFormat(64, 15, fmt.Sprintf("%.0f", record.NetWeight), "1", 1, "C", false, 0, "")
+	pdf.CellFormat(64, 15, netStr, "1", 1, "C", false, 0, "")
 
 	// --- Signatures ---
 	pdf.SetTextColor(51, 51, 51)
@@ -157,7 +202,7 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	pdf.SetY(ySig + 5)
 	pdf.SetX(20)
 	pdf.SetFont("Arial", "", 10)
-	pdf.Cell(80, 5, "Diserahkan Oleh (Supir),")
+	pdf.Cell(80, 5, "Diserahkan Ke (Supir),")
 
 	// Manager Sig
 	pdf.SetX(120)
@@ -167,8 +212,12 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	pdf.SetY(ySig + 40)
 	pdf.SetFont("Arial", "B", 10)
 
+	driverSig := record.DriverName
+	if driverSig == "" {
+		driverSig = "-"
+	}
 	pdf.SetX(20)
-	pdf.Cell(80, 5, "( "+record.DriverName+" )")
+	pdf.Cell(80, 5, "( "+driverSig+" )")
 	pdf.Line(20, ySig+45, 80, ySig+45)
 
 	pdf.SetX(120)
@@ -182,8 +231,6 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	pdf.Cell(0, 4, "Dokumen ini dicetak secara komputerisasi dan sah tanpa cap basah.")
 	pdf.Ln(4)
 	pdf.Cell(0, 4, fmt.Sprintf("Dicetak pada: %s", dateToIndonesian(time.Now())))
-	pdf.Ln(4)
-	pdf.Cell(0, 4, "StoneWeigh System v1.0")
 
 	// Ensure directory exists
 	if _, err := os.Stat("web/static/reports"); os.IsNotExist(err) {
@@ -191,6 +238,7 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	}
 
 	filename := fmt.Sprintf("web/static/reports/inv_%s.pdf", record.TicketNumber)
+	pdf.SetJavascript("this.print(true);")
 	err := pdf.OutputFileAndClose(filename)
 	if err != nil {
 		return "", err

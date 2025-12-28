@@ -49,15 +49,20 @@
         /* Blink animation */
         .blink { animation: blinker 1.5s linear infinite; }
         @keyframes blinker { 50% { opacity: 0; } }
+        @media print {
+            aside, nav, .no-print {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white antialiased h-screen flex overflow-hidden" hx-boost="true">
 
     <!-- Navigation Sidebar -->
     {{ if .showNav }}
-    <aside class="w-64 bg-surface-dark border-r border-border-dark flex flex-col justify-between hidden md:flex">
+    <aside class="w-64 bg-surface-dark border-r border-border-dark flex flex-col justify-between hidden md:flex no-print-sidebar">
         <div class="p-6">
-            <div class="flex items-center gap-3 mb-8">
+            <div class="flex items-center gap-3 mb-8 logo-brand">
                 <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-xl">S</div>
                 <h1 class="text-xl font-bold tracking-tight">StoneWeigh</h1>
             </div>
@@ -82,7 +87,7 @@
             </nav>
         </div>
         <div class="p-6 border-t border-border-dark">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 logo-user">
                 <div class="w-10 h-10 rounded-full bg-card-hover flex items-center justify-center">
                     <span class="material-symbols-outlined text-text-secondary">person</span>
                 </div>

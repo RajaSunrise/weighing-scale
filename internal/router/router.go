@@ -3,6 +3,7 @@ package router
 import (
 	"encoding/json"
 	"html/template"
+	"net/http"
 	"os"
 
 	"github.com/gin-contrib/sessions"
@@ -27,6 +28,13 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 		secret = "secret"
 	}
 	store := cookie.NewStore([]byte(secret))
+	store.Options(sessions.Options{
+		MaxAge:   30 * 24 * 60 * 60, // 30 days
+		Path:     "/",
+		Secure:   false,                // Set to true in production with HTTPS
+		HttpOnly: true,                 // Security: prevent XSS
+		SameSite: http.SameSiteLaxMode, // Allow same-site cookies
+	})
 	r.Use(sessions.Sessions("stoneweigh_session", store))
 
 	// 3. Global Middleware
@@ -50,6 +58,9 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	r.GET("/login", server.ShowLogin)
 	r.POST("/login", server.Login)
 	r.GET("/logout", server.Logout)
+	r.GET("/test-search", func(c *gin.Context) {
+		c.File("test_search.html")
+	})
 
 	// 6. Protected Routes
 	protected := r.Group("/")
@@ -109,6 +120,10 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 			adminApi.GET("/logs", server.GetLogsAPI)
 		}
 	}
+
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
 
 	// 404 Handler
 	r.NoRoute(server.Show404)
