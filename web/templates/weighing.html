@@ -175,21 +175,19 @@
 </div>
 
 <script>
-// Prevent double initialization
-if (window.weighingScriptLoaded) {
-    console.log('Weighing script already loaded, skipping initialization');
-} else {
-    window.weighingScriptLoaded = true;
-    console.log('Initializing weighing script...');
-
 // Main JS will handle SSE
 // Here we just handle UI state for selection
 let activeScaleId = null;
 let currentCameraUrl = "";
 let stationsData = {}; // Store full data
-let isSubmitting = false;
 
-document.addEventListener('DOMContentLoaded', () => {
+function initWeighingPage() {
+    const form = document.getElementById('weighing-form');
+    if (!form || form.getAttribute('data-initialized') === 'true') {
+        return;
+    }
+    form.setAttribute('data-initialized', 'true');
+    console.log('Initializing weighing script...');
     const cards = document.querySelectorAll('.scale-card');
     if (cards.length > 0) {
         selectScale(cards[0].dataset.id);
@@ -281,12 +279,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Form Submission
-    const form = document.getElementById('weighing-form');
     if(form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (isSubmitting) return;
-            isSubmitting = true;
+
+            // Check double submission using data attribute
+            if (form.dataset.submitting === 'true') {
+                console.log('Form submission already in progress.');
+                return;
+            }
+            form.dataset.submitting = 'true';
 
             const btn = document.getElementById('submit-btn');
             btn.disabled = true;
@@ -295,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const scaleId = document.getElementById('active-scale-id').value;
             if (!scaleId) {
                 alert("Pilih unit timbangan dulu");
-                isSubmitting = false;
+                form.dataset.submitting = 'false';
                 btn.disabled = false;
                 return;
             }
@@ -354,11 +356,18 @@ document.addEventListener('DOMContentLoaded', () => {
             } finally {
                 btn.disabled = false;
                 btn.innerText = "Simpan & Cetak Tiket";
-                isSubmitting = false;
+                form.dataset.submitting = 'false';
             }
         });
     }
-});
+}
+
+// Initialize on load
+if (document.readyState !== 'loading') {
+    initWeighingPage();
+} else {
+    document.addEventListener('DOMContentLoaded', initWeighingPage);
+}
 
 // Helper to fetch details
 async function fetchVehicleDetails(plate) {
@@ -517,7 +526,11 @@ function updateCalculations() {
 }
 
 function initSSE() {
+    if (window.currentScaleEventSource) {
+        window.currentScaleEventSource.close();
+    }
     const evtSource = new EventSource("/api/scales/stream");
+    window.currentScaleEventSource = evtSource;
 
     evtSource.onmessage = function(event) {
         const data = JSON.parse(event.data);
