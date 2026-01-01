@@ -30,11 +30,12 @@
         @media print {
             @page {
                 size: landscape;
-                margin: 10mm;
+                margin: 5mm; /* Smaller margin to fit more */
             }
             body {
                 background-color: white !important;
                 color: black !important;
+                font-family: Arial, sans-serif !important;
             }
             header, nav, aside, .no-print, .no-print-sidebar {
                 display: none !important;
@@ -42,12 +43,15 @@
             .logo-brand, .logo-user {
                 display: none !important;
             }
-            /* Reset Layout */
-            .flex-col, .h-full, .p-6, .gap-6 {
+            /* Reset Layout for Multi-page Printing */
+            .flex-col, .h-full, .p-6, .gap-6, .overflow-hidden, .overflow-y-auto, .overflow-x-auto, .flex-1 {
                 height: auto !important;
+                width: 100% !important;
+                overflow: visible !important;
                 padding: 0 !important;
                 gap: 0 !important;
                 display: block !important;
+                position: static !important;
             }
             .bg-surface-dark {
                 background-color: white !important;
@@ -56,27 +60,43 @@
             .text-white, .text-text-secondary {
                 color: black !important;
             }
+
+            /* Table Styling for Print */
             table {
                 width: 100% !important;
                 border-collapse: collapse;
+                table-layout: auto; /* Allow auto sizing */
             }
             th, td {
-                border: 1px solid #ddd !important;
-                padding: 4px !important;
-                font-size: 10pt !important;
+                border: 1px solid #999 !important;
+                padding: 4px 6px !important; /* Compact padding */
+                font-size: 9pt !important; /* Smaller font */
                 color: black !important;
+                vertical-align: middle;
             }
             thead {
-                background-color: #f0f0f0 !important;
+                background-color: #eee !important;
                 color: black !important;
+                font-weight: bold;
                 display: table-header-group;
             }
             tr {
                 page-break-inside: avoid;
             }
+
+            /* Column Specifics */
+            td.whitespace-nowrap {
+                white-space: nowrap !important;
+            }
+
             /* Hide Action Column */
             th:last-child, td:last-child {
                 display: none !important;
+            }
+
+            /* Make header visible on every page */
+            thead th {
+                border-bottom: 2px solid #000 !important;
             }
         }
     </style>
@@ -102,13 +122,13 @@
                     {{ range .Records }}
                     <tr class="hover:bg-card-hover transition-colors">
                         <td class="px-6 py-4 text-text-secondary whitespace-nowrap">{{ .WeighedAt.Format "02 Jan 15:04" }}</td>
-                        <td class="px-6 py-4 font-mono text-xs">{{ .TicketNumber }}</td>
-                        <td class="px-6 py-4 font-medium text-white">{{ .PlateNumber }}</td>
+                        <td class="px-6 py-4 font-mono text-xs whitespace-nowrap">{{ .TicketNumber }}</td>
+                        <td class="px-6 py-4 font-medium text-white whitespace-nowrap">{{ .PlateNumber }}</td>
                         <td class="px-6 py-4">{{ .DriverName }}</td>
                         <td class="px-6 py-4">{{ .Product }}</td>
-                        <td class="px-6 py-4 text-right font-mono">{{ printf "%.0f" .GrossWeight }}</td>
-                        <td class="px-6 py-4 text-right font-mono text-text-secondary">{{ printf "%.0f" .TareWeight }}</td>
-                        <td class="px-6 py-4 text-right font-mono font-bold text-success">{{ printf "%.0f" .NetWeight }}</td>
+                        <td class="px-6 py-4 text-right font-mono whitespace-nowrap">{{ printf "%.0f" .GrossWeight }}</td>
+                        <td class="px-6 py-4 text-right font-mono text-text-secondary whitespace-nowrap">{{ printf "%.0f" .TareWeight }}</td>
+                        <td class="px-6 py-4 text-right font-mono font-bold text-success whitespace-nowrap">{{ printf "%.0f" .NetWeight }}</td>
                         <td class="px-6 py-4 text-center">
                             {{ if .InvoicePath }}
                             <a href="/{{ .InvoicePath }}" target="_blank" class="inline-flex items-center justify-center w-8 h-8 rounded hover:bg-white/10 text-primary" title="Lihat PDF">
@@ -127,8 +147,8 @@
                     {{ end }}
                     <!-- Total Row -->
                     {{ if gt (len .Records) 0 }}
-                    <tr class="bg-card-dark font-bold border-t-2 border-primary">
-                        <td colspan="7" class="px-6 py-4 text-right text-white">TOTAL NETTO (kg)</td>
+                    <tr class="bg-primary/20 font-bold border-t-2 border-primary">
+                        <td colspan="7" class="px-6 py-4 text-right text-primary-light">TOTAL NETTO (kg)</td>
                         <td class="px-6 py-4 text-right font-mono text-primary text-lg">{{ printf "%.0f" .TotalNetWeight }}</td>
                         <td class="px-6 py-4"></td>
                     </tr>
@@ -138,5 +158,14 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Update document title for unique filename when printing
+    (function() {
+        const start = "{{ .StartDate }}";
+        const end = "{{ .EndDate }}";
+        document.title = `Laporan_Transaksi_${start}_sd_${end}`;
+    })();
+</script>
 
 {{ template "footer" . }}
