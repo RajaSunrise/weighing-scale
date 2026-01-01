@@ -44,7 +44,7 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 
 	// 4. Static Files & Templates
 	r.SetFuncMap(template.FuncMap{
-		"json": func(v interface{}) template.JS {
+		"json": func(v any) template.JS {
 			a, _ := json.Marshal(v)
 			return template.JS(a)
 		},

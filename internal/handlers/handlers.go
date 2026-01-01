@@ -8,13 +8,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 	"stoneweigh/internal/cv"
 	"stoneweigh/internal/hardware"
 	"stoneweigh/internal/models"
+	"stoneweigh/internal/pkg"
 	"stoneweigh/internal/reporting"
+
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type Server struct {
@@ -140,7 +142,10 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 
 	net := input.Gross - input.Tare
 	// Use UnixNano to prevent collision on rapid submissions
-	ticket := fmt.Sprintf("T-%d", time.Now().UnixNano())
+	ticket, err:= pkg.GenerateTicketID(12)
+	if err != nil {
+		panic(err)
+	}
 
 	record := models.WeighingRecord{
 		TicketNumber: ticket,

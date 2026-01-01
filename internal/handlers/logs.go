@@ -42,10 +42,7 @@ func (s *Server) GetLogsAPI(c *gin.Context) {
 		lines = append(lines, scanner.Text())
 	}
 
-	start := len(lines) - 100
-	if start < 0 {
-		start = 0
-	}
+	start := max(len(lines)-100, 0)
 
 	c.JSON(http.StatusOK, lines[start:])
 }
