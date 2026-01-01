@@ -30,80 +30,207 @@
         @media print {
             @page {
                 size: landscape;
-                margin: 5mm; /* Smaller margin to fit more */
+                margin: 12mm 10mm;
             }
+            
+            /* Hide all non-essential elements */
+            body * {
+                visibility: hidden;
+            }
+            
+            /* Only show the printable area */
+            .print-area, .print-area * {
+                visibility: visible;
+            }
+            
+            .print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white;
+            }
+            
+            /* Reset body */
             body {
                 background-color: white !important;
                 color: black !important;
-                font-family: Arial, sans-serif !important;
-            }
-            header, nav, aside, .no-print, .no-print-sidebar {
-                display: none !important;
-            }
-            .logo-brand, .logo-user {
-                display: none !important;
-            }
-            /* Reset Layout for Multi-page Printing */
-            .flex-col, .h-full, .p-6, .gap-6, .overflow-hidden, .overflow-y-auto, .overflow-x-auto, .flex-1 {
-                height: auto !important;
-                width: 100% !important;
-                overflow: visible !important;
+                font-family: 'Arial', 'Helvetica', sans-serif !important;
+                margin: 0 !important;
                 padding: 0 !important;
-                gap: 0 !important;
-                display: block !important;
-                position: static !important;
             }
-            .bg-surface-dark {
-                background-color: white !important;
-                border: none !important;
-            }
-            .text-white, .text-text-secondary {
-                color: black !important;
+            
+            /* Hide navigation and sidebar */
+            nav, aside, header.flex, form, button, .logo-brand, .logo-user, .no-print {
+                display: none !important;
+                visibility: hidden !important;
             }
 
-            /* Table Styling for Print */
+            /* Print Header - appears on every page */
+            .print-header {
+                display: block !important;
+                text-align: center;
+                margin-bottom: 15px;
+                padding-bottom: 12px;
+                border-bottom: 3px solid #000;
+            }
+            
+            .print-header h1 {
+                font-size: 16pt;
+                font-weight: bold;
+                margin: 0 0 5px 0;
+                color: #000;
+            }
+            
+            .print-header p {
+                font-size: 10pt;
+                margin: 0;
+                color: #333;
+            }
+
+            /* Table Container */
+            .table-container {
+                width: 100%;
+                overflow: visible !important;
+            }
+
+            /* Table Styling */
             table {
                 width: 100% !important;
-                border-collapse: collapse;
-                table-layout: auto; /* Allow auto sizing */
+                border-collapse: collapse !important;
+                margin: 0 !important;
+                table-layout: fixed;
+                page-break-inside: auto;
             }
+            
+            /* Strong borders */
             th, td {
-                border: 1px solid #999 !important;
-                padding: 4px 6px !important; /* Compact padding */
-                font-size: 9pt !important; /* Smaller font */
-                color: black !important;
-                vertical-align: middle;
+                border: 2px solid #000 !important;
+                padding: 6px 4px !important;
+                font-size: 9pt !important;
+                color: #000 !important;
+                vertical-align: middle !important;
+                text-align: left !important;
+                word-wrap: break-word;
             }
+            
+            /* Header styling - repeat on every page */
             thead {
-                background-color: #eee !important;
-                color: black !important;
-                font-weight: bold;
                 display: table-header-group;
+                background-color: #e0e0e0 !important;
             }
+            
+            thead th {
+                background-color: #e0e0e0 !important;
+                font-weight: bold !important;
+                font-size: 9pt !important;
+                color: #000 !important;
+                border: 2px solid #000 !important;
+                padding: 8px 4px !important;
+                text-transform: uppercase;
+            }
+            
+            /* Allow row breaks across pages */
+            tbody {
+                display: table-row-group;
+            }
+            
             tr {
-                page-break-inside: avoid;
+                page-break-inside: avoid !important;
+                page-break-after: auto !important;
             }
-
-            /* Column Specifics */
-            td.whitespace-nowrap {
-                white-space: nowrap !important;
+            
+            tbody tr {
+                border: 2px solid #000 !important;
             }
-
-            /* Hide Action Column */
+            
+            /* Alternating row colors */
+            tbody tr:nth-child(even):not(.total-row) {
+                background-color: #f5f5f5 !important;
+            }
+            
+            tbody tr:nth-child(odd):not(.total-row) {
+                background-color: #ffffff !important;
+            }
+            
+            /* Total row styling - ONLY on last page, NOT repeated */
+            tfoot {
+                display: table-footer-group;
+                page-break-inside: avoid !important;
+            }
+            
+            tr.total-row {
+                background-color: #d9d9d9 !important;
+                font-weight: bold !important;
+                border-top: 4px double #000 !important;
+                border-bottom: 4px double #000 !important;
+                page-break-before: avoid !important;
+                page-break-inside: avoid !important;
+                page-break-after: avoid !important;
+            }
+            
+            tr.total-row td {
+                font-size: 10pt !important;
+                padding: 10px 4px !important;
+                border: 2px solid #000 !important;
+                font-weight: bold !important;
+            }
+            
+            /* Column alignment */
+            .text-right {
+                text-align: right !important;
+            }
+            
+            .text-center {
+                text-align: center !important;
+            }
+            
+            /* Hide action column */
             th:last-child, td:last-child {
                 display: none !important;
             }
-
-            /* Make header visible on every page */
-            thead th {
-                border-bottom: 2px solid #000 !important;
+            
+            /* Specific column widths - optimized for landscape */
+            th:nth-child(1), td:nth-child(1) { width: 9%; }  /* Waktu */
+            th:nth-child(2), td:nth-child(2) { width: 11%; } /* No. Tiket */
+            th:nth-child(3), td:nth-child(3) { width: 9%; }  /* No. Polisi */
+            th:nth-child(4), td:nth-child(4) { width: 15%; } /* Supir */
+            th:nth-child(5), td:nth-child(5) { width: 15%; } /* Muatan */
+            th:nth-child(6), td:nth-child(6) { width: 13%; } /* Gross */
+            th:nth-child(7), td:nth-child(7) { width: 13%; } /* Tare */
+            th:nth-child(8), td:nth-child(8) { width: 15%; } /* Netto */
+            
+            /* Font styles */
+            .font-mono {
+                font-family: 'Courier New', monospace !important;
+            }
+            
+            /* Remove backgrounds and borders from containers */
+            .bg-surface-dark, .border, .rounded-xl, .overflow-x-auto, .overflow-hidden {
+                background: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                overflow: visible !important;
+                height: auto !important;
+                max-height: none !important;
+            }
+            
+            /* Empty state should not print */
+            .text-center span.material-symbols-outlined {
+                display: none !important;
             }
         }
     </style>
 
     <!-- Report Table -->
-    <div class="bg-surface-dark border border-border-dark rounded-xl flex-1 overflow-hidden flex flex-col">
-        <div class="overflow-x-auto h-full">
+    <div class="bg-surface-dark border border-border-dark rounded-xl flex-1 overflow-hidden flex flex-col print-area">
+        <!-- Print Header (only visible when printing) -->
+        <div class="print-header" style="display: none;">
+            <h1>LAPORAN TRANSAKSI PENIMBANGAN</h1>
+            <p>Periode: {{ .StartDate }} s/d {{ .EndDate }}</p>
+        </div>
+        
+        <div class="overflow-x-auto h-full table-container">
             <table class="w-full text-left text-sm">
                 <thead class="bg-card-dark text-text-secondary font-medium border-b border-border-dark sticky top-0">
                     <tr>
@@ -145,15 +272,17 @@
                         </td>
                     </tr>
                     {{ end }}
-                    <!-- Total Row -->
-                    {{ if gt (len .Records) 0 }}
-                    <tr class="bg-primary/20 font-bold border-t-2 border-primary">
+                </tbody>
+                <!-- Total Row - ONLY appears at the END (last page only) -->
+                {{ if gt (len .Records) 0 }}
+                <tfoot>
+                    <tr class="bg-primary/20 font-bold border-t-2 border-primary total-row">
                         <td colspan="7" class="px-6 py-4 text-right text-primary-light">TOTAL NETTO (kg)</td>
                         <td class="px-6 py-4 text-right font-mono text-primary text-lg">{{ printf "%.0f" .TotalNetWeight }}</td>
                         <td class="px-6 py-4"></td>
                     </tr>
-                    {{ end }}
-                </tbody>
+                </tfoot>
+                {{ end }}
             </table>
         </div>
     </div>
