@@ -175,34 +175,238 @@
 </div>
 
 <script>
-// Prevent double initialization
-if (window.weighingScriptLoaded) {
-    console.log('Weighing script already loaded, skipping initialization');
-} else {
-    window.weighingScriptLoaded = true;
-    console.log('Initializing weighing script...');
+// --- 0. Helper Functions (Global) ---
+// Defined FIRST so they are available when INIT runs below
 
-// Main JS will handle SSE
-// Here we just handle UI state for selection
-let activeScaleId = null;
-let currentCameraUrl = "";
-let stationsData = {}; // Store full data
-let isSubmitting = false;
+window.selectScale = async function(id) {
+    document.getElementById('active-scale-id').value = id;
 
-document.addEventListener('DOMContentLoaded', () => {
+    // Visual feedback
+    document.querySelectorAll('.scale-card').forEach(el => {
+        el.classList.remove('ring-2', 'ring-primary');
+    });
+    const card = document.querySelector(`.scale-card[data-id="${id}"]`);
+    if(card) {
+        card.classList.add('ring-2', 'ring-primary');
+        updateCameraSelector(id);
+    }
+}
+
+window.updateCameraSelector = async function(stationId) {
+    const selector = document.getElementById('camera-select');
+    if(!selector) return;
+    
+    selector.innerHTML = '';
+    selector.classList.add('hidden');
+
+    try {
+        const rawElement = document.getElementById(`station-data-${stationId}`);
+        if(!rawElement) return;
+        
+        const station = JSON.parse(rawElement.value);
+
+        if (station.cameras && station.cameras.length > 0) {
+            selector.classList.remove('hidden');
+            station.cameras.forEach(cam => {
+                const opt = document.createElement('option');
+                opt.value = cam.ID;
+                opt.text = cam.name;
+                selector.appendChild(opt);
+            });
+        } else if (station.camera_url) {
+             const opt = document.createElement('option');
+             opt.value = "";
+             opt.text = "Main Camera (Legacy)";
+             selector.appendChild(opt);
+        }
+    } catch(e) {
+        console.error("Failed to parse station data", e);
+    }
+}
+
+window.switchCamera = function(url) {
+    // Just updates the selection for next scan.
+}
+
+window.triggerScan = function(silent = false) {
+    const activeScaleId = document.getElementById('active-scale-id').value;
+    if (!activeScaleId) {
+        if (!silent) alert("Pilih unit timbangan terlebih dahulu");
+        return;
+    }
+
+    const btn = document.querySelector('button[title="Scan Kamera"]');
+    let originalContent = "";
+    if (!silent && btn) {
+        originalContent = btn.innerHTML;
+        btn.innerHTML = '<span class="loader w-4 h-4 border-2"></span>';
+    }
+
+    let urlParams = `scale_id=${activeScaleId}`;
+    const camSelect = document.getElementById('camera-select');
+    if (camSelect && !camSelect.classList.contains('hidden') && camSelect.value) {
+        urlParams += `&camera_id=${encodeURIComponent(camSelect.value)}`;
+    }
+
+    captureWeight(urlParams, silent).finally(() => {
+        if (!silent && btn) {
+             btn.innerHTML = originalContent;
+        }
+    });
+}
+
+window.captureWeight = async function(params, silent) {
+    try {
+        const res = await fetch(`/api/anpr/trigger?${params}`, { method: 'POST' });
+        const data = await res.json();
+
+        if (data.status === 'success' || data.status === 'simulated') {
+            const plateInput = document.getElementById('plate_no');
+            if (plateInput.value !== data.plate || silent) {
+                 if (silent && document.activeElement === plateInput && plateInput.value !== "") {
+                     // Don't overwrite if user is typing
+                 } else {
+                     plateInput.value = data.plate;
+                     document.getElementById('anpr-result').innerText = data.plate;
+                     fetchVehicleDetails(data.plate);
+                 }
+            }
+            document.getElementById('cctv-preview').src = data.snapshot;
+        } else {
+            if(!silent) document.getElementById('anpr-result').innerText = "ERROR";
+        }
+    } catch (e) {
+        if (!silent) {
+             console.error("Network error", e);
+             alert("Gagal terhubung ke kamera.");
+        }
+    }
+}
+
+window.fetchVehicleDetails = async function(plate) {
+    const statusIcon = document.getElementById('plate-info');
+    try {
+        const res = await fetch(`/api/vehicles/details?plate=${encodeURIComponent(plate)}`);
+        if (res.ok) {
+            const data = await res.json();
+            document.getElementById('driver_name').value = data.driver_name || '';
+            document.getElementById('company_name').value = data.owner_company || '';
+
+            if(statusIcon) {
+                statusIcon.classList.remove('hidden');
+                statusIcon.innerHTML = `<span class="text-success">Data ditemukan: ${data.driver_name}</span>`;
+            }
+
+            // Auto-fill Tare
+            if (data.default_tare && data.default_tare > 0) {
+                 document.getElementById('val-tare').innerText = data.default_tare + " kg";
+                 updateCalculations();
+            }
+        } else {
+            if(statusIcon) {
+                statusIcon.classList.remove('hidden');
+                statusIcon.innerHTML = `<span class="text-text-secondary">Data baru</span>`;
+            }
+        }
+    } catch (e) {
+        console.log("Vehicle not found");
+    }
+}
+
+window.updateCalculations = function() {
+    let gross = 0;
+    const manualToggle = document.getElementById('manual-weight-toggle');
+    if (!manualToggle) return;
+    
+    const isManual = manualToggle.checked;
+
+    if (isManual) {
+        gross = parseFloat(document.getElementById('input-gross').value) || 0;
+    } else {
+        const grossText = document.getElementById('val-gross').innerText.replace(' kg','');
+        gross = parseFloat(grossText) || 0;
+    }
+
+    const tare = parseFloat(document.getElementById('val-tare').innerText.replace(' kg','')) || 0;
+    const net = gross - tare;
+
+    document.getElementById('val-net').innerText = net + " kg";
+}
+
+window.initSSE = function() {
+    window.weighingSSE = new EventSource("/api/scales/stream");
+
+    window.weighingSSE.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        const scaleId = data.scale_id;
+        const weight = data.weight;
+        const connected = data.connected;
+
+        // Update card
+        const display = document.getElementById(`weight-display-${scaleId}`);
+        const status = document.getElementById(`status-scale-${scaleId}`);
+        
+        // Force 0 if disconnected
+        let finalWeight = connected ? weight : 0;
+
+        if (display) {
+            display.innerText = finalWeight;
+        }
+        if (status) {
+            if (connected) {
+                status.innerText = "ONLINE";
+                status.className = "px-2 py-1 rounded bg-success/10 text-success text-xs font-bold";
+            } else {
+                status.innerText = "TERPUTUS";
+                status.className = "px-2 py-1 rounded bg-red-500/10 text-red-500 text-xs font-bold";
+            }
+        }
+
+        // If active scale, update form fields if NOT manual
+        const activeScaleId = document.getElementById('active-scale-id').value;
+        if (activeScaleId == scaleId) {
+            const manualToggle = document.getElementById('manual-weight-toggle');
+            if (manualToggle && !manualToggle.checked) {
+                document.getElementById('val-gross').innerText = finalWeight + " kg";
+                updateCalculations();
+            }
+        }
+    };
+
+    window.weighingSSE.onerror = function(err) {
+        console.error("EventSource failed:", err);
+    };
+}
+
+// --- CLEANUP: Close existing SSE connection to prevent duplicates ---
+if (window.weighingSSE) {
+    window.weighingSSE.close();
+    window.weighingSSE = null;
+}
+if (window.autoScanInterval) {
+    clearInterval(window.autoScanInterval);
+    window.autoScanInterval = null;
+}
+
+// --- INIT: Run immediately ---
+(function() {
+    console.log("Initializing Weighing Interface...");
+
+    let isSubmitting = false;
+
+    // --- 1. Event Listeners & UI Setup ---
+
+    // Select first scale if available
     const cards = document.querySelectorAll('.scale-card');
     if (cards.length > 0) {
         selectScale(cards[0].dataset.id);
     }
 
-    // Auto-fill logic & Autocomplete
+    // Plate Search
     const plateInput = document.getElementById('plate_no');
-
-    // Search suggestions
     if(plateInput) {
         plateInput.addEventListener('input', async (e) => {
             const query = e.target.value.trim();
-            // Start searching from 1 char
             if (query.length >= 1) {
                 try {
                     const res = await fetch(`/api/vehicles/search?q=${encodeURIComponent(query)}`);
@@ -213,8 +417,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         vehicles.forEach(v => {
                             const opt = document.createElement('option');
                             opt.value = v.plate_number;
-                            // Optional: add driver name as label if browser supports it
-                            // opt.label = v.driver_name; 
                             datalist.appendChild(opt);
                         });
                     }
@@ -241,18 +443,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.checked) {
                 input.classList.remove('hidden');
                 display.classList.add('hidden');
-                
-                // Copy current value to input
+
                 const currentVal = parseFloat(display.innerText.replace(' kg','')) || 0;
                 input.value = currentVal;
-                
+
                 input.focus();
                 input.select();
                 updateCalculations();
             } else {
                 input.classList.add('hidden');
                 display.classList.remove('hidden');
-                // Revert to stream value (will be updated by SSE)
             }
         });
     }
@@ -262,11 +462,8 @@ document.addEventListener('DOMContentLoaded', () => {
         grossInput.addEventListener('input', updateCalculations);
     }
 
-    // Initialize SSE (Server Sent Events)
-    initSSE();
-
     // Auto Scan Loop
-    setInterval(() => {
+    window.autoScanInterval = setInterval(() => {
         const toggle = document.getElementById('auto-scan-toggle');
         if(toggle && toggle.checked) {
              triggerScan(true); // true = silent mode
@@ -300,7 +497,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Determine Gross Weight
             let gross = 0;
             const isManual = document.getElementById('manual-weight-toggle').checked;
             if (isManual) {
@@ -333,12 +529,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (res.ok) {
                     alert(`Transaksi Berhasil! Tiket: ${result.ticket}`);
                     window.open(result.invoice, '_blank');
-                    
-                    // Reset UI
+
                     e.target.reset();
-                    // Restore active scale ID
                     document.getElementById('active-scale-id').value = scaleId;
-                    
+
                     document.getElementById('val-gross').innerText = "0 kg";
                     document.getElementById('val-tare').innerText = "0 kg";
                     document.getElementById('val-net').innerText = "0 kg";
@@ -358,208 +552,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-});
 
-// Helper to fetch details
-async function fetchVehicleDetails(plate) {
-    const statusIcon = document.getElementById('plate-info');
-    try {
-        const res = await fetch(`/api/vehicles/details?plate=${encodeURIComponent(plate)}`);
-        if (res.ok) {
-            const data = await res.json();
-            document.getElementById('driver_name').value = data.driver_name || '';
-            document.getElementById('company_name').value = data.owner_company || '';
-            
-            if(statusIcon) {
-                statusIcon.classList.remove('hidden');
-                statusIcon.innerHTML = `<span class="text-success">Data ditemukan: ${data.driver_name}</span>`;
-            }
+    // --- 2. Start SSE ---
+    initSSE();
 
-            // Auto-fill Tare
-            if (data.default_tare && data.default_tare > 0) {
-                 document.getElementById('val-tare').innerText = data.default_tare + " kg";
-                 updateCalculations();
-            }
-        } else {
-            if(statusIcon) {
-                statusIcon.classList.remove('hidden');
-                statusIcon.innerHTML = `<span class="text-text-secondary">Data baru</span>`;
-            }
-        }
-    } catch (e) {
-        console.log("Vehicle not found");
-    }
-}
-
-async function selectScale(id) {
-    activeScaleId = id;
-    document.getElementById('active-scale-id').value = id;
-
-    // Visual feedback
-    document.querySelectorAll('.scale-card').forEach(el => {
-        el.classList.remove('ring-2', 'ring-primary');
-    });
-    const card = document.querySelector(`.scale-card[data-id="${id}"]`);
-    if(card) {
-        card.classList.add('ring-2', 'ring-primary');
-        updateCameraSelector(id);
-    }
-}
-
-async function updateCameraSelector(stationId) {
-    const selector = document.getElementById('camera-select');
-    if(!selector) return;
-    
-    selector.innerHTML = '';
-    selector.classList.add('hidden');
-
-    try {
-        const rawElement = document.getElementById(`station-data-${stationId}`);
-        if(!rawElement) return;
-        
-        const station = JSON.parse(rawElement.value);
-
-        if (station.cameras && station.cameras.length > 0) {
-            selector.classList.remove('hidden');
-            station.cameras.forEach(cam => {
-                const opt = document.createElement('option');
-                opt.value = cam.ID;
-                opt.text = cam.name;
-                selector.appendChild(opt);
-            });
-        } else if (station.camera_url) {
-             const opt = document.createElement('option');
-             opt.value = "";
-             opt.text = "Main Camera (Legacy)";
-             selector.appendChild(opt);
-        }
-    } catch(e) {
-        console.error("Failed to parse station data", e);
-    }
-}
-
-function switchCamera(url) {
-    // Just updates the selection for next scan.
-}
-
-function triggerScan(silent = false) {
-    if (!activeScaleId) {
-        if (!silent) alert("Pilih unit timbangan terlebih dahulu");
-        return;
-    }
-
-    const btn = document.querySelector('button[title="Scan Kamera"]');
-    let originalContent = "";
-    if (!silent && btn) {
-        originalContent = btn.innerHTML;
-        btn.innerHTML = '<span class="loader w-4 h-4 border-2"></span>';
-    }
-
-    let urlParams = `scale_id=${activeScaleId}`;
-    const camSelect = document.getElementById('camera-select');
-    if (camSelect && !camSelect.classList.contains('hidden') && camSelect.value) {
-        urlParams += `&camera_id=${encodeURIComponent(camSelect.value)}`;
-    }
-
-    captureWeight(urlParams, silent).finally(() => {
-        if (!silent && btn) {
-             btn.innerHTML = originalContent;
-        }
-    });
-}
-
-async function captureWeight(params, silent) {
-    try {
-        const res = await fetch(`/api/anpr/trigger?${params}`, { method: 'POST' });
-        const data = await res.json();
-
-        if (data.status === 'success' || data.status === 'simulated') {
-            const plateInput = document.getElementById('plate_no');
-            if (plateInput.value !== data.plate || silent) {
-                 if (silent && document.activeElement === plateInput && plateInput.value !== "") {
-                     // Don't overwrite if user is typing
-                 } else {
-                     plateInput.value = data.plate;
-                     document.getElementById('anpr-result').innerText = data.plate;
-                     fetchVehicleDetails(data.plate);
-                 }
-            }
-            document.getElementById('cctv-preview').src = data.snapshot;
-        } else {
-            if(!silent) document.getElementById('anpr-result').innerText = "ERROR";
-        }
-    } catch (e) {
-        if (!silent) {
-             console.error("Network error", e);
-             alert("Gagal terhubung ke kamera.");
-        }
-    }
-}
-
-function updateCalculations() {
-    let gross = 0;
-    const manualToggle = document.getElementById('manual-weight-toggle');
-    if (!manualToggle) return;
-    
-    const isManual = manualToggle.checked;
-
-    if (isManual) {
-        gross = parseFloat(document.getElementById('input-gross').value) || 0;
-    } else {
-        const grossText = document.getElementById('val-gross').innerText.replace(' kg','');
-        gross = parseFloat(grossText) || 0;
-    }
-
-    const tare = parseFloat(document.getElementById('val-tare').innerText.replace(' kg','')) || 0;
-    const net = gross - tare;
-
-    document.getElementById('val-net').innerText = net + " kg";
-}
-
-function initSSE() {
-    const evtSource = new EventSource("/api/scales/stream");
-
-    evtSource.onmessage = function(event) {
-        const data = JSON.parse(event.data);
-        const scaleId = data.scale_id;
-        const weight = data.weight;
-        const connected = data.connected;
-
-        // Update card
-        const display = document.getElementById(`weight-display-${scaleId}`);
-        const status = document.getElementById(`status-scale-${scaleId}`);
-        
-        // Force 0 if disconnected
-        let finalWeight = connected ? weight : 0;
-
-        if (display) {
-            display.innerText = finalWeight;
-        }
-        if (status) {
-            if (connected) {
-                status.innerText = "ONLINE";
-                status.className = "px-2 py-1 rounded bg-success/10 text-success text-xs font-bold";
-            } else {
-                status.innerText = "TERPUTUS";
-                status.className = "px-2 py-1 rounded bg-red-500/10 text-red-500 text-xs font-bold";
-            }
-        }
-
-        // If active scale, update form fields if NOT manual
-        if (activeScaleId == scaleId) {
-            const manualToggle = document.getElementById('manual-weight-toggle');
-            if (manualToggle && !manualToggle.checked) {
-                document.getElementById('val-gross').innerText = finalWeight + " kg";
-                updateCalculations();
-            }
-        }
-    };
-
-    evtSource.onerror = function(err) {
-        console.error("EventSource failed:", err);
-    };
-}
-}
+})();
 </script>
 
 {{ template "footer" . }}
