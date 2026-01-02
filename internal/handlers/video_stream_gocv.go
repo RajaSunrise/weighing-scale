@@ -5,9 +5,7 @@ package handlers
 import (
 	"fmt"
 	"image"
-	"mime/multipart"
 	"net/http"
-	"net/textproto"
 	"strconv"
 	"sync"
 	"time"
@@ -88,13 +86,6 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 			}
 
 			// Write MIME boundary
-			mw := multipart.NewWriter(c.Writer)
-			mw.SetBoundary("frame")
-
-			partHeader := textproto.MIMEHeader{}
-			partHeader.Set("Content-Type", "image/jpeg")
-			partHeader.Set("Content-Length", strconv.Itoa(len(frame)))
-
 			_, err := c.Writer.Write([]byte(fmt.Sprintf("--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", len(frame))))
 			if err != nil {
 				return
