@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"image"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -54,7 +53,9 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 
 	// Get or Create Stream
 	stream := getStream(url)
-	// getStream already increments client count under lock to prevent race
+	streamLock.Lock()
+	stream.Clients++
+	streamLock.Unlock()
 
 	defer func() {
 		streamLock.Lock()
@@ -106,13 +107,11 @@ func getStream(url string) *SharedStream {
 	defer streamLock.Unlock()
 
 	if s, ok := streamMap[url]; ok {
-		s.Clients++
 		return s
 	}
 
 	s := &SharedStream{
 		URL:       url,
-		Clients:   1, // Initial client
 		Stop:      make(chan bool),
 		Broadcast: make(chan []byte),
 	}
@@ -123,41 +122,63 @@ func getStream(url string) *SharedStream {
 }
 
 func captureLoop(s *SharedStream) {
-	vc, err := gocv.OpenVideoCapture(s.URL)
-	if err != nil {
-		fmt.Printf("Error opening stream %s: %v\n", s.URL, err)
-		return
-	}
-	defer vc.Close()
-
 	img := gocv.NewMat()
 	defer img.Close()
 
 	for {
+		// Outer loop for reconnection
 		select {
 		case <-s.Stop:
 			return
 		default:
-			if ok := vc.Read(&img); !ok || img.Empty() {
-				// Reconnect logic or sleep
-				time.Sleep(100 * time.Millisecond)
-				continue
-			}
-
-			// Resize to reduce bandwidth
-			gocv.Resize(img, &img, image.Point{X: 640, Y: 360}, 0, 0, gocv.InterpolationLinear)
-
-			// Encode to JPG
-			buf, err := gocv.IMEncode(".jpg", img)
-			if err == nil {
-				s.LastFrameMu.Lock()
-				s.LastFrame = buf.GetBytes()
-				s.LastFrameMu.Unlock()
-				buf.Close()
-			}
-
-			// Cap framerate
-			time.Sleep(50 * time.Millisecond) // ~20 FPS max
 		}
+
+		vc, err := gocv.OpenVideoCapture(s.URL)
+		if err != nil {
+			fmt.Printf("Error opening stream %s: %v\n", s.URL, err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
+
+		// Inner loop for reading frames
+		for {
+			select {
+			case <-s.Stop:
+				vc.Close()
+				return
+			default:
+				if ok := vc.Read(&img); !ok || img.Empty() {
+					// Stream disconnected or empty frame
+					time.Sleep(100 * time.Millisecond)
+					vc.Close()
+					goto Reconnect
+				}
+
+				// Resize to 480p (854x480)
+				gocv.Resize(img, &img, image.Point{X: 854, Y: 480}, 0, 0, gocv.InterpolationLinear)
+
+				// Encode to JPG with reduced quality (70) to save bandwidth
+				buf, err := gocv.IMEncodeWithParams(gocv.JPEGFileExt, img, []int{gocv.IMWriteJpegQuality, 70})
+				if err == nil {
+					// CRITICAL FIX: Copy data to Go memory
+					// buf.GetBytes() returns a slice backed by C++ memory which is freed on buf.Close()
+					data := buf.GetBytes()
+					dst := make([]byte, len(data))
+					copy(dst, data)
+
+					s.LastFrameMu.Lock()
+					s.LastFrame = dst
+					s.LastFrameMu.Unlock()
+					buf.Close()
+				}
+
+				// Cap framerate
+				time.Sleep(50 * time.Millisecond) // ~20 FPS max
+			}
+		}
+
+	Reconnect:
+		// Break out of inner loop to reconnect
+		continue
 	}
 }
