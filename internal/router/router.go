@@ -20,7 +20,11 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	if os.Getenv("GIN_MODE") == "release" {
 		gin.SetMode(gin.ReleaseMode)
 	}
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{
+		SkipPaths: []string{"/health"},
+	}))
+	r.Use(gin.Recovery())
 
 	// 2. Setup Session Store
 	secret := os.Getenv("SESSION_SECRET")
@@ -123,7 +127,7 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 		}
 	}
 
-	r.GET("/health", func(c *gin.Context) {
+	r.Any("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 

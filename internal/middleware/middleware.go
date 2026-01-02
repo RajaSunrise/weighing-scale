@@ -12,17 +12,36 @@ import (
 )
 
 // RequestLogger logs the details of each request
+var (
+	lastHealthLog time.Time
+	healthLogMu   sync.Mutex
+)
+
 func RequestLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		startTime := time.Now()
 
 		c.Next()
 
+		path := c.Request.URL.Path
+
+		// Logic specifically for /health to log only once every 6 hours (unless error)
+		if path == "/health" {
+			if c.Writer.Status() == http.StatusOK {
+				healthLogMu.Lock()
+				if time.Since(lastHealthLog) < 6*time.Hour {
+					healthLogMu.Unlock()
+					return
+				}
+				lastHealthLog = time.Now()
+				healthLogMu.Unlock()
+			}
+		}
+
 		latency := time.Since(startTime)
 		status := c.Writer.Status()
 		clientIP := c.ClientIP()
 		method := c.Request.Method
-		path := c.Request.URL.Path
 
 		log.Printf("[HTTP] %3d | %13v | %15s | %-7s %s",
 			status,
