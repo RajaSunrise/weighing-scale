@@ -6,7 +6,12 @@ RUN apk add  \
     tesseract-ocr-data-eng \
     pkgconf \
     build-base \
-    wget
+    wget \
+    gst-plugins-base \
+    gst-plugins-good \
+    gst-plugins-bad \
+    gst-plugins-ugly \
+    gst-libav
 
 WORKDIR /app
 
