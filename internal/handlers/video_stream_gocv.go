@@ -56,9 +56,7 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 
 	// Get or Create Stream
 	stream := getStream(url)
-	streamLock.Lock()
-	stream.Clients++
-	streamLock.Unlock()
+	// getStream already increments client count under lock to prevent race
 
 	defer func() {
 		streamLock.Lock()
@@ -117,11 +115,13 @@ func getStream(url string) *SharedStream {
 	defer streamLock.Unlock()
 
 	if s, ok := streamMap[url]; ok {
+		s.Clients++
 		return s
 	}
 
 	s := &SharedStream{
 		URL:       url,
+		Clients:   1, // Initial client
 		Stop:      make(chan bool),
 		Broadcast: make(chan []byte),
 	}
