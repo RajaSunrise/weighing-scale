@@ -210,10 +210,12 @@ document.getElementById('station-form').addEventListener('submit', async (e) => 
 
     const id = document.getElementById('station-id').value;
 
-    // Remove empty ID to prevent JSON unmarshal error on backend (expecting uint)
-    if (!id) {
-        delete data.id;
-    }
+    // Always delete ID from data payload, as it causes issues with Go struct binding (string vs uint)
+    // For updates, the ID is already in the URL.
+    delete data.id;
+    // Also remove temp camera fields that confuse the backend
+    delete data.cam_name;
+    delete data.cam_url;
 
     const url = id ? `/api/stations/${id}` : '/api/stations';
     const method = id ? 'PUT' : 'POST';

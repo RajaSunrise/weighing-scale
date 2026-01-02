@@ -225,7 +225,20 @@ window.updateCameraSelector = async function(stationId) {
 }
 
 window.switchCamera = function(url) {
-    // Just updates the selection for next scan.
+    if (!url) return;
+
+    // If it's an RTSP URL (starts with rtsp://), use the backend proxy
+    // Otherwise assume it's a direct browser-friendly URL
+    let src = url;
+    if (url.startsWith('rtsp://') || url.match(/^\d+$/)) {
+        src = `/api/camera/stream?url=${encodeURIComponent(url)}`;
+    }
+
+    const img = document.getElementById('cctv-preview');
+    if (img) {
+        // Add timestamp to prevent caching issues if switching back and forth
+        img.src = src + (src.includes('?') ? '&' : '?') + `t=${Date.now()}`;
+    }
 }
 
 window.triggerScan = function(silent = false) {
@@ -476,6 +489,25 @@ if (window.autoScanInterval) {
         cctvImg.style.cursor = "pointer";
         cctvImg.parentElement.addEventListener('click', () => triggerScan(false));
     }
+
+    // Initialize camera on load if available
+    setTimeout(() => {
+        const sel = document.getElementById('camera-select');
+        if (sel && sel.options.length > 0) {
+            // Find the RTSP URL from the station data
+            const activeScaleId = document.getElementById('active-scale-id').value;
+            const rawElement = document.getElementById(`station-data-${activeScaleId}`);
+            if(rawElement) {
+                const station = JSON.parse(rawElement.value);
+                // Prefer first camera
+                if (station.cameras && station.cameras.length > 0) {
+                    switchCamera(station.cameras[0].rtsp_url);
+                } else if (station.camera_url) {
+                    switchCamera(station.camera_url);
+                }
+            }
+        }
+    }, 1000);
 
     // Form Submission
     const form = document.getElementById('weighing-form');

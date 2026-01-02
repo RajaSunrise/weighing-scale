@@ -23,8 +23,29 @@
             <button type="button" onclick="window.print()" class="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2">
                 <span class="material-symbols-outlined text-sm">print</span> Cetak
             </button>
+            <button type="button" onclick="toggleCharts()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition-colors flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">monitoring</span> Grafik
+            </button>
         </form>
     </header>
+
+    <!-- Chart Section (Hidden by default) -->
+    <div id="chart-section" class="hidden flex-col gap-4 bg-surface-dark border border-border-dark rounded-xl p-6 no-print">
+        <div class="flex justify-between items-center border-b border-border-dark pb-4">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-purple-500">analytics</span>
+                Analisa Trend Penimbangan
+            </h3>
+            <div class="flex gap-2 bg-background-dark rounded-lg p-1">
+                <button onclick="loadChart('daily')" id="btn-daily" class="px-3 py-1 rounded text-xs font-bold text-text-secondary hover:bg-white/10">Harian</button>
+                <button onclick="loadChart('weekly')" id="btn-weekly" class="px-3 py-1 rounded text-xs font-bold text-text-secondary hover:bg-white/10">Mingguan</button>
+                <button onclick="loadChart('monthly')" id="btn-monthly" class="px-3 py-1 rounded text-xs font-bold text-text-secondary hover:bg-white/10">Bulanan</button>
+            </div>
+        </div>
+        <div class="h-64 w-full relative">
+            <canvas id="weightChart"></canvas>
+        </div>
+    </div>
 
     <style>
         @media print {
@@ -288,6 +309,9 @@
     </div>
 </div>
 
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
     // Update document title for unique filename when printing
     (function() {
@@ -295,6 +319,100 @@
         const end = "{{ .EndDate }}";
         document.title = `Laporan_Transaksi_${start}_sd_${end}`;
     })();
+
+    let myChart = null;
+
+    function toggleCharts() {
+        const sec = document.getElementById('chart-section');
+        if (sec.classList.contains('hidden')) {
+            sec.classList.remove('hidden');
+            sec.classList.add('flex');
+            loadChart('daily');
+        } else {
+            sec.classList.add('hidden');
+            sec.classList.remove('flex');
+        }
+    }
+
+    async function loadChart(period) {
+        // Update Active Button
+        ['daily','weekly','monthly'].forEach(p => {
+            const btn = document.getElementById(`btn-${p}`);
+            if(p === period) {
+                btn.classList.add('bg-primary', 'text-white');
+                btn.classList.remove('text-text-secondary');
+            } else {
+                btn.classList.remove('bg-primary', 'text-white');
+                btn.classList.add('text-text-secondary');
+            }
+        });
+
+        try {
+            const res = await fetch(`/api/reports/charts?period=${period}`);
+            const data = await res.json();
+            renderChart(data.labels, data.data);
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    function renderChart(labels, data) {
+        const ctx = document.getElementById('weightChart').getContext('2d');
+
+        if (myChart) {
+            myChart.destroy();
+        }
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(25, 109, 236, 0.5)'); // Primary color
+        gradient.addColorStop(1, 'rgba(25, 109, 236, 0)');
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Total Berat Bersih (kg)',
+                    data: data,
+                    borderColor: '#196DEC',
+                    backgroundColor: gradient,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#196DEC',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#9ca3af'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#9ca3af'
+                        }
+                    }
+                }
+            }
+        });
+    }
 </script>
 
 {{ template "footer" . }}
