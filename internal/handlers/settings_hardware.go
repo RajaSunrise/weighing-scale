@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"stoneweigh/internal/models"
 
@@ -22,6 +23,7 @@ func (s *Server) GetStations(c *gin.Context) {
 func (s *Server) CreateStation(c *gin.Context) {
 	var input models.WeighingStation
 	if err := c.ShouldBindJSON(&input); err != nil {
+		fmt.Printf("CreateStation JSON Bind Error: %v\n", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

@@ -78,8 +78,10 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 			api.POST("/transaction", server.SaveTransaction)
 			api.POST("/anpr/trigger", server.TriggerANPR)
 			api.GET("/scales/stream", server.StreamScaleData)
+			api.GET("/camera/stream", server.ProxyVideo)           // New RTSP proxy
 			api.GET("/vehicles/details", server.GetVehicleDetails) // Allow operators to fetch details
 			api.GET("/vehicles/search", server.SearchVehicles)     // Autocomplete
+			api.GET("/reports/charts", server.GetReportCharts)     // Chart Data
 		}
 
 		// Admin Only Routes - Pages
