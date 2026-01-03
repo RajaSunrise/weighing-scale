@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html class="dark" lang="id">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Mitra Batu Split - Artikel</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Noto+Sans:wght@400;500;700&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#d97706",
+                        "primary-dark": "#b45309",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#18181b",
+                        "surface-dark": "#27272a",
+                        "border-dark": "#3f3f46",
+                        "text-secondary": "#a1a1aa",
+                        "card-dark": "#192433"
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                        "serif": ["Newsreader", "serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #18181b; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white antialiased overflow-x-hidden flex flex-col min-h-screen">
+
+    <header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-b-border-dark bg-[#18181b]/95 backdrop-blur-md px-4 md:px-10 py-3">
+        <a href="index.html" class="flex items-center gap-4 text-white cursor-pointer">
+            <div class="size-8 text-primary">
+                <span class="material-symbols-outlined text-3xl">terrain</span>
+            </div>
+            <h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">Mitra Batu Split</h2>
+        </a>
+
+        <!-- Desktop Nav -->
+        <div class="hidden lg:flex flex-1 justify-end gap-8 items-center">
+            <nav class="flex items-center gap-6">
+                <a href="index.html" class="text-sm font-medium leading-normal transition-colors text-slate-300 hover:text-primary">Beranda</a>
+<a href="produk.html" class="text-sm font-medium leading-normal transition-colors text-slate-300 hover:text-primary">Produk</a>
+<a href="galeri.html" class="text-sm font-medium leading-normal transition-colors text-slate-300 hover:text-primary">Galeri</a>
+<a href="tentang.html" class="text-sm font-medium leading-normal transition-colors text-slate-300 hover:text-primary">Tentang</a>
+<a href="artikel.html" class="text-sm font-medium leading-normal transition-colors text-primary font-bold">Berita</a>
+<a href="kontak.html" class="text-sm font-medium leading-normal transition-colors text-slate-300 hover:text-primary">Kontak</a>
+
+            </nav>
+            <div class="flex items-center gap-4">
+                 <a href="faq.html" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-primary hover:bg-amber-700 transition-colors text-white text-sm font-bold leading-normal tracking-[0.015em]">
+                    <span class="truncate">Pusat Bantuan</span>
+                </a>
+                <a href="login.html" class="flex cursor-pointer items-center justify-center rounded-lg h-9 px-4 border border-border-dark hover:bg-surface-dark transition-colors text-white text-sm font-bold">
+                    Login
+                </a>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Toggle -->
+        <button id="mobile-menu-btn" class="lg:hidden text-white">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+    </header>
+
+    <!-- Mobile Menu Dropdown -->
+    <div id="mobile-menu" class="hidden lg:hidden fixed top-16 left-0 w-full bg-[#18181b] border-b border-border-dark z-40 p-4 flex flex-col gap-4 shadow-xl">
+        <a href="index.html" class="text-slate-300 hover:text-primary py-2 text-sm font-medium">Beranda</a>
+<a href="produk.html" class="text-slate-300 hover:text-primary py-2 text-sm font-medium">Produk</a>
+<a href="galeri.html" class="text-slate-300 hover:text-primary py-2 text-sm font-medium">Galeri</a>
+<a href="tentang.html" class="text-slate-300 hover:text-primary py-2 text-sm font-medium">Tentang</a>
+<a href="artikel.html" class="text-slate-300 hover:text-primary py-2 text-sm font-medium">Berita</a>
+<a href="kontak.html" class="text-slate-300 hover:text-primary py-2 text-sm font-medium">Kontak</a>
+<a href="visi-misi.html" class="text-slate-300 hover:text-primary py-2 text-sm font-medium">Visi & Misi</a>
+<a href="syarat-ketentuan.html" class="text-slate-300 hover:text-primary py-2 text-sm font-medium">Syarat & Ketentuan</a>
+<a href="privasi.html" class="text-slate-300 hover:text-primary py-2 text-sm font-medium">Kebijakan Privasi</a>
+<a href="faq.html" class="text-slate-300 hover:text-primary py-2 text-sm font-medium">FAQ</a>
+<a href="login.html" class="text-slate-300 hover:text-primary py-2 text-sm font-medium">Login</a>
+
+    </div>
+    <main class="flex-1 flex flex-col">
+<div class="flex-1 flex flex-col items-center w-full py-8 px-4 md:px-10 lg:px-40">
+    <div class="flex flex-col max-w-[1200px] w-full gap-8">
+        <section class="w-full">
+            <div class="flex flex-col md:flex-row min-h-[480px] w-full overflow-hidden rounded-xl bg-surface-dark relative group cursor-pointer shadow-lg shadow-black/20">
+                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuABKvx13CMP4ep8mgm4gTtd7Rw_W77HASDKnCu5OUdbK7N4Ux3KXPdIZ7RLjPMtVILrOBlBMiWFV1OM7Sxpdpb2vvpu5w1zrodnRFxQtBQvQ1ko-fxVXZIyHxCqL7bofWJU5T5iA_t9RJFu65mj2LJEV06xhoxxjPYvq2kGiJqFqdBqIOJT1bKz72FFCzd6TaKEvr_LRWoKvgQUZtnNP-Q_XqDXZO9Fxzx-2A00ETDJelMLsO1X542HLtinWTkeP4UIqpITK7P9MeY')"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/80 to-transparent md:bg-gradient-to-r md:from-background-dark md:via-background-dark/90 md:to-transparent/20"></div>
+                <div class="relative z-10 flex flex-col justify-end md:justify-center p-6 md:p-12 w-full md:w-2/3 lg:w-1/2 gap-6">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 w-fit backdrop-blur-sm">
+                        <span class="size-2 rounded-full bg-primary animate-pulse"></span>
+                        <span class="text-primary text-xs font-bold uppercase tracking-wider">Update Operasional Q3</span>
+                    </div>
+                    <div class="space-y-4">
+                        <h1 class="text-white text-3xl md:text-5xl font-bold leading-tight tracking-tight">Peningkatan Kapasitas Produksi Crushing Plant #2</h1>
+                        <p class="text-slate-300 text-lg leading-relaxed font-normal">Kami telah menyelesaikan instalasi mesin pemecah batu terbaru untuk memenuhi tingginya permintaan material batu split 1-2.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="w-full">
+            <div class="flex items-center gap-2 mb-6">
+                <span class="material-symbols-outlined text-primary">feed</span>
+                <h2 class="text-white text-2xl font-bold">Artikel Terbaru</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <article class="group flex flex-col bg-surface-dark rounded-lg overflow-hidden border border-border-dark hover:border-primary/50 transition-all shadow-sm hover:shadow-md">
+                    <div class="relative w-full aspect-video overflow-hidden">
+                        <div class="w-full h-full bg-center bg-cover transition-transform duration-500 group-hover:scale-105" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD1IYse7bMhowrqou6JW79h49XrKd9Lqpe2Xv6gKugQlz7Rm01fisrc4wYjUIBUQAP3X0x-z2fRhTvu94G-CIXELWf2m-ibPpqCi3xdJvarmZypFjQB-J3VxQwe5skJ07ZvpCkeF6LEWN6_kCNmGfYKLYQuj_Mj0xsn4V9QLF263Q69w9i_yAD7aqcZnDP7WhOMXI_xYRcKuBOHkfNVpPgxcm9aLyBAMMPjftWnNH9W_b9hj1V3ERKLkuNqhxWG7rIvK-NUrvHmnzE')"></div>
+                        <div class="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded">Logistik</div>
+                    </div>
+                    <div class="flex flex-col p-4 gap-3 flex-1">
+                        <div class="text-xs font-medium text-slate-400">24 Okt 2023</div>
+                        <h3 class="text-white text-lg font-bold leading-tight group-hover:text-primary transition-colors">Strategi Distribusi Batu Split</h3>
+                    </div>
+                </article>
+                <article class="group flex flex-col bg-surface-dark rounded-lg overflow-hidden border border-border-dark hover:border-primary/50 transition-all shadow-sm hover:shadow-md">
+                    <div class="relative w-full aspect-video overflow-hidden">
+                        <div class="w-full h-full bg-center bg-cover transition-transform duration-500 group-hover:scale-105" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDEQmBq6ycOfnB2dmIveFhxsMSvJseCNp7fQy31pvOHBeO53laIW9kIbJ34pap7hhVP-oiCpDfBjj2-ky6z0PtFjITjgYhDAYXBCC_hCc1nKwKFauX8I1XHZvq4A_3q_rMbBTSsXuXGmjiiOw_9L8JhNUyng8FOfCvOteKSoeffT8WbGkp5XGDv60eicguNq4Hm1wFE_qAnOymnexn60cePli4-ucCeprFe6h8SUjFJrmGIUUFDGym_gttcThVpzOai6nzlwm3MRvQ')"></div>
+                        <div class="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded">Regulasi</div>
+                    </div>
+                    <div class="flex flex-col p-4 gap-3 flex-1">
+                        <div class="text-xs font-medium text-slate-400">20 Okt 2023</div>
+                        <h3 class="text-white text-lg font-bold leading-tight group-hover:text-primary transition-colors">Pembaruan Izin Usaha (IUP)</h3>
+                    </div>
+                </article>
+                <article class="group flex flex-col bg-surface-dark rounded-lg overflow-hidden border border-border-dark hover:border-primary/50 transition-all shadow-sm hover:shadow-md">
+                    <div class="relative w-full aspect-video overflow-hidden">
+                        <div class="w-full h-full bg-center bg-cover transition-transform duration-500 group-hover:scale-105" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAtO_W2WqQIwHNczJFOTB8ZsT1xvLlyCHBmOsdxrpj6904-O_Ns41k6ow91eLQdupXuArTcT5c8bp4tnN5DeJsox1Jkmsrux5s9JwCCgaeA9nDTl1fjQoX-q2wHWwyaZme_VuRaWjxvy5qtQKTOl4UOJfyAR81OBB7E9zgnyIIv1esClCN3uKC5NbuWFNsCd8q3Xd6WEHVtEkRu6MIKj36_ckrkPvXuimhOguJnNAjr6v5jbu8AZ_MBHh1_iNQ81t35MCfJ9MyY7hc')"></div>
+                        <div class="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded">Teknologi</div>
+                    </div>
+                    <div class="flex flex-col p-4 gap-3 flex-1">
+                        <div class="text-xs font-medium text-slate-400">15 Okt 2023</div>
+                        <h3 class="text-white text-lg font-bold leading-tight group-hover:text-primary transition-colors">Digitalisasi Laporan Produksi</h3>
+                    </div>
+                </article>
+                <article class="group flex flex-col bg-surface-dark rounded-lg overflow-hidden border border-border-dark hover:border-primary/50 transition-all shadow-sm hover:shadow-md">
+                    <div class="relative w-full aspect-video overflow-hidden">
+                        <div class="w-full h-full bg-center bg-cover transition-transform duration-500 group-hover:scale-105" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCa4G9VKX6D78X53apv69aqxkWx-OKjOAmZWDVfMRkz_W6eHeu7HBMbuv5uOtBCYqUsPLKjXtsgrEBnCtaGZ_0oZ6cz7CAxfZ4JUXYwAkdxx1BLM8djkxTY7QKnlP7NgEkUzc3dgYjs0v58VCfG7lDZBAEnN38hbSKp4JT60UKMFsGWCdEllc_5LJX_g_L-jl0rcO20DgzxyXjEoefaQ3ZP0T7ajfDI1lHkiwyMVgiZwuHGL47V1oL-kY87ZOl3En1qsRHQalrD1t4')"></div>
+                        <div class="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded">Inovasi</div>
+                    </div>
+                    <div class="flex flex-col p-4 gap-3 flex-1">
+                        <div class="text-xs font-medium text-slate-400">10 Okt 2023</div>
+                        <h3 class="text-white text-lg font-bold leading-tight group-hover:text-primary transition-colors">IoT dalam Pemantauan Alat Berat</h3>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </div>
+</div>
+</main>
+    <footer class="border-t border-border-dark bg-[#18181b] py-8 px-4 mt-auto">
+        <div class="max-w-[1280px] mx-auto w-full">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="size-8 text-primary">
+                        <span class="material-symbols-outlined text-2xl">terrain</span>
+                    </div>
+                    <span class="text-white font-bold text-lg">Mitra Batu Split</span>
+                </div>
+                <div class="flex flex-wrap justify-center gap-6">
+                    <a href="visi-misi.html" class="text-text-secondary hover:text-white text-sm transition-colors">Visi & Misi</a>
+                    <a href="syarat-ketentuan.html" class="text-text-secondary hover:text-white text-sm transition-colors">Syarat & Ketentuan</a>
+                    <a href="privasi.html" class="text-text-secondary hover:text-white text-sm transition-colors">Privasi</a>
+                    <a href="faq.html" class="text-text-secondary hover:text-white text-sm transition-colors">FAQ</a>
+                </div>
+            </div>
+            <div class="border-t border-border-dark pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-text-secondary text-sm">© 2024 Mitra Batu Split Indonesia. All rights reserved.</p>
+                <div class="flex gap-4">
+                    <a href="#" class="text-text-secondary hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">public</span></a>
+                    <a href="#" class="text-text-secondary hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">mail</span></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script>
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const icon = menuBtn.querySelector('span');
+
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+            if(mobileMenu.classList.contains('hidden')){
+                icon.innerText = 'menu';
+            } else {
+                icon.innerText = 'close';
+            }
+        });
+    </script>
+</body>
+</html>
