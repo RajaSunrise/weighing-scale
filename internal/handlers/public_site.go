@@ -8,9 +8,7 @@ import (
 // Public Site Handlers
 
 func (s *Server) ShowHome(c *gin.Context) {
-	// Note: Because Go templates are registered by filename (base name),
-	// "web/templates/public/index.html" is registered as "index.html".
-	c.HTML(http.StatusOK, "index.html", gin.H{})
+	c.HTML(http.StatusOK, "home.html", gin.H{})
 }
 
 func (s *Server) ShowProduct(c *gin.Context) {

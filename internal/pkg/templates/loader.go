@@ -61,7 +61,7 @@ func LoadTemplates(r *gin.Engine, rootDir string) error {
 
 	tmpl := template.New("")
 	// We must register the FuncMap BEFORE parsing
-	tmpl.FuncMap(r.FuncMap)
+	tmpl.Funcs(r.FuncMap)
 
 	// Parse files
 	_, err = tmpl.ParseFiles(files...)
@@ -71,4 +71,9 @@ func LoadTemplates(r *gin.Engine, rootDir string) error {
 
 	r.SetHTMLTemplate(tmpl)
 	return nil
+}
+
+// LoadTemplatesFromString loads templates from a string for testing purposes.
+func LoadTemplatesFromString(templateString string) (*template.Template, error) {
+	return template.New("").Parse(templateString)
 }
