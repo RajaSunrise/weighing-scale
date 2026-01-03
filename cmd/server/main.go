@@ -19,6 +19,9 @@ import (
 )
 
 func main() {
+	// Optimizing OpenCV FFMPEG Options for RTSP (TCP preferred to avoid timeout)
+	os.Setenv("OPENCV_FFMPEG_CAPTURE_OPTIONS", "rtsp_transport;tcp")
+
 	// Set timezone to Asia/Jakarta
 	if tz, err := time.LoadLocation("Asia/Jakarta"); err == nil {
 		time.Local = tz
