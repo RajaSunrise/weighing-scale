@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html class="dark" lang="id">
+<head>
+    <title>Mitra Batu Split - Tentang Kami</title>
+    {{ template "public_head" . }}
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white antialiased overflow-x-hidden flex flex-col min-h-screen">
+    {{ template "public_navbar" dict "active" "tentang" }}
+
+    <main class="flex-1 flex flex-col">
+
+<div class="w-full flex flex-col items-center">
+    <div class="w-full max-w-[960px] py-10 px-4">
+        <div class="relative flex min-h-[400px] flex-col gap-6 overflow-hidden rounded-xl bg-cover bg-center bg-no-repeat items-center justify-center p-8 text-center" style="background-image: linear-gradient(rgba(17, 24, 34, 0.7) 0%, rgba(17, 24, 34, 0.9) 100%), url('https://lh3.googleusercontent.com/aida-public/AB6AXuAxlM3RiLxKaCeX9a57NiVC6zYl7eRFlTD4c1xQMx7Y69Kbv98J59fT5RJQPHfX6x4NRif4KxaUN4DkAwgl1hGRG5uKGtBAmHt1uwc2apHr0wEoSBjkroZ00jo5D4KJfn5wfpvnqsQVS60-o7Ev8UyNyI-jQZKfk2nQIa6K1XKKCuNSD1LiGx7Ag5MJfU73bnJIp9k90kJN_H6mskUYI5r5w5yzKs-hrVr9_Dfu4rU3vBXyfvZlLppaZGvwFMdKSCmC-dKJ_eibktc')">
+            <div class="flex flex-col gap-4 max-w-[750px] z-10">
+                <h1 class="text-white text-4xl font-black leading-tight tracking-[-0.033em] md:text-5xl">Fondasi Kokoh untuk Infrastruktur Masa Depan</h1>
+                <h2 class="text-text-secondary text-base font-normal leading-relaxed md:text-lg">Mitra Batu Split adalah perusahaan pertambangan dan pengolahan batu split terkemuka. Kami mendedikasikan diri untuk menyediakan material konstruksi berkualitas tinggi.</h2>
+            </div>
+            <a href="/produk" class="z-10 flex cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-6 bg-primary text-white text-sm font-bold leading-normal hover:bg-amber-600 transition-colors">Lihat Katalog Produk</a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 py-8">
+            <div class="flex flex-col gap-2 rounded-lg p-6 bg-surface-dark border border-border-dark hover:border-primary/50 transition-colors">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="material-symbols-outlined text-primary">history</span>
+                    <p class="text-text-secondary text-base font-medium">Pengalaman</p>
+                </div>
+                <p class="text-white tracking-light text-3xl font-bold">15+ Tahun</p>
+            </div>
+            <div class="flex flex-col gap-2 rounded-lg p-6 bg-surface-dark border border-border-dark hover:border-primary/50 transition-colors">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="material-symbols-outlined text-primary">conveyor_belt</span>
+                    <p class="text-text-secondary text-base font-medium">Kapasitas</p>
+                </div>
+                <p class="text-white tracking-light text-3xl font-bold">50k Ton/Bln</p>
+            </div>
+            <div class="flex flex-col gap-2 rounded-lg p-6 bg-surface-dark border border-border-dark hover:border-primary/50 transition-colors">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="material-symbols-outlined text-primary">handshake</span>
+                    <p class="text-text-secondary text-base font-medium">Klien Percaya</p>
+                </div>
+                <p class="text-white tracking-light text-3xl font-bold">200+ Proyek</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    </main>
+
+    {{ template "public_footer" . }}
+</body>
+</html>

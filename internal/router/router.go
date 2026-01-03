@@ -2,6 +2,7 @@ package router
 
 import (
 	"encoding/json"
+	"errors"
 	"html/template"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 
 	"stoneweigh/internal/handlers"
 	"stoneweigh/internal/middleware"
+	"stoneweigh/internal/pkg/templates"
 )
 
 func SetupRouter(server *handlers.Server) *gin.Engine {
@@ -52,13 +54,43 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 			a, _ := json.Marshal(v)
 			return template.JS(a)
 		},
+		"dict": func(values ...interface{}) (map[string]interface{}, error) {
+			if len(values)%2 != 0 {
+				return nil, errors.New("invalid dict call")
+			}
+			dict := make(map[string]interface{}, len(values)/2)
+			for i := 0; i < len(values); i += 2 {
+				key, ok := values[i].(string)
+				if !ok {
+					return nil, errors.New("dict keys must be strings")
+				}
+				dict[key] = values[i+1]
+			}
+			return dict, nil
+		},
 	})
 	r.Static("/static", "./web/static")
 	// Fix for legacy/broken links pointing to /web/static
 	r.Static("/web/static", "./web/static")
-	r.LoadHTMLGlob("web/templates/*")
 
-	// 5. Public Routes
+	// Load templates recursively using custom helper
+	if err := templates.LoadTemplates(r, "web/templates"); err != nil {
+		panic("Failed to load templates: " + err.Error())
+	}
+
+	// 5. Public Routes (Site)
+	r.GET("/", server.ShowHome)
+	r.GET("/produk", server.ShowProduct)
+	r.GET("/galeri", server.ShowGallery)
+	r.GET("/tentang", server.ShowAbout)
+	r.GET("/artikel", server.ShowNews)
+	r.GET("/kontak", server.ShowContact)
+	r.GET("/faq", server.ShowFAQ)
+	r.GET("/visi-misi", server.ShowVision)
+	r.GET("/syarat-ketentuan", server.ShowTerms)
+	r.GET("/privasi", server.ShowPrivacy)
+
+	// Auth Routes
 	r.GET("/login", server.ShowLogin)
 	r.POST("/login", server.Login)
 	r.GET("/logout", server.Logout)
@@ -71,7 +103,7 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	protected.Use(middleware.AuthRequired())
 	{
 		// Dashboard & Weighing
-		protected.GET("/", server.ShowDashboard)
+		// Note: The root "/" is now the public site. Dashboard is at /dashboard.
 		protected.GET("/dashboard", server.ShowDashboard)
 		protected.GET("/weighing", server.ShowWeighing)
 		protected.GET("/reports", server.ShowReports)

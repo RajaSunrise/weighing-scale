@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html class="dark" lang="id">
+<head>
+    <title>Mitra Batu Split - Beranda</title>
+    {{ template "public_head" . }}
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white antialiased overflow-x-hidden flex flex-col min-h-screen">
+    {{ template "public_navbar" dict "active" "home" }}
+
+    <main class="flex-1 flex flex-col">
+
+<div class="w-full flex flex-col items-center">
+    <div class="w-full max-w-7xl px-4 md:px-10 flex flex-col gap-16 py-10">
+        <section class="@container">
+            <div class="relative overflow-hidden rounded-xl bg-cover bg-center bg-no-repeat min-h-[550px] flex flex-col justify-end p-8 md:p-12 gap-6 shadow-2xl" style="background-image: linear-gradient(rgba(28, 25, 23, 0.4) 0%, rgba(28, 25, 23, 0.95) 100%), url('https://lh3.googleusercontent.com/aida-public/AB6AXuCmgQEh9LykjMntbBRjTy0NFUow_cQ-Hav51r9Az7qgXeNAp-XEr5U0F0IPqEZ1guROdmHp6Djd4eESNpwYYh3A4pJSa5GLuqIAB2rHvNPOzexhzNcNyfqa8DpFzSAC4WFCj8BszNLm7eQ4Ax93UyBtjSftqT59OOORoRlcEBL0v3sdZD_lfvWPCcstgVReZfSpdjFyzAVsbRqvMU-sfsQZDueU-ICpsplM6FEqWZUeg_lPakyc5F-oY8dotxqKPkqGwGysAaSiSi4')">
+                <div class="flex flex-col gap-4 max-w-3xl">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 w-fit backdrop-blur-sm">
+                        <span class="material-symbols-outlined text-primary text-sm">verified_user</span>
+                        <span class="text-primary text-xs font-bold uppercase tracking-wide">Pemasok Batu Split Terpercaya</span>
+                    </div>
+                    <h1 class="text-white text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight">
+                        Pondasi Kokoh Dimulai dari<br/><span class="text-primary">Material Berkualitas.</span>
+                    </h1>
+                    <p class="text-slate-200 text-base md:text-lg font-normal leading-relaxed max-w-2xl">
+                        Mitra Batu Split menyediakan batu split, abu batu, dan base course berkualitas tinggi langsung dari lokasi tambang kami untuk kebutuhan infrastruktur nasional.
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-4 pt-4">
+                    <a href="/produk" class="flex items-center justify-center rounded-lg h-12 px-6 bg-primary text-white text-base font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/25">
+                        Lihat Produk
+                    </a>
+                    <a href="/galeri" class="flex items-center justify-center rounded-lg h-12 px-6 bg-white/10 backdrop-blur-md border border-white/20 text-white text-base font-bold hover:bg-white/20 transition-all">
+                        Lihat Galeri
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="flex flex-col gap-2 rounded-xl p-6 border border-border-dark bg-surface-dark shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between">
+                    <p class="text-slate-400 text-sm font-medium">Kapasitas Produksi</p>
+                    <span class="material-symbols-outlined text-primary">conveyor_belt</span>
+                </div>
+                <p class="text-white text-3xl font-bold">75.000 Ton</p>
+                <p class="text-xs text-slate-400 mt-2">Output per Bulan</p>
+            </div>
+            <div class="flex flex-col gap-2 rounded-xl p-6 border border-border-dark bg-surface-dark shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between">
+                    <p class="text-slate-400 text-sm font-medium">Area Tambang</p>
+                    <span class="material-symbols-outlined text-primary">landscape</span>
+                </div>
+                <p class="text-white text-3xl font-bold">120 Hektar</p>
+                <p class="text-xs text-slate-400 mt-2">Terbagi di 3 Zona Eksplorasi</p>
+            </div>
+            <div class="flex flex-col gap-2 rounded-xl p-6 border border-border-dark bg-surface-dark shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between">
+                    <p class="text-slate-400 text-sm font-medium">Mitra Kontraktor</p>
+                    <span class="material-symbols-outlined text-primary">handshake</span>
+                </div>
+                <p class="text-white text-3xl font-bold">150+ Proyek</p>
+                <p class="text-xs text-slate-400 mt-2">Dipercaya BUMN & Swasta</p>
+            </div>
+        </section>
+
+        <section class="flex flex-col gap-10 py-8">
+                <div class="flex flex-col gap-4 md:w-3/4">
+                <h2 class="text-3xl md:text-4xl font-bold text-white leading-tight">Keunggulan Batu Split Kami</h2>
+                <p class="text-lg text-slate-400">Batu andesit kami diolah menggunakan mesin crusher modern untuk menghasilkan agregat yang bersih, kuat, dan kubikal.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="group flex flex-col gap-4 rounded-xl border border-border-dark bg-surface-dark p-8 hover:border-primary/50 transition-colors duration-300">
+                    <div class="size-14 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-4xl">diamond</span>
+                    </div>
+                    <div class="flex flex-col gap-3">
+                        <h3 class="text-xl font-bold text-white">Hard Rock Andesit</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">Kekerasan batuan tinggi dengan tingkat abrasi rendah. Ideal untuk beton mutu tinggi.</p>
+                    </div>
+                </div>
+                <div class="group flex flex-col gap-4 rounded-xl border border-border-dark bg-surface-dark p-8 hover:border-primary/50 transition-colors duration-300">
+                    <div class="size-14 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-4xl">straighten</span>
+                    </div>
+                    <div class="flex flex-col gap-3">
+                        <h3 class="text-xl font-bold text-white">Gradasi Presisi</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">Tersedia berbagai ukuran: Split 1-2, 2-3, 3-5, Abu Batu. Diproses dengan screen modern.</p>
+                    </div>
+                </div>
+                <div class="group flex flex-col gap-4 rounded-xl border border-border-dark bg-surface-dark p-8 hover:border-primary/50 transition-colors duration-300">
+                    <div class="size-14 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-4xl">local_shipping</span>
+                    </div>
+                    <div class="flex flex-col gap-3">
+                        <h3 class="text-xl font-bold text-white">Logistik Cepat</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">Armada dump truck kami siap mengirim material 24/7 ke lokasi proyek Anda.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="rounded-2xl bg-gradient-to-br from-surface-dark to-background-dark border border-border-dark p-8 md:p-16 text-center relative overflow-hidden">
+            <div class="relative z-10 flex flex-col items-center gap-6 max-w-2xl mx-auto">
+                <div class="size-16 rounded-full bg-primary/20 flex items-center justify-center mb-2 border border-primary/30">
+                    <span class="material-symbols-outlined text-primary text-4xl">contact_phone</span>
+                </div>
+                <h2 class="text-3xl md:text-4xl font-bold text-white leading-tight">Butuh Suplai Batu Split untuk Proyek Anda?</h2>
+                <p class="text-slate-400 text-base md:text-lg">Dapatkan penawaran harga terbaik langsung dari tambang. Konsultasikan kebutuhan spesifikasi material Anda.</p>
+                <div class="flex flex-col sm:flex-row gap-4 w-full justify-center pt-4">
+                    <a href="/kontak" class="flex items-center justify-center h-12 px-8 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">Minta Penawaran</a>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+    </main>
+
+    {{ template "public_footer" . }}
+</body>
+</html>
