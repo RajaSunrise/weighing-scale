@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -67,6 +68,9 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 				dict[key] = values[i+1]
 			}
 			return dict, nil
+		},
+		"currentYear": func() int {
+			return time.Now().Year()
 		},
 	})
 	r.Static("/static", "./web/static")

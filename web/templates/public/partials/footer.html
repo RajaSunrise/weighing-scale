@@ -1,61 +1,15 @@
 {{ define "public_footer" }}
-    <footer class="border-t border-border-dark bg-[#18181b] py-8 px-4 mt-auto">
-        <div class="max-w-[1280px] mx-auto w-full">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-6 mb-6">
-                <div class="flex items-center gap-3">
-                    <div class="size-8 text-primary">
-                        <span class="material-symbols-outlined text-2xl">terrain</span>
-                    </div>
-                    <span class="text-white font-bold text-lg">Mitra Batu Split</span>
-                </div>
-                <div class="flex flex-wrap justify-center gap-6">
-                    <a href="/visi-misi" class="text-text-secondary hover:text-white text-sm transition-colors">Visi & Misi</a>
-                    <a href="/syarat-ketentuan" class="text-text-secondary hover:text-white text-sm transition-colors">Syarat & Ketentuan</a>
-                    <a href="/privasi" class="text-text-secondary hover:text-white text-sm transition-colors">Privasi</a>
-                    <a href="/faq" class="text-text-secondary hover:text-white text-sm transition-colors">FAQ</a>
-                </div>
+<footer class="bg-gray-800 text-white py-8">
+    <div class="container mx-auto px-6">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+            <div class="mb-4 md:mb-0">
+                <p>&copy; {{ currentYear }} Mitra Batu Split. All rights reserved.</p>
             </div>
-            <div class="border-t border-border-dark pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
-                <p class="text-text-secondary text-sm">© 2024 Mitra Batu Split Indonesia. All rights reserved.</p>
-                <div class="flex gap-4">
-                    <a href="#" class="text-text-secondary hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">public</span></a>
-                    <a href="#" class="text-text-secondary hover:text-primary transition-colors"><span class="material-symbols-outlined text-lg">mail</span></a>
-                </div>
+            <div class="flex space-x-4">
+                <a href="/privasi" class="hover:text-gray-300">Kebijakan Privasi</a>
+                <a href="/syarat-ketentuan" class="hover:text-gray-300">Syarat & Ketentuan</a>
             </div>
         </div>
-    </footer>
-    <script>
-        // Mobile Menu Toggle
-        const menuBtn = document.getElementById('mobile-menu-btn');
-        const mobileMenu = document.getElementById('mobile-menu');
-        const icon = menuBtn.querySelector('span');
-
-        if(menuBtn){
-            menuBtn.addEventListener('click', () => {
-                mobileMenu.classList.toggle('hidden');
-                if(mobileMenu.classList.contains('hidden')){
-                    icon.innerText = 'menu';
-                } else {
-                    icon.innerText = 'close';
-                }
-            });
-        }
-
-        // Theme Toggle Logic
-        const toggleBtn = document.getElementById('theme-toggle');
-        const toggleBtnMobile = document.getElementById('theme-toggle-mobile');
-
-        function toggleTheme() {
-             if (document.documentElement.classList.contains('dark')) {
-                document.documentElement.classList.remove('dark');
-                localStorage.theme = 'light';
-            } else {
-                document.documentElement.classList.add('dark');
-                localStorage.theme = 'dark';
-            }
-        }
-
-        if(toggleBtn) toggleBtn.addEventListener('click', toggleTheme);
-        if(toggleBtnMobile) toggleBtnMobile.addEventListener('click', toggleTheme);
-    </script>
+    </div>
+</footer>
 {{ end }}
