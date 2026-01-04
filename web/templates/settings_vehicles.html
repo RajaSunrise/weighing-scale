@@ -1,6 +1,7 @@
 {{ template "header" . }}
 
 <div class="h-full flex flex-col p-6 gap-6">
+    <input type="hidden" id="csrf_token" value="{{.csrf_token}}">
     <header class="flex justify-between items-center">
         <div>
             <h2 class="text-2xl font-bold text-white">Manajemen Kendaraan</h2>
@@ -96,9 +97,13 @@ document.getElementById('addVehicleForm').addEventListener('submit', async (e) =
     // Convert tare to number
     data.default_tare = parseFloat(data.default_tare) || 0;
 
+    const csrfToken = document.getElementById('csrf_token').value;
     const res = await fetch('/api/vehicles', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        },
         body: JSON.stringify(data)
     });
 
@@ -113,7 +118,13 @@ document.getElementById('addVehicleForm').addEventListener('submit', async (e) =
 
 async function deleteVehicle(id) {
     if(!confirm("Anda yakin?")) return;
-    await fetch('/api/vehicles/' + id, { method: 'DELETE' });
+    const csrfToken = document.getElementById('csrf_token').value;
+    await fetch('/api/vehicles/' + id, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken
+        }
+    });
     loadVehicles();
 }
 </script>

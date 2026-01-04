@@ -1,6 +1,7 @@
 {{ template "header" . }}
 
 <div class="h-full flex flex-col p-6 gap-6">
+    <input type="hidden" id="csrf_token" value="{{.csrf_token}}">
     <header class="flex justify-between items-center">
         <div>
             <h2 class="text-2xl font-bold text-white">Konfigurasi Hardware</h2>
@@ -219,10 +220,14 @@ document.getElementById('station-form').addEventListener('submit', async (e) => 
 
     const url = id ? `/api/stations/${id}` : '/api/stations';
     const method = id ? 'PUT' : 'POST';
+    const csrfToken = document.getElementById('csrf_token').value;
 
     const res = await fetch(url, {
         method: method,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        },
         body: JSON.stringify(data)
     });
 
@@ -236,7 +241,13 @@ document.getElementById('station-form').addEventListener('submit', async (e) => 
 
 async function deleteStation(id) {
     if(!confirm('Hapus stasiun ini?')) return;
-    await fetch('/api/stations/'+id, { method: 'DELETE' });
+    const csrfToken = document.getElementById('csrf_token').value;
+    await fetch('/api/stations/'+id, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken
+        }
+    });
     loadStations();
 }
 </script>

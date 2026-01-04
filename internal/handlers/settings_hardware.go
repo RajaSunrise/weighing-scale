@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	csrf "github.com/utrack/gin-csrf"
 )
 
 // === Weighing Station / Hardware Config ===
@@ -103,5 +104,6 @@ func (s *Server) ShowSettingsHardware(c *gin.Context) {
 		"active":      "settings",
 		"showNav":     true,
 		"CurrentUser": fullName,
+		"csrf_token":  csrf.GetToken(c),
 	})
 }

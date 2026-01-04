@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	csrf "github.com/utrack/gin-csrf"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -24,6 +25,7 @@ func (s *Server) ShowUsers(c *gin.Context) {
 		"active":      "settings",
 		"showNav":     true,
 		"CurrentUser": fullName,
+		"csrf_token":  csrf.GetToken(c),
 	})
 }
 
