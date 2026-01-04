@@ -11,6 +11,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+	csrf "github.com/utrack/gin-csrf"
 	"golang.org/x/time/rate"
 
 	"stoneweigh/internal/handlers"
@@ -48,6 +49,15 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	r.Use(middleware.RequestLogger())
 	// Rate Limit: 20 requests/second, burst of 50
 	r.Use(middleware.RateLimiter(rate.Limit(20), 50))
+
+	// CSRF Protection
+	r.Use(csrf.Middleware(csrf.Options{
+		Secret: secret,
+		ErrorFunc: func(c *gin.Context) {
+			c.String(400, "CSRF token mismatch")
+			c.Abort()
+		},
+	}))
 
 	// 4. Static Files & Templates
 	r.SetFuncMap(template.FuncMap{
@@ -98,6 +108,7 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	r.GET("/login", server.ShowLogin)
 	r.POST("/login", server.Login)
 	r.GET("/logout", server.Logout)
+	r.GET("/api/captcha", server.GetCaptcha) // New endpoint for refreshing captcha
 	r.GET("/test-search", func(c *gin.Context) {
 		c.File("test_search.html")
 	})
