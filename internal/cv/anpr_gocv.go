@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"gocv.io/x/gocv"
 )
@@ -37,7 +38,10 @@ func NewANPRService(modelPath string) *ANPRService {
 	}
 
 	// Attempt to load the model.
-	// Note: ReadNet expects ONNX format, not .pt (PyTorch)
+	// Note: ReadNet expects ONNX format, not .pt (PyTorch).
+	// This service now assumes the model is a YOLOv8 ONNX model with
+	// output shape roughly [1, 5, 8400] (for 1 class).
+	// Users must convert their .pt model to ONNX using `yolo export model=platdetection.pt format=onnx`.
 	var net gocv.Net
 	var loadErr error
 
@@ -98,12 +102,8 @@ func (s *ANPRService) CaptureAndDetect(cameraSource string) (string, string, err
 		return "", "", fmt.Errorf("failed to read frame from camera")
 	}
 
-	// Save Snapshot
-	filename := fmt.Sprintf("web/static/images/snap_%d.jpg", SystemClock())
-	gocv.IMWrite(filename, img)
-
 	// Perform Detection
-	// Preprocessing: YOLO style
+	// Preprocessing: YOLO style (640x640)
 	blob := gocv.BlobFromImage(img, 1.0/255.0, image.Pt(640, 640), gocv.NewScalar(0, 0, 0, 0), true, false)
 	defer blob.Close()
 
@@ -111,28 +111,161 @@ func (s *ANPRService) CaptureAndDetect(cameraSource string) (string, string, err
 	prob := s.Net.Forward("")
 	defer prob.Close()
 
-	// REAL OCR Implementation using Tesseract CLI
-	// This ensures that the detection is based on the actual image content.
-	// Requires 'tesseract' to be installed on the system.
+	// Parse YOLOv8 Output
+	// Output shape is typically [1, 5, 8400] for 1 class (x, y, w, h, score)
+	// or [1, 4+nc, 8400]
+	// We need to parse this to find the best bounding box.
 
-	out, err := exec.Command("tesseract", filename, "stdout", "--psm", "7").Output()
-	if err != nil {
-		log.Printf("Tesseract OCR failed: %v. Make sure tesseract-ocr is installed.", err)
-		// Fallback to a generic string if OCR fails, to avoid crashing flow
-		return "OCR_FAILED", filename, nil
+	bestBox, found := processYOLOv8Output(prob, img.Cols(), img.Rows())
+
+	var filename string
+	var detectedText string
+
+	if found {
+		// Crop the license plate
+		// Ensure coordinates are within bounds
+		rect := bestBox
+		if rect.Min.X < 0 { rect.Min.X = 0 }
+		if rect.Min.Y < 0 { rect.Min.Y = 0 }
+		if rect.Max.X > img.Cols() { rect.Max.X = img.Cols() }
+		if rect.Max.Y > img.Rows() { rect.Max.Y = img.Rows() }
+
+		// Draw rectangle for debug on original
+		gocv.Rectangle(&img, rect, color.RGBA{0, 255, 0, 0}, 2)
+
+		// Create cropped region for OCR
+		region := img.Region(rect)
+		defer region.Close()
+
+		// Resize for better OCR (upscale)
+		ocrImg := gocv.NewMat()
+		defer ocrImg.Close()
+		gocv.Resize(region, &ocrImg, image.Point{}, 2.0, 2.0, gocv.InterpolationCubic)
+
+		// Save crop for Tesseract
+		cropFilename := fmt.Sprintf("web/static/images/snap_crop_%d.jpg", SystemClock())
+		gocv.IMWrite(cropFilename, ocrImg)
+
+		// Save full image with box
+		filename = fmt.Sprintf("web/static/images/snap_%d.jpg", SystemClock())
+		gocv.IMWrite(filename, img)
+
+		// Run OCR on crop
+		out, err := exec.Command("tesseract", cropFilename, "stdout", "--psm", "7", "-l", "eng").Output()
+		if err == nil {
+			detectedText = strings.TrimSpace(string(out))
+		} else {
+			log.Printf("OCR Failed on crop: %v", err)
+		}
+
+		// Clean up crop file to prevent disk fill-up
+		defer os.Remove(cropFilename)
+
+	} else {
+		// No plate found, save full image and try fallback OCR on full image (risky but better than nothing)
+		filename = fmt.Sprintf("web/static/images/snap_%d.jpg", SystemClock())
+		gocv.IMWrite(filename, img)
+
+		out, err := exec.Command("tesseract", filename, "stdout", "--psm", "11").Output() // PSM 11: Sparse text
+		if err == nil {
+			detectedText = strings.TrimSpace(string(out))
+		}
 	}
 
-	detectedText := strings.TrimSpace(string(out))
 	detectedText = cleanPlateText(detectedText)
-
-	// Draw rectangle on image for debug (simplified as we didn't parse YOLO boxes yet)
-	// In a full implementation, we would use the YOLO boxes to crop the plate before OCR.
-	// For now, we assume the camera is framed on the plate or Tesseract can find it.
-	gocv.Rectangle(&img, image.Rect(100, 100, 300, 200), color.RGBA{0, 255, 0, 0}, 2)
-	gocv.IMWrite(filename, img)
+	if detectedText == "" {
+		detectedText = "NOT FOUND"
+	}
 
 	return detectedText, filename, nil
 }
+
+// processYOLOv8Output parses the output tensor from YOLOv8
+// YOLOv8 Output: [Batch, Dimensions, Anchors] -> [1, 5, 8400] for 1 class
+// Dimensions: CenterX, CenterY, Width, Height, Score
+func processYOLOv8Output(prob gocv.Mat, imgW, imgH int) (image.Rectangle, bool) {
+	// Get dimensions
+	// sizes := prob.Size()
+	// The Mat might be 3D: [1, 5, 8400], but GoCV might return it as 2D [5, 8400] if squeezed?
+	// Usually ReadNet returns [1, 5, 8400]
+	// We need to access raw data.
+
+	// prob.DataPtrFloat32() returns the flat array.
+	// Indexing: [batch][dim][anchor]
+	// We assume batch=1.
+
+	// Shapes logic:
+	// We need to transpose essentially.
+	// Iterate over 8400 anchors.
+	// For each anchor, check score (index 4).
+
+	ptr, err := prob.DataPtrFloat32()
+	if err != nil {
+		log.Println("Error getting data ptr:", err)
+		return image.Rectangle{}, false
+	}
+
+	totalAnchors := 8400
+	numDims := 5 // x, y, w, h, score (assuming 1 class)
+
+	// Check if the output size matches expectation.
+	// If the model has more classes, numDims will be higher (4 + num_classes).
+	// We determine numDims by dividing total elements by 8400.
+	totalElements := prob.Total()
+	if totalElements%totalAnchors == 0 {
+		numDims = totalElements / totalAnchors
+	}
+
+	// YOLOv8 format: [class_prob] is at index 4 onwards.
+	// x,y,w,h are 0,1,2,3.
+
+	var bestScore float32 = 0.4 // Threshold
+	var bestBox image.Rectangle
+	found := false
+
+	// Scale factors (Model is 640x640)
+	scaleX := float32(imgW) / 640.0
+	scaleY := float32(imgH) / 640.0
+
+	// Iterate columns (anchors)
+	for i := 0; i < totalAnchors; i++ {
+		// Calculate score.
+		// The matrix is [Dimensions, Anchors].
+		// So data is laid out: Row 0 (all Xs), Row 1 (all Ys)...
+		// Index for attribute A at anchor I is: A * totalAnchors + I
+
+		// Find max class score
+		var maxClassScore float32 = 0.0
+		// Classes start at index 4
+		for c := 4; c < numDims; c++ {
+			score := ptr[c*totalAnchors + i]
+			if score > maxClassScore {
+				maxClassScore = score
+			}
+		}
+
+		if maxClassScore > bestScore {
+			bestScore = maxClassScore
+			found = true
+
+			cx := ptr[0*totalAnchors + i]
+			cy := ptr[1*totalAnchors + i]
+			w := ptr[2*totalAnchors + i]
+			h := ptr[3*totalAnchors + i]
+
+			// Convert to corners
+			x1 := (cx - w/2) * scaleX
+			y1 := (cy - h/2) * scaleY
+			x2 := (cx + w/2) * scaleX
+			y2 := (cy + h/2) * scaleY
+
+			bestBox = image.Rect(int(x1), int(y1), int(x2), int(y2))
+		}
+	}
+
+	return bestBox, found
+}
+
 
 func cleanPlateText(text string) string {
 	// Keep only alphanumeric and spaces
@@ -146,5 +279,5 @@ func cleanPlateText(text string) string {
 }
 
 func SystemClock() int64 {
-	return 1 // Placeholder
+	return time.Now().UnixNano()
 }
