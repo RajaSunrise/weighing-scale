@@ -16,6 +16,7 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	csrf "github.com/utrack/gin-csrf"
 	"gorm.io/gorm"
 )
 
@@ -109,6 +110,7 @@ func (s *Server) ShowWeighing(c *gin.Context) {
 		"showNav":     true,
 		"CurrentUser": fullName,
 		"Stations":    allowedStations,
+		"csrf_token":  csrf.GetToken(c),
 	})
 }
 
