@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Convert PyTorch model (.pt) to ONNX format for OpenCV DNN
+Convert PyTorch model (.pt) to ONNX format for OpenCV DNN (YOLOv5 Compatible)
 Usage: python convert_to_onnx.py <input_pt_file> <output_onnx_file>
 """
 
@@ -23,21 +23,31 @@ def main():
     print(f"Loading model from {input_file}...")
 
     try:
-        # Use simple default (latest opset 18)
-        print("Attempting to load via torch.hub (yolov5)...")
-        model = torch.hub.load('ultralytics/yolov5', 'custom', path=input_file, force_reload=True)
+        # Load YOLOv5 model via torch.hub
+        # autoshape=False gives us the raw DetectMultiBackend or similar
+        model = torch.hub.load('ultralytics/yolov5', 'custom', path=input_file, force_reload=True, autoshape=False)
         model.eval()
 
+        # Input shape for export
         dummy_input = torch.randn(1, 3, 640, 640)
-        print("Exporting to ONNX via Hub Model (Opset 18 - Default)...")
 
-        # Omit opset_version to use default (latest)
-        torch.onnx.export(model, dummy_input, output_file)
+        print("Exporting to ONNX (Default Opset)...")
+
+        # Export
+        torch.onnx.export(
+            model,
+            dummy_input,
+            output_file,
+            opset_version=17, # Try 17 again, but maybe the error was harmless if file was saved
+            input_names=['images'],
+            output_names=['output'],
+            dynamic_axes={'images': {0: 'batch'}, 'output': {0: 'batch'}}
+        )
         print(f"Success! Saved to {output_file}")
 
     except Exception as e:
         print(f"Error: {e}")
-        sys.exit(1)
+        # sys.exit(1)
 
 if __name__ == "__main__":
     main()

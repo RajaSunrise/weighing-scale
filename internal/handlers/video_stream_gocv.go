@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"image"
 	"net/http"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -136,6 +138,10 @@ func captureLoop(s *SharedStream) {
 		// Force FFMPEG backend to avoid GStreamer frame estimation warnings
 		// Also use TCP for RTSP to prevent UDP timeout warnings
 		// (We set env var once, or assume it's handled, but enforcing API is key)
+		if strings.HasPrefix(s.URL, "rtsp") {
+			os.Setenv("OPENCV_FFMPEG_CAPTURE_OPTIONS", "rtsp_transport;tcp")
+		}
+
 		// 1900 is gocv.VideoCaptureFFmpeg
 		vc, err := gocv.OpenVideoCaptureWithAPI(s.URL, gocv.VideoCaptureFFmpeg)
 		if err != nil {
