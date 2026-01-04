@@ -29,6 +29,7 @@
         </div>
 
         <form id="loginForm" class="space-y-6">
+            <input type="hidden" name="_csrf" value="{{ .csrf_token }}">
             <div>
                 <label class="block text-sm font-medium text-gray-400 mb-2">Username</label>
                 <input type="text" name="username" class="w-full bg-background-dark border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary transition-colors" placeholder="admin" required>
@@ -37,6 +38,16 @@
             <div>
                 <label class="block text-sm font-medium text-gray-400 mb-2">Password</label>
                 <input type="password" name="password" class="w-full bg-background-dark border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary transition-colors" placeholder="••••••••" required>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-2">Kode Keamanan</label>
+                <div class="flex gap-4 mb-2">
+                    <img id="captcha-img" src="{{ .captchaB64 }}" alt="Captcha" class="h-12 rounded bg-white/5 cursor-pointer" onclick="refreshCaptcha()" title="Klik untuk ganti gambar">
+                    <input type="hidden" id="captcha-id" name="captcha_id" value="{{ .captchaID }}">
+                    <button type="button" onclick="refreshCaptcha()" class="text-xs text-primary hover:underline">Ganti Gambar</button>
+                </div>
+                <input type="text" name="captcha" class="w-full bg-background-dark border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary transition-colors" placeholder="Masukkan angka di atas" required>
             </div>
 
             <div id="error-msg" class="text-red-500 text-sm text-center hidden">Username atau Password salah</div>
@@ -48,15 +59,39 @@
     </div>
 
     <script>
+        async function refreshCaptcha() {
+            try {
+                const res = await fetch('/api/captcha');
+                const data = await res.json();
+                if (data.id && data.b64) {
+                    document.getElementById('captcha-img').src = data.b64;
+                    document.getElementById('captcha-id').value = data.id;
+                }
+            } catch (e) {
+                console.error("Gagal refresh captcha", e);
+            }
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
+
+            // Note: CSRF Middleware in Gin usually expects X-CSRF-TOKEN header or form field.
+            // Since we are sending JSON, we must put it in the header if middleware requires it,
+            // OR ensure middleware reads from body/query too.
+            // 'utrack/gin-csrf' checks header 'X-CSRF-TOKEN' or form '_csrf'.
+            // Since we send JSON, we should extract _csrf and send it as header.
+
             const data = Object.fromEntries(formData);
+            const csrfToken = data._csrf;
 
             try {
                 const response = await fetch('/login', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
                     body: JSON.stringify(data)
                 });
 
@@ -68,9 +103,13 @@
                     const errorEl = document.getElementById('error-msg');
                     errorEl.innerText = result.error || 'Login gagal';
                     errorEl.classList.remove('hidden');
+                    // Refresh captcha on failure to prevent reuse
+                    refreshCaptcha();
                 }
             } catch (err) {
                 console.error(err);
+                document.getElementById('error-msg').innerText = "Terjadi kesalahan sistem";
+                document.getElementById('error-msg').classList.remove('hidden');
             }
         });
     </script>
