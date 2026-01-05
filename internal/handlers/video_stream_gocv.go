@@ -140,12 +140,26 @@ func captureLoop(s *SharedStream) {
 		// Note: The OPENCV_FFMPEG_CAPTURE_OPTIONS env var is set globally in main.go to avoid race conditions here.
 		// However, if we need per-stream options in the future, we would need a different approach (e.g. videoio properties).
 
+		// Prepare connection URL
+		connectUrl := s.URL
+		if strings.HasPrefix(connectUrl, "rtsp") {
+			// Append rtsp_transport=tcp to the URL parameters to enforce TCP at the source level for FFmpeg.
+			// This is often more reliable than the env var alone for specific streams.
+			separator := "?"
+			if strings.Contains(connectUrl, "?") {
+				separator = "&"
+			}
+			if !strings.Contains(connectUrl, "rtsp_transport") {
+				connectUrl = connectUrl + separator + "rtsp_transport=tcp"
+			}
+		}
+
 		// Use auto-detection instead of enforcing FFmpeg backend ID (1900).
 		// Enforcing the backend sometimes causes "backend is generally available but can't be used to capture by name"
 		// error if the build configuration or URL scheme conflicts.
 		// Auto-detection will still prefer FFmpeg for RTSP in most standard OpenCV builds,
 		// and will respect the OPENCV_FFMPEG_CAPTURE_OPTIONS env var if FFmpeg is selected.
-		vc, err := gocv.OpenVideoCapture(s.URL)
+		vc, err := gocv.OpenVideoCapture(connectUrl)
 		if err != nil {
 			fmt.Printf("Error opening stream %s: %v\n", s.URL, err)
 			time.Sleep(2 * time.Second)
