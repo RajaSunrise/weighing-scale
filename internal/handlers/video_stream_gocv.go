@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"image"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -70,7 +69,7 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 	}()
 
 	// Stream Loop
-	ticker := time.NewTicker(100 * time.Millisecond) // 10 FPS
+	ticker := time.NewTicker(25 * time.Millisecond) // 25 FPS
 	defer ticker.Stop()
 
 	for {
@@ -137,13 +136,29 @@ func captureLoop(s *SharedStream) {
 
 		// Force FFMPEG backend to avoid GStreamer frame estimation warnings
 		// Also use TCP for RTSP to prevent UDP timeout warnings
-		// (We set env var once, or assume it's handled, but enforcing API is key)
-		if strings.HasPrefix(s.URL, "rtsp") {
-			os.Setenv("OPENCV_FFMPEG_CAPTURE_OPTIONS", "rtsp_transport;tcp")
+		// Note: The OPENCV_FFMPEG_CAPTURE_OPTIONS env var is set globally in main.go to avoid race conditions here.
+		// However, if we need per-stream options in the future, we would need a different approach (e.g. videoio properties).
+		
+		// Prepare connection URL
+		connectUrl := s.URL
+		if strings.HasPrefix(connectUrl, "rtsp") {
+			// Append rtsp_transport=tcp to the URL parameters to enforce TCP at the source level for FFmpeg.
+			// This is often more reliable than the env var alone for specific streams.
+			separator := "?"
+			if strings.Contains(connectUrl, "?") {
+				separator = "&"
+			}
+			if !strings.Contains(connectUrl, "rtsp_transport") {
+				connectUrl = connectUrl + separator + "rtsp_transport=tcp"
+			}
 		}
 
-		// 1900 is gocv.VideoCaptureFFmpeg
-		vc, err := gocv.OpenVideoCaptureWithAPI(s.URL, gocv.VideoCaptureFFmpeg)
+		// Use auto-detection instead of enforcing FFmpeg backend ID (1900).
+		// Enforcing the backend sometimes causes "backend is generally available but can't be used to capture by name"
+		// error if the build configuration or URL scheme conflicts.
+		// Auto-detection will still prefer FFmpeg for RTSP in most standard OpenCV builds,
+		// and will respect the OPENCV_FFMPEG_CAPTURE_OPTIONS env var if FFmpeg is selected.
+		vc, err := gocv.OpenVideoCapture(connectUrl)
 		if err != nil {
 			fmt.Printf("Error opening stream %s: %v\n", s.URL, err)
 			time.Sleep(2 * time.Second)
@@ -186,7 +201,7 @@ func captureLoop(s *SharedStream) {
 				}
 
 				// Cap framerate
-				time.Sleep(50 * time.Millisecond) // ~20 FPS max
+				time.Sleep(1 * time.Millisecond)
 			}
 		}
 

@@ -9,6 +9,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -48,7 +50,30 @@ func NewANPRService(modelPath string) *ANPRService {
 				loadErr = fmt.Errorf("panic during model load: %v", r)
 			}
 		}()
-		net = gocv.ReadNet(modelPath, "")
+
+		// Convert to absolute path to ensure external data (weights) are found correctly by OpenCV
+		// This is crucial for .onnx models that reference external .onnx.data files
+		if absPath, err := filepath.Abs(modelPath); err == nil {
+			modelPath = absPath
+		}
+
+		// Use ReadNetFromONNX explicitly for better compatibility
+		net = gocv.ReadNetFromONNX(modelPath)
+		
+		// Check if the inner pointer is nil to prevent SIGSEGV in Empty()
+		// This uses reflection to access the unexported 'p' field of gocv.Net
+		// which is defined as: type Net struct { p unsafe.Pointer }
+		// This is a safety check because gocv.ReadNet might return a struct with nil pointer
+		// if the underlying C++ code failed significantly.
+		val := reflect.ValueOf(net)
+		if val.Kind() == reflect.Struct {
+			field := val.FieldByName("p")
+			if field.IsValid() && field.UnsafePointer() == nil {
+				loadErr = fmt.Errorf("model failed to load (internal pointer is nil)")
+				return
+			}
+		}
+
 		if net.Empty() {
 			loadErr = fmt.Errorf("model loaded but is empty")
 		}
