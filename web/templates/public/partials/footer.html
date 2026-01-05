@@ -1,13 +1,89 @@
 {{ define "public_footer" }}
-<footer class="bg-gray-800 text-white py-8">
-    <div class="container mx-auto px-6">
-        <div class="flex flex-col md:flex-row justify-between items-center">
-            <div class="mb-4 md:mb-0">
-                <p>&copy; {{ currentYear }} Mitra Batu Split. All rights reserved.</p>
+<footer class="bg-[#18181b] border-t border-border-dark pt-16 pb-8">
+    <div class="max-w-7xl mx-auto px-4 md:px-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+            <!-- Brand Section -->
+            <div class="flex flex-col gap-6">
+                <a href="/" class="flex items-center gap-3 text-white">
+                    <span class="material-symbols-outlined text-primary text-4xl">terrain</span>
+                    <span class="text-xl font-bold tracking-tight">Mitra Batu Split</span>
+                </a>
+                <p class="text-slate-400 text-sm leading-relaxed">
+                    Penyedia material batu split dan agregat berkualitas tinggi untuk kebutuhan konstruksi infrastruktur nasional. Langsung dari tambang, presisi, dan terpercaya.
+                </p>
+                <div class="flex gap-4 mt-2">
+                    <a href="#" class="size-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-primary hover:text-white transition-all">
+                        <span class="text-xs font-bold">FB</span>
+                    </a>
+                    <a href="#" class="size-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-primary hover:text-white transition-all">
+                        <span class="text-xs font-bold">IG</span>
+                    </a>
+                    <a href="#" class="size-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-primary hover:text-white transition-all">
+                        <span class="text-xs font-bold">LN</span>
+                    </a>
+                </div>
             </div>
-            <div class="flex space-x-4">
-                <a href="/privasi" class="hover:text-gray-300">Kebijakan Privasi</a>
-                <a href="/syarat-ketentuan" class="hover:text-gray-300">Syarat & Ketentuan</a>
+
+            <!-- Quick Links -->
+            <div>
+                <h3 class="text-white font-bold text-lg mb-6">Navigasi</h3>
+                <ul class="flex flex-col gap-4">
+                    <li><a href="/" class="text-slate-400 hover:text-primary transition-colors text-sm">Beranda</a></li>
+                    <li><a href="/produk" class="text-slate-400 hover:text-primary transition-colors text-sm">Produk Kami</a></li>
+                    <li><a href="/galeri" class="text-slate-400 hover:text-primary transition-colors text-sm">Galeri Proyek</a></li>
+                    <li><a href="/tentang" class="text-slate-400 hover:text-primary transition-colors text-sm">Tentang Perusahaan</a></li>
+                    <li><a href="/artikel" class="text-slate-400 hover:text-primary transition-colors text-sm">Berita & Artikel</a></li>
+                </ul>
+            </div>
+
+            <!-- Support -->
+            <div>
+                <h3 class="text-white font-bold text-lg mb-6">Dukungan</h3>
+                <ul class="flex flex-col gap-4">
+                    <li><a href="/kontak" class="text-slate-400 hover:text-primary transition-colors text-sm">Hubungi Kami</a></li>
+                    <li><a href="/faq" class="text-slate-400 hover:text-primary transition-colors text-sm">Pusat Bantuan (FAQ)</a></li>
+                    <li><a href="/syarat-ketentuan" class="text-slate-400 hover:text-primary transition-colors text-sm">Syarat & Ketentuan</a></li>
+                    <li><a href="/privasi" class="text-slate-400 hover:text-primary transition-colors text-sm">Kebijakan Privasi</a></li>
+                    <li><a href="/visi-misi" class="text-slate-400 hover:text-primary transition-colors text-sm">Visi & Misi</a></li>
+                </ul>
+            </div>
+
+            <!-- Contact -->
+            <div>
+                <h3 class="text-white font-bold text-lg mb-6">Hubungi Kami</h3>
+                <ul class="flex flex-col gap-6">
+                    <li class="flex gap-4">
+                        <span class="material-symbols-outlined text-primary mt-1">location_on</span>
+                        <div class="flex flex-col">
+                            <span class="text-white text-sm font-medium">Kantor Pusat</span>
+                            <span class="text-slate-400 text-sm leading-relaxed">Jl. Raya Industri No. 45, Karawang Barat, Jawa Barat 41311</span>
+                        </div>
+                    </li>
+                    <li class="flex gap-4">
+                        <span class="material-symbols-outlined text-primary mt-1">call</span>
+                        <div class="flex flex-col">
+                            <span class="text-white text-sm font-medium">Telepon</span>
+                            <span class="text-slate-400 text-sm">+62 267 1234 5678</span>
+                        </div>
+                    </li>
+                    <li class="flex gap-4">
+                        <span class="material-symbols-outlined text-primary mt-1">mail</span>
+                        <div class="flex flex-col">
+                            <span class="text-white text-sm font-medium">Email</span>
+                            <span class="text-slate-400 text-sm">sales@mitrabatusplit.co.id</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p class="text-slate-500 text-sm text-center md:text-left">
+                &copy; {{ currentYear }} Mitra Batu Split. Hak Cipta Dilindungi Undang-Undang.
+            </p>
+            <div class="flex gap-6">
+                <a href="#" class="text-slate-500 hover:text-white text-sm">Peta Situs</a>
+                <a href="#" class="text-slate-500 hover:text-white text-sm">Karir</a>
             </div>
         </div>
     </div>
