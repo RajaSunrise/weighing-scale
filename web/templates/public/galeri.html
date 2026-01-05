@@ -9,13 +9,31 @@
 
     <main class="flex-1 flex flex-col">
 
-<div class="w-full max-w-[1280px] mx-auto px-4 md:px-10 py-8 md:py-12 flex flex-col gap-8">
+<div class="w-full max-w-[1280px] mx-auto px-4 md:px-10 py-8 md:py-12 flex flex-col gap-12">
+    <!-- Header -->
     <section class="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border-dark">
         <div class="flex flex-col gap-3 max-w-2xl">
             <h2 class="text-3xl md:text-5xl font-extrabold leading-tight tracking-tight text-white">Tambang & Fasilitas</h2>
             <p class="text-slate-400 text-base md:text-lg leading-relaxed">Galeri visual aktivitas penambangan batu split, armada alat berat, dan fasilitas pengolahan stone crusher.</p>
         </div>
     </section>
+
+    <!-- Video Tour Placeholder -->
+    <section class="w-full relative rounded-2xl overflow-hidden aspect-video bg-black group cursor-pointer">
+        <!-- Placeholder Image acting as video thumbnail -->
+        <div class="absolute inset-0 bg-cover bg-center opacity-80 transition-opacity duration-300 group-hover:opacity-60" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCF6ne2bhHvc19mE0LzbrTzoOhbZWE0dhkbKV4yiJ9gRNbl1swoC6CwYzI31of-XYPCekCW9nBYP2vrU8_bvMzuZxhVwdFoW2Pqn2nAoJNPuHWR-Le-O4eu2xn0RY1gIcu93WijHhRC1qHFcLMwhLfta_ox6Op1TupuxLENUy_csY7aj5-WAqBl3pLiUHgOrPz1wyy-lUZIepAv3XIZcoVAsu9kJbVGhfzCh3Olt6AWH95IUcgHEHUG8NwbGQ73o_2Mr5wwxjx8yWw')"></div>
+        <div class="absolute inset-0 flex items-center justify-center">
+            <div class="size-20 bg-primary/90 rounded-full flex items-center justify-center pl-1 shadow-2xl shadow-primary/40 group-hover:scale-110 transition-transform duration-300">
+                <span class="material-symbols-outlined text-white text-5xl">play_arrow</span>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-0 w-full p-6 md:p-10 bg-gradient-to-t from-black/90 to-transparent">
+            <h3 class="text-white text-2xl font-bold mb-2">Tur Virtual Area Tambang</h3>
+            <p class="text-slate-300">Lihat bagaimana kami mengelola proses produksi dari hulu ke hilir dengan standar keselamatan tinggi.</p>
+        </div>
+    </section>
+
+    <!-- Image Grid -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <div class="group relative flex flex-col gap-3 rounded-xl bg-surface-dark p-3 shadow-sm border border-border-dark hover:border-primary/50 transition-all duration-300 hover:-translate-y-1">
             <div class="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-slate-800">
@@ -78,6 +96,19 @@
                     <div>
                         <h3 class="text-lg font-bold text-white leading-tight mb-1 group-hover:text-primary transition-colors">Akses Tambang</h3>
                         <p class="text-slate-400 text-sm">Gerbang Utama</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="group relative flex flex-col gap-3 rounded-xl bg-surface-dark p-3 shadow-sm border border-border-dark hover:border-primary/50 transition-all duration-300 hover:-translate-y-1">
+            <div class="relative w-full aspect-[4/3] rounded-lg overflow-hidden bg-slate-800">
+                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuABKvx13CMP4ep8mgm4gTtd7Rw_W77HASDKnCu5OUdbK7N4Ux3KXPdIZ7RLjPMtVILrOBlBMiWFV1OM7Sxpdpb2vvpu5w1zrodnRFxQtBQvQ1ko-fxVXZIyHxCqL7bofWJU5T5iA_t9RJFu65mj2LJEV06xhoxxjPYvq2kGiJqFqdBqIOJT1bKz72FFCzd6TaKEvr_LRWoKvgQUZtnNP-Q_XqDXZO9Fxzx-2A00ETDJelMLsO1X542HLtinWTkeP4UIqpITK7P9MeY')"></div>
+            </div>
+             <div class="px-1 pb-1">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-lg font-bold text-white leading-tight mb-1 group-hover:text-primary transition-colors">Plant Area</h3>
+                        <p class="text-slate-400 text-sm">Crushing Plant #2</p>
                     </div>
                 </div>
             </div>
