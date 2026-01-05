@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -48,6 +49,13 @@ func NewANPRService(modelPath string) *ANPRService {
 				loadErr = fmt.Errorf("panic during model load: %v", r)
 			}
 		}()
+
+		// Convert to absolute path to ensure external data (weights) are found correctly by OpenCV
+		// This is crucial for .onnx models that reference external .onnx.data files
+		if absPath, err := filepath.Abs(modelPath); err == nil {
+			modelPath = absPath
+		}
+
 		net = gocv.ReadNet(modelPath, "")
 		if net.Empty() {
 			loadErr = fmt.Errorf("model loaded but is empty")
