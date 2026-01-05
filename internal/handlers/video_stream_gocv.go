@@ -70,7 +70,7 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 	}()
 
 	// Stream Loop
-	ticker := time.NewTicker(100 * time.Millisecond) // 10 FPS
+	ticker := time.NewTicker(40 * time.Millisecond) // ~25 FPS
 	defer ticker.Stop()
 
 	for {
@@ -202,7 +202,9 @@ func captureLoop(s *SharedStream) {
 				}
 
 				// Cap framerate
-				time.Sleep(50 * time.Millisecond) // ~20 FPS max
+				// Removed large sleep to reduce latency. vc.Read is naturally blocking.
+				// A minimal sleep avoids busy-looping if Read returns instantly without data (unlikely with check above).
+				time.Sleep(5 * time.Millisecond)
 			}
 		}
 
