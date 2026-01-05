@@ -56,7 +56,18 @@ func NewANPRService(modelPath string) *ANPRService {
 			modelPath = absPath
 		}
 
-		net = gocv.ReadNet(modelPath, "")
+		// Use ReadNetFromONNX explicitly for better compatibility
+		net = gocv.ReadNetFromONNX(modelPath)
+
+		// Check if the inner pointer is nil to prevent SIGSEGV in Empty()
+		// gocv.ReadNetFromONNX might return a zero-value struct if loading fails,
+		// and calling Empty() on a zero-value struct causes a SIGSEGV because the internal C pointer is nil.
+		// We can check against the zero value of gocv.Net safely.
+		if net == (gocv.Net{}) {
+			loadErr = fmt.Errorf("model failed to load (returned zero value)")
+			return
+		}
+
 		if net.Empty() {
 			loadErr = fmt.Errorf("model loaded but is empty")
 		}

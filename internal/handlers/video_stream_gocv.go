@@ -137,13 +137,15 @@ func captureLoop(s *SharedStream) {
 
 		// Force FFMPEG backend to avoid GStreamer frame estimation warnings
 		// Also use TCP for RTSP to prevent UDP timeout warnings
-		// (We set env var once, or assume it's handled, but enforcing API is key)
-		if strings.HasPrefix(s.URL, "rtsp") {
-			os.Setenv("OPENCV_FFMPEG_CAPTURE_OPTIONS", "rtsp_transport;tcp")
-		}
+		// Note: The OPENCV_FFMPEG_CAPTURE_OPTIONS env var is set globally in main.go to avoid race conditions here.
+		// However, if we need per-stream options in the future, we would need a different approach (e.g. videoio properties).
 
-		// 1900 is gocv.VideoCaptureFFmpeg
-		vc, err := gocv.OpenVideoCaptureWithAPI(s.URL, gocv.VideoCaptureFFmpeg)
+		// Use auto-detection instead of enforcing FFmpeg backend ID (1900).
+		// Enforcing the backend sometimes causes "backend is generally available but can't be used to capture by name"
+		// error if the build configuration or URL scheme conflicts.
+		// Auto-detection will still prefer FFmpeg for RTSP in most standard OpenCV builds,
+		// and will respect the OPENCV_FFMPEG_CAPTURE_OPTIONS env var if FFmpeg is selected.
+		vc, err := gocv.OpenVideoCapture(s.URL)
 		if err != nil {
 			fmt.Printf("Error opening stream %s: %v\n", s.URL, err)
 			time.Sleep(2 * time.Second)
