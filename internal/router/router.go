@@ -14,6 +14,7 @@ import (
 	csrf "github.com/utrack/gin-csrf"
 	"golang.org/x/time/rate"
 
+	"stoneweigh/internal/api"
 	"stoneweigh/internal/handlers"
 	"stoneweigh/internal/middleware"
 	"stoneweigh/internal/pkg/templates"
@@ -50,14 +51,21 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	// Rate Limit: 20 requests/second, burst of 50
 	r.Use(middleware.RateLimiter(rate.Limit(20), 50))
 
-	// CSRF Protection
-	r.Use(csrf.Middleware(csrf.Options{
-		Secret: secret,
-		ErrorFunc: func(c *gin.Context) {
-			c.String(400, "CSRF token mismatch")
-			c.Abort()
-		},
-	}))
+	// CSRF Protection (Skipping /api/external)
+	r.Use(func(c *gin.Context) {
+		// Skip CSRF for external API
+		if len(c.Request.URL.Path) >= 13 && c.Request.URL.Path[:13] == "/api/external" {
+			c.Next()
+			return
+		}
+		csrf.Middleware(csrf.Options{
+			Secret: secret,
+			ErrorFunc: func(c *gin.Context) {
+				c.String(400, "CSRF token mismatch")
+				c.Abort()
+			},
+		})(c)
+	})
 
 	// 4. Static Files & Templates
 	r.SetFuncMap(template.FuncMap{
@@ -177,6 +185,9 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	r.Any("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+
+	// External Device APIs (Token Based)
+	r.POST("/api/external/scale", api.HandleRemoteScaleData)
 
 	// 404 Handler
 	r.NoRoute(server.Show404)

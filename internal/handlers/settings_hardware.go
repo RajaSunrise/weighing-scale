@@ -59,6 +59,7 @@ func (s *Server) UpdateStation(c *gin.Context) {
 	station.ScalePort = input.ScalePort
 	station.BaudRate = input.BaudRate
 	station.Enabled = input.Enabled
+	station.Token = input.Token
 
 	// Handle Cameras update
 	// 1. Delete existing cameras
