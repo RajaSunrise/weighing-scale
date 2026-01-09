@@ -62,6 +62,7 @@ type WeighingStation struct {
 	BaudRate  int             `json:"baud_rate"`  // e.g., 9600
 	Cameras   []StationCamera `json:"cameras"`    // Multiple CCTVs
 	Enabled   bool            `json:"enabled"`
+	Token     string          `json:"token"`      // Security token for remote data push
 
 	// Deprecated: Kept for migration, assume data moved to Cameras[0]
 	CameraURL string `json:"camera_url,omitempty"`

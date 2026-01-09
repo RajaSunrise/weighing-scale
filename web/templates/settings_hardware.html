@@ -31,6 +31,17 @@
                 <input type="text" name="name" id="station-name" class="w-full bg-background-dark border border-border-dark rounded px-3 py-2 text-white" placeholder="Contoh: Timbangan Gerbang Depan" required>
             </div>
 
+            <div>
+                <label class="block text-xs font-bold text-text-secondary mb-1">Token Remote (Opsional)</label>
+                <div class="flex gap-2">
+                    <input type="text" name="token" id="station-token" class="w-full bg-background-dark border border-border-dark rounded px-3 py-2 text-white font-mono" placeholder="Masukkan token unik atau generate">
+                    <button type="button" onclick="generateToken()" class="px-3 bg-white/10 hover:bg-white/20 rounded text-white text-xs whitespace-nowrap">
+                        Generate
+                    </button>
+                </div>
+                <p class="text-[10px] text-text-secondary mt-1">Gunakan token ini untuk aplikasi pengirim data dari PC Timbangan</p>
+            </div>
+
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-text-secondary mb-1">Port Serial</label>
@@ -150,6 +161,7 @@ function editStation(data) {
     document.getElementById('station-port').value = data.scale_port;
     document.getElementById('station-baud').value = data.baud_rate;
     document.getElementById('station-enabled').checked = data.enabled;
+    document.getElementById('station-token').value = data.token || "";
 
     // Load Cameras
     const container = document.getElementById('camera-list');
@@ -249,6 +261,16 @@ async function deleteStation(id) {
         }
     });
     loadStations();
+}
+
+function generateToken() {
+    // Simple random string generator
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for ( let i = 0; i < 32; i++ ) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('station-token').value = result;
 }
 </script>
 
