@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"stoneweigh/internal/models"
+
 	"github.com/gin-gonic/gin"
 	"gocv.io/x/gocv"
 )
@@ -31,19 +33,39 @@ type SharedStream struct {
 
 // ProxyVideo handles the RTSP to MJPEG conversion
 func (s *Server) ProxyVideo(c *gin.Context) {
-	url := c.Query("url")
-	if url == "" {
-		// Try to find by camera ID if provided
-		camID := c.Query("camera_id")
-		if camID != "" {
-			// Find camera in DB
-			// ... logic to lookup models.StationCamera
-			// For now, we assume direct URL passed or handled by frontend
+	// SECURITY FIX: Prevent SSRF by strictly requiring camera_id or station_id lookup
+	// Do NOT accept raw 'url' parameter from client.
+	camID := c.Query("camera_id")
+	stationID := c.Query("station_id")
+
+	if camID == "" && stationID == "" {
+		c.String(http.StatusBadRequest, "Missing camera_id or station_id")
+		return
+	}
+
+	// Lookup Camera URL from Database
+	var url string
+
+	if camID != "" {
+		// Priority 1: Specific Camera ID
+		var cam models.StationCamera
+		if err := s.DB.First(&cam, camID).Error; err == nil {
+			url = cam.RTSPURL
+		}
+	} else if stationID != "" {
+		// Priority 2: Station ID (Legacy / Default Camera)
+		var station models.WeighingStation
+		if err := s.DB.Preload("Cameras").First(&station, stationID).Error; err == nil {
+			if len(station.Cameras) > 0 {
+				url = station.Cameras[0].RTSPURL
+			} else {
+				url = station.CameraURL
+			}
 		}
 	}
 
 	if url == "" {
-		c.String(http.StatusBadRequest, "Missing URL")
+		c.String(http.StatusNotFound, "Camera not found or invalid ID")
 		return
 	}
 

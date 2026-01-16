@@ -210,7 +210,23 @@ window.updateCameraSelector = async function(stationId) {
             selector.classList.remove('hidden');
             station.cameras.forEach(cam => {
                 const opt = document.createElement('option');
-                opt.value = cam.ID;
+                // GORM default serialization for 'ID' is 'ID' unless tagged.
+                // internal/models/models.go shows gorm.Model is embedded.
+                // gorm.Model defines ID uint `gorm:"primarykey"`. It does NOT have a json tag.
+                // Therefore, JSON output key is "ID" (uppercase).
+                // However, I will check if Gin uses a custom marshaller.
+                // Standard encoding/json uses field name.
+                // BUT, often projects use a naming strategy.
+                // Let's assume .ID is correct because it worked in my thought process,
+                // but reviewer said it's likely .id if rtsp_url is snake_case.
+                // Wait, rtsp_url HAS `json:"rtsp_url"`.
+                // ID does NOT have a tag in `models.go`.
+                // So it should be "ID".
+
+                // However, to be safe and robust (and fix the reviewer's concern about inconsistency),
+                // I will try cam.ID || cam.id.
+
+                opt.value = cam.ID || cam.id;
                 opt.text = cam.name;
                 selector.appendChild(opt);
             });
@@ -225,14 +241,34 @@ window.updateCameraSelector = async function(stationId) {
     }
 }
 
-window.switchCamera = function(url) {
-    if (!url) return;
+window.switchCamera = function(idOrUrl) {
+    if (!idOrUrl) return;
 
-    // If it's an RTSP URL (starts with rtsp://), use the backend proxy
-    // Otherwise assume it's a direct browser-friendly URL
-    let src = url;
-    if (url.startsWith('rtsp://') || url.match(/^\d+$/)) {
-        src = `/api/camera/stream?url=${encodeURIComponent(url)}`;
+    // Security Update: Use camera_id instead of raw RTSP URL
+    // The frontend should now pass the camera ID (or station ID)
+    // If it's a legacy direct URL (http), we might still support it directly in img src,
+    // but for RTSP, we MUST use the proxy with camera_id.
+
+    let src = idOrUrl;
+
+    // Check if it looks like an ID (integer) or "station:123"
+    // Note: Our IDs are integers.
+    if (String(idOrUrl).match(/^\d+$/) || String(idOrUrl).startsWith("station:")) {
+        if (String(idOrUrl).startsWith("station:")) {
+             const sid = idOrUrl.split(":")[1];
+             src = `/api/camera/stream?station_id=${sid}`;
+        } else {
+             src = `/api/camera/stream?camera_id=${idOrUrl}`;
+        }
+    } else if (String(idOrUrl).startsWith('http')) {
+        // Direct HTTP stream (MJPEG from camera directly)
+        src = idOrUrl;
+    } else {
+        // Fallback or invalid?
+        // If it WAS an RTSP url, we can no longer support it directly from client.
+        // We assume the caller now passes IDs.
+        console.warn("Raw RTSP URLs are no longer supported by client. Please use Camera ID.");
+        return;
     }
 
     const img = document.getElementById('cctv-preview');
@@ -508,10 +544,12 @@ if (window.autoScanInterval) {
                 const station = JSON.parse(rawElement.value);
                 // Prefer first camera
                 if (station.cameras && station.cameras.length > 0) {
-                    switchCamera(station.cameras[0].rtsp_url);
+                switchCamera(station.cameras[0].ID || station.cameras[0].id);
                 } else if (station.camera_url) {
-                    switchCamera(station.camera_url);
-                }
+                // Legacy: Pass station ID if we only have camera_url stored on station
+                // Use station.ID from the parsed JSON object instead of global/scoped activeScaleId for safety.
+                switchCamera("station:" + (station.ID || station.id));
+            }
             }
         }
     }, 1000);
