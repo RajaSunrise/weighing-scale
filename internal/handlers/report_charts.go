@@ -1,16 +1,22 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"stoneweigh/internal/models"
 )
 
 type ChartData struct {
 	Labels []string  `json:"labels"`
 	Data   []float64 `json:"data"`
+}
+
+// DailyStat holds the aggregation result from DB
+type DailyStat struct {
+	DateStr string  `gorm:"column:date_str"`
+	Total   float64 `gorm:"column:total"`
 }
 
 func (s *Server) GetReportCharts(c *gin.Context) {
@@ -19,7 +25,7 @@ func (s *Server) GetReportCharts(c *gin.Context) {
 	now := time.Now()
 	var startDate time.Time
 
-	// Determine range and grouping
+	// Determine range
 	switch period {
 	case "weekly":
 		// Last 12 weeks
@@ -32,14 +38,29 @@ func (s *Server) GetReportCharts(c *gin.Context) {
 		startDate = now.AddDate(0, 0, -30)
 	}
 
-	var records []models.WeighingRecord
-	s.DB.Select("weighed_at, net_weight").Where("weighed_at >= ?", startDate).Find(&records)
+	// Optimization: Aggregation via SQL instead of fetching all records
+	var stats []DailyStat
+	var err error
 
-	// Re-implementation of aggregation logic to be robust
-	// 1. Create a map of "YYYY-MM-DD" -> NetWeight
+	// Determine Dialect for Date Function
+	if s.DB.Dialector.Name() == "sqlite" {
+		// SQLite: DATE(weighed_at) returns string "YYYY-MM-DD"
+		err = s.DB.Raw("SELECT DATE(weighed_at) as date_str, SUM(net_weight) as total FROM weighing_records WHERE weighed_at >= ? GROUP BY 1", startDate).Scan(&stats).Error
+	} else {
+		// Postgres: TO_CHAR(weighed_at, 'YYYY-MM-DD') returns string
+		err = s.DB.Raw("SELECT TO_CHAR(weighed_at, 'YYYY-MM-DD') as date_str, SUM(net_weight) as total FROM weighing_records WHERE weighed_at >= ? GROUP BY 1", startDate).Scan(&stats).Error
+	}
+
+	if err != nil {
+		fmt.Printf("Error aggregating charts: %v\n", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate charts"})
+		return
+	}
+
+	// Map results: "YYYY-MM-DD" -> Total
 	dayMap := make(map[string]float64)
-	for _, r := range records {
-		dayMap[r.WeighedAt.Format("2006-01-02")] += r.NetWeight
+	for _, stat := range stats {
+		dayMap[stat.DateStr] = stat.Total
 	}
 
 	labels := []string{}
@@ -78,7 +99,7 @@ func (s *Server) GetReportCharts(c *gin.Context) {
 		// Aggregate by month
 		cur := now.AddDate(-1, 0, 0)
 		// Align to 1st
-		cur = time.Date(cur.Year(), cur.Month(), 1, 0,0,0,0, cur.Location())
+		cur = time.Date(cur.Year(), cur.Month(), 1, 0, 0, 0, 0, cur.Location())
 
 		for !cur.After(now) {
 			monSum := 0.0
