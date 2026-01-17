@@ -1,9 +1,12 @@
 package router
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"html/template"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -34,7 +37,16 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	// 2. Setup Session Store
 	secret := os.Getenv("SESSION_SECRET")
 	if secret == "" {
-		secret = "secret"
+		if gin.Mode() == gin.ReleaseMode {
+			log.Fatal("SESSION_SECRET environment variable is required in production mode")
+		}
+		// Generate random 32 byte hex string for development/fallback
+		b := make([]byte, 32)
+		if _, err := rand.Read(b); err != nil {
+			panic("failed to generate random session secret: " + err.Error())
+		}
+		secret = hex.EncodeToString(b)
+		log.Println("WARNING: SESSION_SECRET not set. Using generated random secret. Sessions will not persist across restarts.")
 	}
 	store := cookie.NewStore([]byte(secret))
 	store.Options(sessions.Options{
