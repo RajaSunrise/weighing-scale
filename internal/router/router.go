@@ -37,10 +37,11 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 		secret = "secret"
 	}
 	store := cookie.NewStore([]byte(secret))
+	secureCookies := os.Getenv("SECURE_COOKIES") == "true"
 	store.Options(sessions.Options{
 		MaxAge:   30 * 24 * 60 * 60, // 30 days
 		Path:     "/",
-		Secure:   false,                // Set to true in production with HTTPS
+		Secure:   secureCookies,        // Dynamic based on env
 		HttpOnly: true,                 // Security: prevent XSS
 		SameSite: http.SameSiteLaxMode, // Allow same-site cookies
 	})
@@ -48,6 +49,7 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 
 	// 3. Global Middleware
 	r.Use(middleware.RequestLogger())
+	r.Use(middleware.SecurityHeaders()) // Add Security Headers
 	// Rate Limit: 20 requests/second, burst of 50
 	r.Use(middleware.RateLimiter(rate.Limit(20), 50))
 
