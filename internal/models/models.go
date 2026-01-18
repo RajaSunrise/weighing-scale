@@ -29,7 +29,7 @@ type WeighingRecord struct {
 	SnapshotBack  string `json:"snapshot_back"`  // CCTV Path
 	InvoicePath   string `json:"invoice_path"`   // PDF Path
 
-	WeighedAt time.Time `json:"weighed_at"`
+	WeighedAt time.Time `gorm:"index" json:"weighed_at"`
 }
 
 func (wr *WeighingRecord) BeforeCreate(tx *gorm.DB) error {

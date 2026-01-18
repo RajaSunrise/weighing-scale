@@ -31,6 +31,7 @@ func setupRouterWithDict() *gin.Engine {
 			return dict, nil
 		},
 		"json": func(v any) template.JS { return "" },
+		"currentYear": func() int { return 2024 },
 	})
 	return r
 }
