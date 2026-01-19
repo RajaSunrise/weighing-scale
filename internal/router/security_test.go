@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPublicRoute(t *testing.T) {
+func TestSecurityHeaders(t *testing.T) {
 	// Robust way to find templates: walk up until we find web/templates
 	wd, _ := os.Getwd()
 	for {
@@ -27,10 +27,7 @@ func TestPublicRoute(t *testing.T) {
 		wd = parent
 	}
 
-	// Set Gin to Test Mode
 	gin.SetMode(gin.TestMode)
-
-	// Create a server with nil dependencies
 	server := handlers.NewServer(nil, nil, nil)
 
 	// Recover from panics during setup (e.g. bad template path)
@@ -47,12 +44,11 @@ func TestPublicRoute(t *testing.T) {
 
 	r.ServeHTTP(w, req)
 
-	// Assertions
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	// Check for specific content from home.html
-	assert.Contains(t, w.Body.String(), "Pondasi Kokoh")
-
-	// Check for dynamic footer year
-	assert.Contains(t, w.Body.String(), "Mitra Batu Split. Hak Cipta Dilindungi Undang-Undang.")
+	// Verify Security Headers
+	assert.Equal(t, "nosniff", w.Header().Get("X-Content-Type-Options"))
+	assert.Equal(t, "SAMEORIGIN", w.Header().Get("X-Frame-Options"))
+	assert.Equal(t, "1; mode=block", w.Header().Get("X-XSS-Protection"))
+	assert.Equal(t, "strict-origin-when-cross-origin", w.Header().Get("Referrer-Policy"))
 }

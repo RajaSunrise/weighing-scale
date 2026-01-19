@@ -48,6 +48,8 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 
 	// 3. Global Middleware
 	r.Use(middleware.RequestLogger())
+	// Security Headers
+	r.Use(middleware.SecurityHeaders())
 	// Rate Limit: 20 requests/second, burst of 50
 	r.Use(middleware.RateLimiter(rate.Limit(20), 50))
 
