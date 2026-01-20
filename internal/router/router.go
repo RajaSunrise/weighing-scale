@@ -67,6 +67,12 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 
 	// CSRF Protection (Skipping /api/external)
 	r.Use(func(c *gin.Context) {
+		// Skip CSRF for Test Mode
+		if gin.Mode() == gin.TestMode {
+			c.Next()
+			return
+		}
+
 		// Skip CSRF for external API
 		if len(c.Request.URL.Path) >= 13 && c.Request.URL.Path[:13] == "/api/external" {
 			c.Next()
@@ -128,7 +134,8 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 
 	// Auth Routes
 	r.GET("/login", server.ShowLogin)
-	r.POST("/login", server.Login)
+	// Rate Limit for Login: 1 attempt/minute, burst of 5 (Strict Brute Force Protection)
+	r.POST("/login", middleware.RateLimiter(rate.Limit(1.0/60.0), 5), server.Login)
 	r.GET("/logout", server.Logout)
 	r.GET("/api/captcha", server.GetCaptcha) // New endpoint for refreshing captcha
 	r.GET("/test-search", func(c *gin.Context) {
