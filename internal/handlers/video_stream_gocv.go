@@ -25,10 +25,10 @@ var (
 type SharedStream struct {
 	URL         string
 	Clients     int
-	Broadcast   chan []byte
 	Stop        chan bool
+	FrameSignal chan struct{}
 	LastFrame   []byte
-	LastFrameMu sync.RWMutex
+	LastFrameMu sync.Mutex
 }
 
 // ProxyVideo handles the RTSP to MJPEG conversion
@@ -90,18 +90,33 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 		streamLock.Unlock()
 	}()
 
-	// Stream Loop
-	ticker := time.NewTicker(25 * time.Millisecond) // 25 FPS
-	defer ticker.Stop()
+	// Optimization: Send initial frame if available to reduce perceived latency
+	stream.LastFrameMu.Lock()
+	if len(stream.LastFrame) > 0 {
+		_, err := c.Writer.Write([]byte(fmt.Sprintf("--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", len(stream.LastFrame))))
+		if err == nil {
+			c.Writer.Write(stream.LastFrame)
+			c.Writer.Write([]byte("\r\n"))
+			c.Writer.Flush()
+		}
+	}
+	stream.LastFrameMu.Unlock()
 
+	// Stream Loop with Notification (No Polling)
 	for {
+		stream.LastFrameMu.Lock()
+		waitChan := stream.FrameSignal
+		stream.LastFrameMu.Unlock()
+
 		select {
 		case <-c.Request.Context().Done():
 			return
-		case <-ticker.C:
-			stream.LastFrameMu.RLock()
+		case <-waitChan:
+			// Frame Updated
+			stream.LastFrameMu.Lock()
 			frame := stream.LastFrame
-			stream.LastFrameMu.RUnlock()
+			// Grab next signal if we want to loop? We just loop and grab fresh signal at top.
+			stream.LastFrameMu.Unlock()
 
 			if len(frame) == 0 {
 				continue
@@ -134,9 +149,9 @@ func getStream(url string) *SharedStream {
 	}
 
 	s := &SharedStream{
-		URL:       url,
-		Stop:      make(chan bool),
-		Broadcast: make(chan []byte),
+		URL:         url,
+		Stop:        make(chan bool),
+		FrameSignal: make(chan struct{}),
 	}
 	streamMap[url] = s
 
@@ -218,6 +233,9 @@ func captureLoop(s *SharedStream) {
 
 					s.LastFrameMu.Lock()
 					s.LastFrame = dst
+					// Broadcast new frame to all listeners by closing channel
+					close(s.FrameSignal)
+					s.FrameSignal = make(chan struct{})
 					s.LastFrameMu.Unlock()
 					buf.Close()
 				}
