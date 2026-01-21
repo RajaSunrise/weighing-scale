@@ -128,7 +128,9 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 
 	// Auth Routes
 	r.GET("/login", server.ShowLogin)
-	r.POST("/login", server.Login)
+	// Apply strict rate limiting to login POST (1 req/min, burst 5) to prevent brute force
+	loginLimiter := middleware.RateLimiter(rate.Limit(1.0/60.0), 5)
+	r.POST("/login", loginLimiter, server.Login)
 	r.GET("/logout", server.Logout)
 	r.GET("/api/captcha", server.GetCaptcha) // New endpoint for refreshing captcha
 	r.GET("/test-search", func(c *gin.Context) {
