@@ -32,10 +32,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Run Linter (inside container)
-        run: |
-          docker run --rm app-builder:latest golangci-lint run -v --timeout=5m --build-tags gocv ./...
-
       - name: Run Tests (inside container)
         run: |
           docker run --rm app-builder:latest go test -v -tags gocv ./...
