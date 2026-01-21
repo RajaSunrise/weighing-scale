@@ -25,7 +25,7 @@ var (
 type SharedStream struct {
 	URL         string
 	Clients     int
-	Broadcast   chan []byte
+	Signal      chan struct{}
 	Stop        chan bool
 	LastFrame   []byte
 	LastFrameMu sync.RWMutex
@@ -90,23 +90,15 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 		streamLock.Unlock()
 	}()
 
-	// Stream Loop
-	ticker := time.NewTicker(25 * time.Millisecond) // 25 FPS
-	defer ticker.Stop()
-
+	// Event-driven Stream Loop (Optimized: Replaces Polling Ticker)
 	for {
-		select {
-		case <-c.Request.Context().Done():
-			return
-		case <-ticker.C:
-			stream.LastFrameMu.RLock()
-			frame := stream.LastFrame
-			stream.LastFrameMu.RUnlock()
+		// Get current frame and signal channel
+		stream.LastFrameMu.RLock()
+		frame := stream.LastFrame
+		signal := stream.Signal
+		stream.LastFrameMu.RUnlock()
 
-			if len(frame) == 0 {
-				continue
-			}
-
+		if len(frame) > 0 {
 			// Write MIME boundary
 			_, err := c.Writer.Write([]byte(fmt.Sprintf("--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", len(frame))))
 			if err != nil {
@@ -122,6 +114,14 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 			}
 			c.Writer.Flush()
 		}
+
+		// Wait for next frame or cancellation
+		select {
+		case <-c.Request.Context().Done():
+			return
+		case <-signal:
+			// New frame available, loop continues
+		}
 	}
 }
 
@@ -134,9 +134,9 @@ func getStream(url string) *SharedStream {
 	}
 
 	s := &SharedStream{
-		URL:       url,
-		Stop:      make(chan bool),
-		Broadcast: make(chan []byte),
+		URL:    url,
+		Stop:   make(chan bool),
+		Signal: make(chan struct{}),
 	}
 	streamMap[url] = s
 
@@ -218,11 +218,14 @@ func captureLoop(s *SharedStream) {
 
 					s.LastFrameMu.Lock()
 					s.LastFrame = dst
+					// Signal waiting clients
+					close(s.Signal)
+					s.Signal = make(chan struct{})
 					s.LastFrameMu.Unlock()
 					buf.Close()
 				}
 
-				// Cap framerate
+				// Cap framerate (slightly reduced sleep to allow higher FPS if needed, but keeping small delay)
 				time.Sleep(1 * time.Millisecond)
 			}
 		}
