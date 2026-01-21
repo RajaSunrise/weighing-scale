@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  build-and-test:
+    name: Build, Test, and Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image (Builder Stage)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: builder
+          load: true
+          tags: app-builder:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Linter (inside container)
+        run: |
+          docker run --rm app-builder:latest golangci-lint run -v --timeout=5m --build-tags gocv ./...
+
+      - name: Run Tests (inside container)
+        run: |
+          docker run --rm app-builder:latest go test -v -tags gocv ./...
+
+      - name: Build Final Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: app:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@0.19.0
+        with:
+          image-ref: 'app:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
