@@ -7,9 +7,11 @@ require (
 	github.com/gin-gonic/gin v1.11.0
 	github.com/joho/godotenv v1.5.1
 	github.com/jung-kurt/gofpdf v1.16.2
+	github.com/mojocn/base64Captcha v1.3.8
 	github.com/stretchr/testify v1.11.1
+	github.com/utrack/gin-csrf v0.0.0-20190424104817-40fb8d2c8fca
 	go.bug.st/serial v1.6.4
-	gocv.io/x/gocv v0.42.0
+	gocv.io/x/gocv v0.43.0
 	golang.org/x/crypto v0.46.0
 	golang.org/x/time v0.14.0
 	gorm.io/driver/postgres v1.6.0
@@ -50,14 +52,12 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/mojocn/base64Captcha v1.3.8 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/quic-go/quic-go v0.58.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.3.1 // indirect
-	github.com/utrack/gin-csrf v0.0.0-20190424104817-40fb8d2c8fca // indirect
 	go.uber.org/mock v0.6.0 // indirect
 	golang.org/x/arch v0.23.0 // indirect
 	golang.org/x/image v0.23.0 // indirect
