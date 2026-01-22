@@ -17,6 +17,18 @@
                 <label class="block text-xs font-bold text-text-secondary mb-1">Sampai Tanggal</label>
                 <input type="date" name="end_date" value="{{ .EndDate }}" class="bg-background-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary">
             </div>
+
+            <!-- Company Filter -->
+            <div>
+                <label class="block text-xs font-bold text-text-secondary mb-1">Perusahaan</label>
+                <select name="company" class="bg-background-dark border border-border-dark rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary w-40">
+                    <option value="">Semua</option>
+                    {{ range .Companies }}
+                    <option value="{{ .Name }}" {{ if eq $.SelectedCompany .Name }}selected{{ end }}>{{ .Name }}</option>
+                    {{ end }}
+                </select>
+            </div>
+
             <button type="submit" class="px-4 py-2 bg-surface-dark border border-border-dark hover:bg-card-hover text-white text-sm font-bold rounded-lg transition-colors">
                 Filter
             </button>

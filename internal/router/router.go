@@ -180,6 +180,11 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 			adminApi.POST("/vehicles", server.CreateVehicle)
 			adminApi.DELETE("/vehicles/:id", server.DeleteVehicle)
 
+			// Company API
+			adminApi.GET("/companies", server.ListCompanies)
+			adminApi.POST("/companies", server.CreateCompany)
+			adminApi.DELETE("/companies/:id", server.DeleteCompany)
+
 			// Station / Hardware API
 			adminApi.GET("/stations", server.GetStations)
 			adminApi.POST("/stations", server.CreateStation)

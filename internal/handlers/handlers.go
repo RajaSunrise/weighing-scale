@@ -117,6 +117,70 @@ func (s *Server) ShowWeighing(c *gin.Context) {
 	})
 }
 
+// ShowReports renders the report page
+func (s *Server) ShowReports(c *gin.Context) {
+	session := sessions.Default(c)
+	fullName := "Operator"
+	if v := session.Get("full_name"); v != nil {
+		fullName = v.(string)
+	}
+
+	startDate := c.Query("start_date")
+	endDate := c.Query("end_date")
+	companyFilter := c.Query("company") // Expecting company name or ID
+
+	// Default to today if empty
+	if startDate == "" {
+		startDate = time.Now().Format("2006-01-02")
+	}
+	if endDate == "" {
+		endDate = time.Now().Format("2006-01-02")
+	}
+
+	// Parse
+	start, _ := time.Parse("2006-01-02", startDate)
+	end, _ := time.Parse("2006-01-02", endDate)
+	// Set end to end of day
+	end = end.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+
+	query := s.DB.Model(&models.WeighingRecord{}).
+		Where("weighed_at BETWEEN ? AND ?", start, end).
+		Order("weighed_at desc")
+
+	// Apply Company Filter
+	if companyFilter != "" {
+		// Filter by company name since it's stored in record
+		query = query.Where("company_name = ?", companyFilter)
+	}
+
+	var records []models.WeighingRecord
+	query.Find(&records)
+
+	// Calculate totals
+	var totalNet float64
+	for _, r := range records {
+		totalNet += r.NetWeight
+	}
+
+	// Fetch distinct companies for filter dropdown
+	var companies []models.Company
+	s.DB.Order("name asc").Find(&companies)
+
+	c.HTML(http.StatusOK, "reports.html", gin.H{
+		"title":         "Reports",
+		"active":        "reports",
+		"showNav":       true,
+		"CurrentUser":   fullName,
+		"Records":       records,
+		"StartDate":     startDate,
+		"EndDate":       endDate,
+		"TotalNetWeight": totalNet,
+		"Companies":     companies,
+		"SelectedCompany": companyFilter,
+		"csrf_token":    csrf.GetToken(c),
+	})
+}
+
 // === API HANDLERS ===
 
 // SaveTransaction handles the final weighing and invoice generation
