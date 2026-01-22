@@ -100,6 +100,62 @@ func (s *Server) DeleteVehicle(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Vehicle deleted"})
 }
 
+// UpdateVehicle API updates an existing vehicle
+func (s *Server) UpdateVehicle(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	var input struct {
+		PlateNumber  string  `json:"plate_number" binding:"required"`
+		DriverName   string  `json:"driver_name" binding:"required"`
+		DefaultTare  float64 `json:"default_tare"`
+		OwnerCompany string  `json:"owner_company"` // Legacy/Fallback
+
+		// New fields
+		SIM       string `json:"sim"`
+		CompanyID *uint  `json:"company_id"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var vehicle models.Vehicle
+	if err := s.DB.First(&vehicle, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Vehicle not found"})
+		return
+	}
+
+	// Update fields
+	vehicle.PlateNumber = input.PlateNumber
+	vehicle.DriverName = input.DriverName
+	vehicle.DefaultTare = input.DefaultTare
+	vehicle.SIM = input.SIM
+	vehicle.CompanyID = input.CompanyID
+
+	// If CompanyID is provided, fetch the company name to populate OwnerCompany
+	if input.CompanyID != nil && *input.CompanyID > 0 {
+		var comp models.Company
+		if err := s.DB.First(&comp, *input.CompanyID).Error; err == nil {
+			vehicle.OwnerCompany = comp.Name
+		}
+	} else {
+		vehicle.OwnerCompany = input.OwnerCompany
+	}
+
+	if err := s.DB.Save(&vehicle).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update vehicle"})
+		return
+	}
+
+	c.JSON(http.StatusOK, vehicle)
+}
+
 // GetVehicleDetails returns details for a specific plate (public for operators)
 func (s *Server) GetVehicleDetails(c *gin.Context) {
 	plate := c.Query("plate")
@@ -180,6 +236,46 @@ func (s *Server) CreateCompany(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, company)
+}
+
+// UpdateCompany API
+func (s *Server) UpdateCompany(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	var input struct {
+		Name          string `json:"name" binding:"required"`
+		Address       string `json:"address"`
+		ContactPerson string `json:"contact_person"`
+		Phone         string `json:"phone"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var company models.Company
+	if err := s.DB.First(&company, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Company not found"})
+		return
+	}
+
+	company.Name = input.Name
+	company.Address = input.Address
+	company.ContactPerson = input.ContactPerson
+	company.Phone = input.Phone
+
+	if err := s.DB.Save(&company).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update company"})
+		return
+	}
+
+	c.JSON(http.StatusOK, company)
 }
 
 // DeleteCompany API
