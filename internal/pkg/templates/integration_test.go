@@ -1,10 +1,12 @@
 package templates_test
 
 import (
+	"encoding/json"
 	"errors"
-	"testing"
 	"html/template"
 	"path/filepath"
+	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +32,13 @@ func setupRouterWithDict() *gin.Engine {
 			}
 			return dict, nil
 		},
-		"json": func(v any) template.JS { return "" },
+		"json": func(v any) template.JS {
+			a, _ := json.Marshal(v)
+			return template.JS(a)
+		},
+		"currentYear": func() int {
+			return time.Now().Year()
+		},
 	})
 	return r
 }

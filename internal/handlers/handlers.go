@@ -41,6 +41,9 @@ func (s *Server) ShowDashboard(c *gin.Context) {
 
 	// 1. Fetch Stats for Today
 	startOfDay := time.Now().Truncate(24 * time.Hour)
+	// SQLite in memory might have timezone issues in tests.
+	// If using GORM with SQLite, time is stored as string/timestamp.
+	// To be safe in tests, we rely on GORM's comparison.
 
 	var todayCount int64
 	var todayWeight float64 // Sum of NetWeight
