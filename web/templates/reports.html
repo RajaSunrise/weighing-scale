@@ -329,7 +329,14 @@
     (function() {
         const start = "{{ .StartDate }}";
         const end = "{{ .EndDate }}";
-        document.title = `Laporan_Transaksi_${start}_sd_${end}`;
+        const company = "{{ .SelectedCompany }}";
+        let title = `Laporan_Transaksi_${start}_sd_${end}`;
+        if (company) {
+            // Sanitize company name for filename
+            const safeCompany = company.replace(/[^a-zA-Z0-9]/g, '_');
+            title += `_${safeCompany}`;
+        }
+        document.title = title;
     })();
 
     let myChart = null;
