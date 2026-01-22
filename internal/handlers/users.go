@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"stoneweigh/internal/models"
+	"unicode/utf8"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -52,6 +54,12 @@ func (s *Server) CreateUser(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate Password Strength
+	if err := validatePassword(input.Password); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -139,4 +147,22 @@ func (s *Server) UpdateUserAssignments(c *gin.Context) {
 func stringToUint(s string) uint {
 	val, _ := strconv.Atoi(s)
 	return uint(val)
+}
+
+// validatePassword enforces strong password requirements
+func validatePassword(p string) error {
+	if utf8.RuneCountInString(p) < 8 {
+		return errors.New("Password must be at least 8 characters long")
+	}
+	hasNumber := false
+	for _, c := range p {
+		if c >= '0' && c <= '9' {
+			hasNumber = true
+			break
+		}
+	}
+	if !hasNumber {
+		return errors.New("Password must contain at least one number")
+	}
+	return nil
 }
