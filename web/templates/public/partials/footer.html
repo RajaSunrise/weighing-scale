@@ -3,13 +3,13 @@
     <div class="max-w-7xl mx-auto px-4 md:px-10">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             <!-- Brand Section -->
-            <div class="flex flex-col gap-6">
+            <div class="flex flex-col gap-6" data-aos="fade-up">
                 <a href="/" class="flex items-center gap-3 text-white">
                     <span class="material-symbols-outlined text-primary text-4xl">terrain</span>
-                    <span class="text-xl font-bold tracking-tight">Mitra Batu Split</span>
+                    <span class="text-xl font-bold tracking-tight">PT. KAYA RAYA BAROKAH</span>
                 </a>
                 <p class="text-slate-400 text-sm leading-relaxed">
-                    Penyedia material batu split dan agregat berkualitas tinggi untuk kebutuhan konstruksi infrastruktur nasional. Langsung dari tambang, presisi, dan terpercaya.
+                    Penyedia material batu split dan agregat berkualitas tinggi untuk kebutuhan konstruksi infrastruktur di Nusa Tenggara Barat. Langsung dari tambang, presisi, dan terpercaya.
                 </p>
                 <div class="flex gap-4 mt-2">
                     <a href="#" class="size-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:bg-primary hover:text-white transition-all">
@@ -25,7 +25,7 @@
             </div>
 
             <!-- Quick Links -->
-            <div>
+            <div data-aos="fade-up" data-aos-delay="100">
                 <h3 class="text-white font-bold text-lg mb-6">Navigasi</h3>
                 <ul class="flex flex-col gap-4">
                     <li><a href="/" class="text-slate-400 hover:text-primary transition-colors text-sm">Beranda</a></li>
@@ -37,7 +37,7 @@
             </div>
 
             <!-- Support -->
-            <div>
+            <div data-aos="fade-up" data-aos-delay="200">
                 <h3 class="text-white font-bold text-lg mb-6">Dukungan</h3>
                 <ul class="flex flex-col gap-4">
                     <li><a href="/kontak" class="text-slate-400 hover:text-primary transition-colors text-sm">Hubungi Kami</a></li>
@@ -49,28 +49,28 @@
             </div>
 
             <!-- Contact -->
-            <div>
+            <div data-aos="fade-up" data-aos-delay="300">
                 <h3 class="text-white font-bold text-lg mb-6">Hubungi Kami</h3>
                 <ul class="flex flex-col gap-6">
                     <li class="flex gap-4">
                         <span class="material-symbols-outlined text-primary mt-1">location_on</span>
                         <div class="flex flex-col">
                             <span class="text-white text-sm font-medium">Kantor Pusat</span>
-                            <span class="text-slate-400 text-sm leading-relaxed">Jl. Raya Industri No. 45, Karawang Barat, Jawa Barat 41311</span>
+                            <span class="text-slate-400 text-sm leading-relaxed">Jl. Raya Labuhan Lombok No. 88, Lombok Timur, Nusa Tenggara Barat</span>
                         </div>
                     </li>
                     <li class="flex gap-4">
                         <span class="material-symbols-outlined text-primary mt-1">call</span>
                         <div class="flex flex-col">
                             <span class="text-white text-sm font-medium">Telepon</span>
-                            <span class="text-slate-400 text-sm">+62 267 1234 5678</span>
+                            <span class="text-slate-400 text-sm">+62 376 1234 5678</span>
                         </div>
                     </li>
                     <li class="flex gap-4">
                         <span class="material-symbols-outlined text-primary mt-1">mail</span>
                         <div class="flex flex-col">
                             <span class="text-white text-sm font-medium">Email</span>
-                            <span class="text-slate-400 text-sm">sales@mitrabatusplit.co.id</span>
+                            <span class="text-slate-400 text-sm">sales@kayarayabarokah.co.id</span>
                         </div>
                     </li>
                 </ul>
@@ -79,7 +79,7 @@
 
         <div class="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
             <p class="text-slate-500 text-sm text-center md:text-left">
-                &copy; {{ currentYear }} Mitra Batu Split. Hak Cipta Dilindungi Undang-Undang.
+                &copy; {{ currentYear }} PT. KAYA RAYA BAROKAH. Hak Cipta Dilindungi Undang-Undang.
             </p>
             <div class="flex gap-6">
                 <a href="#" class="text-slate-500 hover:text-white text-sm">Peta Situs</a>
@@ -88,4 +88,47 @@
         </div>
     </div>
 </footer>
+
+<!-- External Scripts -->
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+<!-- Global Logic -->
+<script>
+    // Initialize AOS
+    AOS.init({
+        once: true,
+        duration: 800,
+        offset: 50,
+    });
+
+    // Mobile Menu Logic
+    const menuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+
+    if (menuBtn && mobileMenu) {
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+    }
+
+    // Theme Toggle Logic
+    const themeToggles = [
+        document.getElementById('theme-toggle'),
+        document.getElementById('theme-toggle-mobile')
+    ];
+
+    themeToggles.forEach(toggle => {
+        if (!toggle) return;
+        toggle.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.contains('dark');
+            if (isDark) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+        });
+    });
+</script>
 {{ end }}

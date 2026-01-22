@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="dark" lang="id">
 <head>
-    <title>Mitra Batu Split - FAQ</title>
+    <title>FAQ - PT. KAYA RAYA BAROKAH</title>
     {{ template "public_head" . }}
 </head>
-<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white antialiased overflow-x-hidden flex flex-col min-h-screen">
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white antialiased overflow-x-hidden flex flex-col min-h-screen transition-colors duration-300">
     {{ template "public_navbar" dict "active" "faq" }}
 
     <main class="flex-1 flex flex-col">
@@ -12,72 +12,72 @@
 <div class="flex flex-col md:flex-row max-w-[1440px] mx-auto w-full">
     <div class="flex-1 px-6 md:px-12 py-8 max-w-4xl mx-auto">
     <div class="flex flex-col gap-8">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3" data-aos="fade-down">
             <div class="p-2 bg-primary/10 rounded-lg"><span class="material-symbols-outlined text-primary text-2xl">help_center</span></div>
-            <h2 class="text-2xl font-bold text-white">Pertanyaan Umum (FAQ)</h2>
+            <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Pertanyaan Umum (FAQ)</h2>
         </div>
 
         <!-- Category: Produk -->
-        <h3 class="text-lg font-bold text-primary mt-2">Produk & Kualitas</h3>
+        <h3 class="text-lg font-bold text-primary mt-2" data-aos="fade-right">Produk & Kualitas</h3>
         <div class="space-y-4">
-            <div class="group bg-surface-dark rounded-xl border border-border-dark overflow-hidden">
-                <button class="faq-toggle w-full flex cursor-pointer items-center justify-between p-5 text-base font-bold text-white text-left">
+            <div class="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden shadow-sm" data-aos="fade-up" data-aos-delay="0">
+                <button class="faq-toggle w-full flex cursor-pointer items-center justify-between p-5 text-base font-bold text-slate-900 dark:text-white text-left hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <span>Apa saja jenis ukuran batu split yang tersedia?</span>
                     <span class="material-symbols-outlined text-slate-400 transition-transform">expand_more</span>
                 </button>
-                <div class="faq-content hidden px-5 pb-5 pt-0 text-slate-300 leading-relaxed text-sm">Kami memproduksi berbagai ukuran: Split 1-2 (10-20mm), Split 2-3 (20-30mm), Split 3-5 (30-50mm), dan Abu Batu (0-5mm).</div>
+                <div class="faq-content hidden px-5 pb-5 pt-0 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">Kami memproduksi berbagai ukuran: Split 1-2 (10-20mm), Split 2-3 (20-30mm), Split 3-5 (30-50mm), dan Abu Batu (0-5mm).</div>
             </div>
-            <div class="group bg-surface-dark rounded-xl border border-border-dark overflow-hidden">
-                <button class="faq-toggle w-full flex cursor-pointer items-center justify-between p-5 text-base font-bold text-white text-left">
+            <div class="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden shadow-sm" data-aos="fade-up" data-aos-delay="100">
+                <button class="faq-toggle w-full flex cursor-pointer items-center justify-between p-5 text-base font-bold text-slate-900 dark:text-white text-left hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <span>Apakah material ini cocok untuk beton mutu tinggi?</span>
                     <span class="material-symbols-outlined text-slate-400 transition-transform">expand_more</span>
                 </button>
-                <div class="faq-content hidden px-5 pb-5 pt-0 text-slate-300 leading-relaxed text-sm">Ya, material Andesit kami memiliki kekerasan tinggi dan kadar lumpur <1%, cocok untuk beton K-300 ke atas. Kami juga menyertakan hasil uji lab berkala.</div>
+                <div class="faq-content hidden px-5 pb-5 pt-0 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">Ya, material Andesit kami memiliki kekerasan tinggi dan kadar lumpur <1%, cocok untuk beton K-300 ke atas. Kami juga menyertakan hasil uji lab berkala.</div>
             </div>
         </div>
 
         <!-- Category: Pemesanan -->
-        <h3 class="text-lg font-bold text-primary mt-2">Pemesanan & Pembayaran</h3>
+        <h3 class="text-lg font-bold text-primary mt-2" data-aos="fade-right">Pemesanan & Pembayaran</h3>
         <div class="space-y-4">
-             <div class="group bg-surface-dark rounded-xl border border-border-dark overflow-hidden">
-                <button class="faq-toggle w-full flex cursor-pointer items-center justify-between p-5 text-base font-bold text-white text-left">
+             <div class="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden shadow-sm" data-aos="fade-up" data-aos-delay="0">
+                <button class="faq-toggle w-full flex cursor-pointer items-center justify-between p-5 text-base font-bold text-slate-900 dark:text-white text-left hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <span>Berapa minimum order?</span>
                     <span class="material-symbols-outlined text-slate-400 transition-transform">expand_more</span>
                 </button>
-                <div class="faq-content hidden px-5 pb-5 pt-0 text-slate-300 leading-relaxed text-sm">Minimum pemesanan 1 rit. Untuk Dump Truck sekitar 6-8m³, dan Tronton sekitar 24-30m³.</div>
+                <div class="faq-content hidden px-5 pb-5 pt-0 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">Minimum pemesanan 1 rit. Untuk Dump Truck sekitar 6-8m³, dan Tronton sekitar 24-30m³.</div>
             </div>
-            <div class="group bg-surface-dark rounded-xl border border-border-dark overflow-hidden">
-                <button class="faq-toggle w-full flex cursor-pointer items-center justify-between p-5 text-base font-bold text-white text-left">
+            <div class="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden shadow-sm" data-aos="fade-up" data-aos-delay="100">
+                <button class="faq-toggle w-full flex cursor-pointer items-center justify-between p-5 text-base font-bold text-slate-900 dark:text-white text-left hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <span>Bagaimana prosedur pembayaran?</span>
                     <span class="material-symbols-outlined text-slate-400 transition-transform">expand_more</span>
                 </button>
-                <div class="faq-content hidden px-5 pb-5 pt-0 text-slate-300 leading-relaxed text-sm">Untuk pelanggan baru, kami menerapkan sistem CBD (Cash Before Delivery). Untuk kontrak jangka panjang, tersedia opsi termin (TOP) sesuai kesepakatan.</div>
+                <div class="faq-content hidden px-5 pb-5 pt-0 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">Untuk pelanggan baru, kami menerapkan sistem CBD (Cash Before Delivery). Untuk kontrak jangka panjang, tersedia opsi termin (TOP) sesuai kesepakatan.</div>
             </div>
-            <div class="group bg-surface-dark rounded-xl border border-border-dark overflow-hidden">
-                <button class="faq-toggle w-full flex cursor-pointer items-center justify-between p-5 text-base font-bold text-white text-left">
+            <div class="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden shadow-sm" data-aos="fade-up" data-aos-delay="200">
+                <button class="faq-toggle w-full flex cursor-pointer items-center justify-between p-5 text-base font-bold text-slate-900 dark:text-white text-left hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <span>Apakah harga sudah termasuk pajak?</span>
                     <span class="material-symbols-outlined text-slate-400 transition-transform">expand_more</span>
                 </button>
-                <div class="faq-content hidden px-5 pb-5 pt-0 text-slate-300 leading-relaxed text-sm">Harga yang kami tawarkan biasanya belum termasuk PPN 11%, kecuali dinyatakan lain dalam penawaran resmi (Quotation).</div>
+                <div class="faq-content hidden px-5 pb-5 pt-0 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">Harga yang kami tawarkan biasanya belum termasuk PPN 11%, kecuali dinyatakan lain dalam penawaran resmi (Quotation).</div>
             </div>
         </div>
 
         <!-- Category: Pengiriman -->
-        <h3 class="text-lg font-bold text-primary mt-2">Pengiriman & Logistik</h3>
+        <h3 class="text-lg font-bold text-primary mt-2" data-aos="fade-right">Pengiriman & Logistik</h3>
         <div class="space-y-4">
-            <div class="group bg-surface-dark rounded-xl border border-border-dark overflow-hidden">
-                <button class="faq-toggle w-full flex cursor-pointer items-center justify-between p-5 text-base font-bold text-white text-left">
+            <div class="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden shadow-sm" data-aos="fade-up" data-aos-delay="0">
+                <button class="faq-toggle w-full flex cursor-pointer items-center justify-between p-5 text-base font-bold text-slate-900 dark:text-white text-left hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <span>Area mana saja yang dapat dijangkau?</span>
                     <span class="material-symbols-outlined text-slate-400 transition-transform">expand_more</span>
                 </button>
-                <div class="faq-content hidden px-5 pb-5 pt-0 text-slate-300 leading-relaxed text-sm">Kami melayani pengiriman ke seluruh wilayah JABODETABEK (Jakarta, Bogor, Depok, Tangerang, Bekasi) dan sebagian Jawa Barat (Karawang, Purwakarta).</div>
+                <div class="faq-content hidden px-5 pb-5 pt-0 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">Kami melayani pengiriman ke seluruh wilayah Lombok (Lombok Timur, Tengah, Barat, Utara, Mataram) dan sekitarnya di Nusa Tenggara Barat.</div>
             </div>
-            <div class="group bg-surface-dark rounded-xl border border-border-dark overflow-hidden">
-                <button class="faq-toggle w-full flex cursor-pointer items-center justify-between p-5 text-base font-bold text-white text-left">
+            <div class="group bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden shadow-sm" data-aos="fade-up" data-aos-delay="100">
+                <button class="faq-toggle w-full flex cursor-pointer items-center justify-between p-5 text-base font-bold text-slate-900 dark:text-white text-left hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <span>Apakah bisa ambil sendiri di tambang (FOB)?</span>
                     <span class="material-symbols-outlined text-slate-400 transition-transform">expand_more</span>
                 </button>
-                <div class="faq-content hidden px-5 pb-5 pt-0 text-slate-300 leading-relaxed text-sm">Ya, kami melayani pembelian FOB (Free On Board) dimana pembeli membawa armada sendiri. Pastikan armada Anda memenuhi standar keselamatan tambang kami.</div>
+                <div class="faq-content hidden px-5 pb-5 pt-0 text-slate-600 dark:text-slate-300 leading-relaxed text-sm">Ya, kami melayani pembelian FOB (Free On Board) dimana pembeli membawa armada sendiri. Pastikan armada Anda memenuhi standar keselamatan tambang kami.</div>
             </div>
         </div>
 
