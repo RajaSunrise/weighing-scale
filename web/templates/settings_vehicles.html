@@ -4,32 +4,69 @@
     <input type="hidden" id="csrf_token" value="{{.csrf_token}}">
     <header class="flex justify-between items-center">
         <div>
-            <h2 class="text-2xl font-bold text-white">Manajemen Kendaraan</h2>
-            <p class="text-text-secondary">Daftar truk, alat berat, dan data supir</p>
+            <h2 class="text-2xl font-bold text-white">Manajemen Kendaraan & Perusahaan</h2>
+            <p class="text-text-secondary">Kelola daftar truk, alat berat, dan perusahaan rekanan</p>
         </div>
-        <button onclick="document.getElementById('addVehicleModal').classList.remove('hidden')" class="px-4 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg transition-colors flex items-center gap-2">
-            <span class="material-symbols-outlined">add</span> Tambah Kendaraan
-        </button>
+
     </header>
 
-    <!-- Vehicles Table -->
-    <div class="bg-surface-dark border border-border-dark rounded-xl flex-1 overflow-hidden flex flex-col">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-                <thead class="bg-card-dark text-text-secondary font-medium border-b border-border-dark">
-                    <tr>
-                        <th class="px-6 py-4">Nomor Polisi</th>
-                        <th class="px-6 py-4">Nama Supir</th>
-                        <th class="px-6 py-4">Perusahaan</th>
-                        <th class="px-6 py-4 text-right">Berat Kosong (kg)</th>
-                        <th class="px-6 py-4 text-center">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="vehicleTableBody" class="divide-y divide-border-dark">
-                    <!-- Loaded via JS -->
-                </tbody>
-            </table>
+    <div class="flex flex-col lg:flex-row gap-6 h-full min-h-0">
+
+        <!-- Left Column: Vehicles -->
+        <div class="flex-1 flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-white">Daftar Kendaraan</h3>
+                <button onclick="openVehicleModal()" class="px-3 py-1.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">add</span> Kendaraan
+                </button>
+            </div>
+
+            <div class="bg-surface-dark border border-border-dark rounded-xl flex-1 overflow-hidden flex flex-col">
+                <div class="overflow-x-auto h-full">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-card-dark text-text-secondary font-medium border-b border-border-dark sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3">No. Polisi</th>
+                                <th class="px-4 py-3">Supir</th>
+                                <th class="px-4 py-3">Perusahaan</th>
+                                <th class="px-4 py-3 text-right">Tare (kg)</th>
+                                <th class="px-4 py-3 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vehicleTableBody" class="divide-y divide-border-dark overflow-y-auto">
+                            <!-- Loaded via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
+
+        <!-- Right Column: Companies -->
+        <div class="w-full lg:w-1/3 flex flex-col gap-4">
+             <div class="flex justify-between items-center">
+                <h3 class="font-bold text-white">Daftar Perusahaan</h3>
+                <button onclick="openCompanyModal()" class="px-3 py-1.5 bg-surface-dark border border-border-dark hover:bg-card-hover text-white font-bold rounded-lg text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">add</span> Perusahaan
+                </button>
+            </div>
+
+            <div class="bg-surface-dark border border-border-dark rounded-xl flex-1 overflow-hidden flex flex-col">
+                <div class="overflow-x-auto h-full">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-card-dark text-text-secondary font-medium border-b border-border-dark sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3">Nama Perusahaan</th>
+                                <th class="px-4 py-3 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companyTableBody" class="divide-y divide-border-dark overflow-y-auto">
+                            <!-- Loaded via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -38,18 +75,33 @@
     <div class="bg-surface-dark border border-border-dark rounded-xl w-full max-w-lg p-6 shadow-2xl">
         <h3 class="text-xl font-bold text-white mb-4">Registrasi Kendaraan Baru</h3>
         <form id="addVehicleForm" class="space-y-4">
-            <div>
-                <label class="block text-xs font-bold text-text-secondary mb-1">Nomor Polisi</label>
-                <input type="text" name="plate_number" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary font-mono uppercase" required>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-text-secondary mb-1">Nomor Polisi</label>
+                    <input type="text" name="plate_number" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary font-mono uppercase" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-text-secondary mb-1">SIM Supir</label>
+                    <input type="text" name="sim" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary">
+                </div>
             </div>
+
             <div>
                 <label class="block text-xs font-bold text-text-secondary mb-1">Nama Supir</label>
                 <input type="text" name="driver_name" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary" required>
             </div>
+
             <div>
                 <label class="block text-xs font-bold text-text-secondary mb-1">Perusahaan / Pemilik</label>
-                <input type="text" name="owner_company" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary">
+                <div class="flex gap-2">
+                    <select name="company_id" id="vehicleCompanySelect" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary">
+                        <option value="">-- Pilih Perusahaan --</option>
+                        <!-- Populated via JS -->
+                    </select>
+                </div>
+                <p class="text-xs text-text-secondary mt-1">Jika perusahaan tidak ada, tambahkan di menu sebelah kanan.</p>
             </div>
+
             <div>
                 <label class="block text-xs font-bold text-text-secondary mb-1">Berat Kosong Default (kg)</label>
                 <input type="number" name="default_tare" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary">
@@ -64,38 +116,137 @@
     </div>
 </div>
 
+<!-- Add Company Modal -->
+<div id="addCompanyModal" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-surface-dark border border-border-dark rounded-xl w-full max-w-md p-6 shadow-2xl">
+        <h3 class="text-xl font-bold text-white mb-4">Tambah Perusahaan</h3>
+        <form id="addCompanyForm" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-text-secondary mb-1">Nama Perusahaan</label>
+                <input type="text" name="name" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary" required>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-text-secondary mb-1">Alamat</label>
+                <textarea name="address" rows="2" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary"></textarea>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-text-secondary mb-1">Kontak Person</label>
+                <input type="text" name="contact_person" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-text-secondary mb-1">Telepon</label>
+                <input type="text" name="phone" class="w-full bg-background-dark border border-border-dark rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary">
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <button type="button" onclick="document.getElementById('addCompanyModal').classList.add('hidden')" class="px-4 py-2 text-text-secondary hover:text-white">Batal</button>
+                <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-// Trigger immediately for HTMX swaps
-loadVehicles();
+// --- Initialization ---
+loadCompanies().then(() => {
+    loadVehicles(); // Load vehicles after companies so we have the map if needed (though API provides preload)
+});
+
+// --- Data Loading ---
 
 async function loadVehicles() {
-    const res = await fetch('/api/vehicles');
-    const data = await res.json();
-    const tbody = document.getElementById('vehicleTableBody');
-    tbody.innerHTML = '';
+    try {
+        const res = await fetch('/api/vehicles');
+        const data = await res.json();
+        const tbody = document.getElementById('vehicleTableBody');
+        tbody.innerHTML = '';
 
-    data.forEach(v => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-card-hover transition-colors';
-        tr.innerHTML = `
-            <td class="px-6 py-4 font-mono font-bold text-white">${v.plate_number}</td>
-            <td class="px-6 py-4">${v.driver_name}</td>
-            <td class="px-6 py-4 text-text-secondary">${v.owner_company}</td>
-            <td class="px-6 py-4 text-right font-mono">${v.default_tare}</td>
-            <td class="px-6 py-4 text-center">
-                <button onclick="deleteVehicle(${v.ID})" class="text-red-500 hover:text-red-400 material-symbols-outlined text-sm">delete</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
+        data.forEach(v => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-card-hover transition-colors';
+
+            // Determine company display name
+            // Prioritize relation, fallback to legacy string
+            let compName = v.owner_company || "-";
+            if (v.company && v.company.name) {
+                compName = v.company.name;
+            }
+
+            tr.innerHTML = `
+                <td class="px-4 py-3 font-mono font-bold text-white">${v.plate_number}</td>
+                <td class="px-4 py-3">
+                    <div class="text-white">${v.driver_name}</div>
+                    <div class="text-[10px] text-text-secondary">${v.sim ? 'SIM: ' + v.sim : ''}</div>
+                </td>
+                <td class="px-4 py-3 text-text-secondary text-xs">${compName}</td>
+                <td class="px-4 py-3 text-right font-mono">${v.default_tare}</td>
+                <td class="px-4 py-3 text-center">
+                    <button onclick="deleteVehicle(${v.ID})" class="text-red-500 hover:text-red-400 material-symbols-outlined text-sm">delete</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch(e) { console.error(e); }
 }
+
+async function loadCompanies() {
+    try {
+        const res = await fetch('/api/companies');
+        const data = await res.json();
+        const tbody = document.getElementById('companyTableBody');
+        const select = document.getElementById('vehicleCompanySelect');
+
+        tbody.innerHTML = '';
+        select.innerHTML = '<option value="">-- Pilih Perusahaan --</option>';
+
+        data.forEach(c => {
+            // Populate Table
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-card-hover transition-colors';
+            tr.innerHTML = `
+                <td class="px-4 py-3 text-white">
+                    <div class="font-bold">${c.name}</div>
+                    <div class="text-[10px] text-text-secondary">${c.phone || '-'}</div>
+                </td>
+                <td class="px-4 py-3 text-right">
+                    <button onclick="deleteCompany(${c.ID})" class="text-red-500 hover:text-red-400 material-symbols-outlined text-sm">delete</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+
+            // Populate Select
+            const opt = document.createElement('option');
+            opt.value = c.ID;
+            opt.innerText = c.name;
+            select.appendChild(opt);
+        });
+    } catch(e) { console.error(e); }
+}
+
+// --- Modals ---
+
+function openVehicleModal() {
+    document.getElementById('addVehicleModal').classList.remove('hidden');
+}
+
+function openCompanyModal() {
+    document.getElementById('addCompanyModal').classList.remove('hidden');
+}
+
+// --- Form Submissions ---
 
 document.getElementById('addVehicleForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
-    // Convert tare to number
+
+    // Type conversion
     data.default_tare = parseFloat(data.default_tare) || 0;
+    if(data.company_id) {
+        data.company_id = parseInt(data.company_id);
+    } else {
+        data.company_id = null;
+    }
 
     const csrfToken = document.getElementById('csrf_token').value;
     const res = await fetch('/api/vehicles', {
@@ -116,16 +267,51 @@ document.getElementById('addVehicleForm').addEventListener('submit', async (e) =
     }
 });
 
+document.getElementById('addCompanyForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+
+    const csrfToken = document.getElementById('csrf_token').value;
+    const res = await fetch('/api/companies', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify(data)
+    });
+
+    if(res.ok) {
+        document.getElementById('addCompanyModal').classList.add('hidden');
+        e.target.reset();
+        loadCompanies();
+    } else {
+        alert("Gagal menyimpan perusahaan.");
+    }
+});
+
+// --- Deletions ---
+
 async function deleteVehicle(id) {
-    if(!confirm("Anda yakin?")) return;
+    if(!confirm("Anda yakin hapus kendaraan ini?")) return;
     const csrfToken = document.getElementById('csrf_token').value;
     await fetch('/api/vehicles/' + id, {
         method: 'DELETE',
-        headers: {
-            'X-CSRF-TOKEN': csrfToken
-        }
+        headers: { 'X-CSRF-TOKEN': csrfToken }
     });
     loadVehicles();
+}
+
+async function deleteCompany(id) {
+    if(!confirm("Anda yakin hapus perusahaan ini?")) return;
+    const csrfToken = document.getElementById('csrf_token').value;
+    await fetch('/api/companies/' + id, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': csrfToken }
+    });
+    loadCompanies();
+    loadVehicles(); // Refresh vehicles as company info might change
 }
 </script>
 

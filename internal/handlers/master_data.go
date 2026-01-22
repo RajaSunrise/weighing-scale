@@ -32,7 +32,7 @@ func (s *Server) ShowVehicleSettings(c *gin.Context) {
 // ListVehicles API returns all registered vehicles
 func (s *Server) ListVehicles(c *gin.Context) {
 	var vehicles []models.Vehicle
-	if err := s.DB.Find(&vehicles).Error; err != nil {
+	if err := s.DB.Preload("Company").Find(&vehicles).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch vehicles"})
 		return
 	}
@@ -45,7 +45,12 @@ func (s *Server) CreateVehicle(c *gin.Context) {
 		PlateNumber  string  `json:"plate_number" binding:"required"`
 		DriverName   string  `json:"driver_name" binding:"required"`
 		DefaultTare  float64 `json:"default_tare"`
+		// Legacy string field, but we can fill it from Company name if ID provided
 		OwnerCompany string  `json:"owner_company"`
+
+		// New fields
+		SIM          string  `json:"sim"`
+		CompanyID    *uint   `json:"company_id"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -53,11 +58,21 @@ func (s *Server) CreateVehicle(c *gin.Context) {
 		return
 	}
 
+	// If CompanyID is provided, fetch the company name to populate OwnerCompany for legacy/display compatibility
+	if input.CompanyID != nil && *input.CompanyID > 0 {
+		var comp models.Company
+		if err := s.DB.First(&comp, *input.CompanyID).Error; err == nil {
+			input.OwnerCompany = comp.Name
+		}
+	}
+
 	vehicle := models.Vehicle{
 		PlateNumber:  input.PlateNumber,
 		DriverName:   input.DriverName,
 		DefaultTare:  input.DefaultTare,
 		OwnerCompany: input.OwnerCompany,
+		SIM:          input.SIM,
+		CompanyID:    input.CompanyID,
 	}
 
 	if err := s.DB.Create(&vehicle).Error; err != nil {
@@ -94,7 +109,7 @@ func (s *Server) GetVehicleDetails(c *gin.Context) {
 	}
 
 	var vehicle models.Vehicle
-	if err := s.DB.Where("plate_number = ?", plate).First(&vehicle).Error; err != nil {
+	if err := s.DB.Preload("Company").Where("plate_number = ?", plate).First(&vehicle).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Vehicle not found"})
 		return
 	}
@@ -115,7 +130,7 @@ func (s *Server) SearchVehicles(c *gin.Context) {
 
 	var vehicles []models.Vehicle
 	// Simple fuzzy search - case insensitive (already uppercased)
-	err := s.DB.Where("plate_number LIKE ?", "%"+query+"%").Limit(10).Find(&vehicles).Error
+	err := s.DB.Preload("Company").Where("plate_number LIKE ?", "%"+query+"%").Limit(10).Find(&vehicles).Error
 	if err != nil {
 		log.Printf("SearchVehicles error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Search failed"})
@@ -124,4 +139,65 @@ func (s *Server) SearchVehicles(c *gin.Context) {
 
 	log.Printf("SearchVehicles found %d vehicles", len(vehicles))
 	c.JSON(http.StatusOK, vehicles)
+}
+
+// === COMPANY MANAGEMENT ===
+
+// ListCompanies API
+func (s *Server) ListCompanies(c *gin.Context) {
+	var companies []models.Company
+	if err := s.DB.Order("name asc").Find(&companies).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch companies"})
+		return
+	}
+	c.JSON(http.StatusOK, companies)
+}
+
+// CreateCompany API
+func (s *Server) CreateCompany(c *gin.Context) {
+	var input struct {
+		Name          string `json:"name" binding:"required"`
+		Address       string `json:"address"`
+		ContactPerson string `json:"contact_person"`
+		Phone         string `json:"phone"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	company := models.Company{
+		Name:          input.Name,
+		Address:       input.Address,
+		ContactPerson: input.ContactPerson,
+		Phone:         input.Phone,
+	}
+
+	if err := s.DB.Create(&company).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create company. Name might be duplicate."})
+		return
+	}
+
+	c.JSON(http.StatusCreated, company)
+}
+
+// DeleteCompany API
+func (s *Server) DeleteCompany(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	// Optional: Check if used by vehicles?
+	// GORM foreign keys might restrict this depending on constraint setup.
+
+	if err := s.DB.Delete(&models.Company{}, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete company"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Company deleted"})
 }

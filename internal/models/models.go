@@ -80,6 +80,15 @@ type ScaleConfig struct {
 	Enabled  bool   `json:"enabled"`
 }
 
+// Company represents a transport company
+type Company struct {
+	gorm.Model
+	Name          string `gorm:"uniqueIndex;not null" json:"name"`
+	Address       string `json:"address"`
+	ContactPerson string `json:"contact_person"`
+	Phone         string `json:"phone"`
+}
+
 // Vehicle represents master data for known vehicles
 type Vehicle struct {
 	gorm.Model
@@ -87,6 +96,10 @@ type Vehicle struct {
 	DriverName   string  `json:"driver_name"`
 	DefaultTare  float64 `json:"default_tare"` // Known empty weight
 	OwnerCompany string  `json:"owner_company"`
+
+	SIM          string  `json:"sim"`
+	CompanyID    *uint   `json:"company_id"`
+	Company      Company `json:"company"`
 }
 
 // Invoice metadata
