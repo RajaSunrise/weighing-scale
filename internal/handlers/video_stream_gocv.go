@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -74,6 +75,13 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 	c.Writer.Header().Set("Cache-Control", "no-cache")
 	c.Writer.Header().Set("Connection", "keep-alive")
 
+	// Pre-allocate buffer for header construction to avoid allocations in loop
+	// Size: ~60 bytes static + ~6 digits for length = ~70 bytes
+	headerBuf := make([]byte, 0, 128)
+	headerPart1 := []byte("--frame\r\nContent-Type: image/jpeg\r\nContent-Length: ")
+	headerPart2 := []byte("\r\n\r\n")
+	crlf := []byte("\r\n")
+
 	// Get or Create Stream
 	stream := getStream(url)
 	streamLock.Lock()
@@ -99,8 +107,13 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 		stream.LastFrameMu.RUnlock()
 
 		if len(frame) > 0 {
-			// Write MIME boundary
-			_, err := c.Writer.Write([]byte(fmt.Sprintf("--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", len(frame))))
+			// Write MIME boundary (Zero-allocation optimization)
+			headerBuf = headerBuf[:0]
+			headerBuf = append(headerBuf, headerPart1...)
+			headerBuf = strconv.AppendInt(headerBuf, int64(len(frame)), 10)
+			headerBuf = append(headerBuf, headerPart2...)
+
+			_, err := c.Writer.Write(headerBuf)
 			if err != nil {
 				return
 			}
@@ -108,7 +121,7 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 			if err != nil {
 				return
 			}
-			_, err = c.Writer.Write([]byte("\r\n"))
+			_, err = c.Writer.Write(crlf)
 			if err != nil {
 				return
 			}
