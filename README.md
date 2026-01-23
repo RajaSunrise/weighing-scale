@@ -125,6 +125,15 @@ Untuk memantau error atau aktivitas sistem:
 
 ## 📁 Struktur Project
 
+## Build ScaleRender
+```bash
+GOOS=windows GOARCH=amd64 \
+  CGO_ENABLED=0 \
+  GOEXPERIMENT=greenteagc \
+  go build -o scale_sender.exe \
+    -ldflags "-s -w" \
+    -trimpath \
+    ./cmd/scale_sender/
 ```
 stoneweigh/
 ├── cmd/server/         # Entry point aplikasi
