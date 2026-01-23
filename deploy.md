@@ -1,188 +1,196 @@
-# Panduan Deployment StoneWeigh ke VPS
+# Deploy to Fly.io
 
-Dokumen ini menjelaskan langkah-langkah untuk mendeploy aplikasi StoneWeigh ke VPS (Virtual Private Server) dan menghubungkannya dengan domain menggunakan Nginx dan HTTPS (SSL).
+This guide explains how to deploy the StoneWeigh application to Fly.io.
 
-## Prasyarat
+## Prerequisites
 
-1.  **VPS** dengan sistem operasi Linux (Ubuntu 20.04/22.04 LTS atau Debian 11/12 direkomendasikan).
-2.  **Domain** yang sudah diarahkan (A Record) ke IP Address VPS Anda.
-3.  Akses **SSH** root atau user dengan hak sudo ke VPS.
+- [Fly.io account](https://fly.io/)
+- [flyctl CLI installed](https://fly.io/docs/getting-started/installing-flyctl/) (optional, you can use the web dashboard)
+- Docker installed locally (for testing)
+- GitHub repository (for web-based deployment)
 
-## Langkah 1: Persiapan Lingkungan VPS
+## Steps
 
-Masuk ke VPS Anda via SSH dan update sistem serta install Docker & Docker Compose.
-
-```bash
-# Update repository dan paket sistem
-sudo apt update && sudo apt upgrade -y
-
-# Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-
-# Install Docker Compose (biasanya sudah include di versi docker terbaru sebagai plugin)
-sudo apt install docker-compose-plugin -y
-
-# Verifikasi instalasi
-docker compose version
-```
-
-## Langkah 2: Clone Repository & Konfigurasi
-
-Clone source code aplikasi ke direktori yang diinginkan (misal: `/opt/stoneweigh` atau `~/stoneweigh`).
+### 1. Install flyctl (if not already installed)
 
 ```bash
-# Clone repository (ganti URL dengan repository Anda)
-git clone https://github.com/username/stoneweigh.git
-cd stoneweigh
-
-# Buat file konfigurasi .env dari template atau manual
-cp .env.example .env  # Jika ada, atau buat baru
-nano .env
+curl -L https://fly.io/install.sh | sh
 ```
 
-**Konfigurasi Penting di `.env`:**
-Pastikan Anda mengubah nilai default untuk keamanan produksi:
-
-```ini
-# Gunakan mode release untuk produksi
-GIN_MODE=release
-PORT=8080
-
-# Security
-SESSION_SECRET=GANTI_DENGAN_STRING_ACAK_YANG_PANJANG_DAN_RUMIT_!@#
-
-# Admin Awal
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=password_yang_sangat_kuat
-
-# Database (Default SQLite sudah cukup untuk skala kecil/menengah)
-DB_DRIVER=sqlite
-DB_DSN=stoneweigh.db
-```
-
-## Langkah 3: Menjalankan Aplikasi dengan Docker
-
-Jalankan aplikasi menggunakan Docker Compose. Proses ini akan membuild image dan menjalankan container.
+### 2. Authenticate with Fly.io
 
 ```bash
-# Build dan jalankan di background (detached mode)
-docker compose up -d --build
-
-# Cek status container
-docker compose ps
-
-# Cek logs jika ada error
-docker compose logs -f
+fly auth login
 ```
 
-Saat ini aplikasi sudah berjalan di `http://IP-VPS:8080`.
+This will open a browser window for you to log in to your Fly.io account.
 
-## Langkah 4: Setup Nginx sebagai Reverse Proxy
+### 3. Prepare for Go Build
 
-Untuk menghubungkan domain dan menghilangkan port 8080 di URL, kita gunakan Nginx.
+Since you want to use `go build` with SQLite and without GoCV, ensure there's no `Dockerfile` in the project root (rename or delete it if it exists). This will allow Fly.io to use its built-in Go buildpack.
+
+If you have a `Dockerfile`, run:
 
 ```bash
-# Install Nginx
-sudo apt install nginx -y
+mv Dockerfile Dockerfile.backup
 ```
 
-Buat konfigurasi server block baru untuk domain Anda:
+### 4. Initialize the Fly app
+
+From the project root directory:
 
 ```bash
-sudo nano /etc/nginx/sites-available/stoneweigh
+fly launch
 ```
 
-Isi dengan konfigurasi berikut (ganti `domain-anda.com` dengan domain asli):
+This command will:
+- Ask you to choose an app name (e.g., stoneweigh)
+- Select a region for deployment (choose one close to your users)
+- Generate a `fly.toml` configuration file
+- Use the Go buildpack to build your application (since no Dockerfile is present)
 
-```nginx
-server {
-    listen 80;
-    server_name domain-anda.com www.domain-anda.com;
+### 5. Configure fly.toml (if needed)
 
-    location / {
-        proxy_pass http://localhost:8080;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
+The `fly launch` command creates a `fly.toml` file. For this Go application using the buildpack, it should look something like this:
 
-    # Optional: Cache control untuk static files
-    location /static/ {
-        proxy_pass http://localhost:8080;
-        expires 30d;
-        add_header Cache-Control "public, no-transform";
-    }
-}
+```toml
+app = "stoneweigh"
+primary_region = "sin"
+
+[build]
+  # Using Go buildpack - no dockerfile specified
+
+[env]
+  GIN_MODE = "release"
+  PORT = "8080"
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = "80"
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = "443"
 ```
 
-Aktifkan konfigurasi dan restart Nginx:
+The Go buildpack will automatically run `go build` without any special tags, ensuring SQLite is used and GoCV is not activated. Adjust other settings based on your application requirements. Make sure the PORT matches your application's configuration.
+
+### 5. Set Environment Variables
+
+Before deploying, set your environment variables:
 
 ```bash
-# Link ke sites-enabled
-sudo ln -s /etc/nginx/sites-available/stoneweigh /etc/nginx/sites-enabled/
-
-# Cek syntax error
-sudo nginx -t
-
-# Restart Nginx
-sudo systemctl restart nginx
+fly secrets set SESSION_SECRET="your-secure-random-string"
+fly secrets set ADMIN_USERNAME="admin"
+fly secrets set ADMIN_PASSWORD="strong-password"
+fly secrets set DB_DRIVER="sqlite"
+fly secrets set DB_DSN="stoneweigh.db"
 ```
 
-Sekarang akses `http://domain-anda.com`. Seharusnya aplikasi sudah muncul.
-
-## Langkah 5: Pasang SSL (HTTPS) dengan Certbot
-
-Amankan koneksi menggunakan SSL gratis dari Let's Encrypt.
+For database, if using PostgreSQL, you can attach a Fly.io Postgres:
 
 ```bash
-# Install Certbot dan plugin Nginx
-sudo apt install certbot python3-certbot-nginx -y
-
-# Request sertifikat (ikuti instruksi di layar)
-sudo certbot --nginx -d domain-anda.com -d www.domain-anda.com
+fly postgres create
+fly postgres attach <postgres-app-name>
 ```
 
-Certbot akan otomatis memodifikasi file Nginx Anda untuk mengalihkan HTTP ke HTTPS.
-
-## Langkah 6: Maintenance & Update
-
-**Melihat Logs:**
-```bash
-cd ~/stoneweigh
-docker compose logs -f --tail=100
-```
-
-**Update Aplikasi:**
-Jika ada perubahan kode di repository:
-```bash
-cd ~/stoneweigh
-git pull origin main
-docker compose up -d --build
-docker image prune -f  # Hapus image lama yang tidak terpakai
-```
-
-**Backup Database (SQLite):**
-Cukup copy file `data/stoneweigh.db` (jika dimount di volume) atau file di dalam container.
-Sesuai `docker-compose.yml`, volume `./data` dimount, jadi database aman di host.
+### 7. Deploy the application
 
 ```bash
-# Contoh backup manual
-cp data/stoneweigh.db data/backup_stoneweigh_$(date +%F).db
+fly deploy
 ```
 
-## Troubleshooting Umum
+This will build your Go application using the buildpack and deploy it to Fly.io. The first deployment may take several minutes.
 
-1.  **Camera RTSP tidak muncul:**
-    *   Pastikan VPS memiliki koneksi ke kamera jika kamera berada di jaringan publik, atau gunakan VPN jika kamera di jaringan lokal (Site-to-Site VPN).
-    *   Cek logs: `docker compose logs | grep gst` untuk melihat error GStreamer.
+### 7. Check deployment status
 
-2.  **Error 502 Bad Gateway:**
-    *   Artinya Nginx tidak bisa menghubungi aplikasi Docker. Cek apakah container mati: `docker compose ps`.
+```bash
+fly status
+```
 
-3.  **Permission Error pada Logs:**
-    *   Pastikan folder logs di host bisa ditulisi: `chmod 777 logs`.
+To view logs:
+
+```bash
+fly logs
+```
+
+### 8. Access your application
+
+Once deployed, Fly.io will provide a URL for your application (e.g., https://stoneweigh.fly.dev). You can also check it with:
+
+```bash
+fly open
+```
+
+## Alternative: Build and Deploy via Fly.io Web Dashboard
+
+If you prefer not to use the CLI, you can build and deploy through the Fly.io web interface using GitHub integration:
+
+### 1. Connect Your Repository
+
+1. Go to [Fly.io Dashboard](https://fly.io/dashboard)
+2. Click "Launch an app"
+3. Choose "Connect to GitHub" instead of "From a Dockerfile"
+4. Authorize Fly.io to access your GitHub account
+5. Select your StoneWeigh repository
+
+### 2. Configure the App
+
+- Choose an app name and region
+- Fly.io will detect it's a Go application and set up the buildpack automatically
+- Review the generated configuration (similar to fly.toml)
+
+### 3. Set Environment Variables
+
+In the dashboard:
+- Go to your app's settings
+- Under "Secrets", add the same environment variables as in step 5 above:
+  - SESSION_SECRET
+  - ADMIN_USERNAME
+  - ADMIN_PASSWORD
+  - DB_DRIVER=sqlite
+  - DB_DSN=stoneweigh.db
+
+### 4. Deploy
+
+- Push your code to GitHub (if not already)
+- In the dashboard, click "Deploy" or set up auto-deploy on push
+- The web interface will build your Go application using the buildpack and deploy it
+
+### 5. Monitor and Access
+
+- View build logs and app status in the dashboard
+- Access your app URL from the dashboard
+- Scale, view metrics, and manage the app through the web interface
+
+This method is convenient if you want to avoid installing flyctl locally.
+
+## Additional Commands
+
+- **Update deployment**: Run `fly deploy` again after making changes to the code
+- **Scale the app**: `fly scale count 2` (for 2 instances)
+- **View environment**: `fly secrets list`
+- **SSH into the app**: `fly ssh console`
+
+## Database Considerations
+
+- For SQLite (default): Data persists in the Fly volume. Make sure to configure a volume if needed.
+- For PostgreSQL: Use Fly's managed Postgres for better performance and reliability.
+
+## Troubleshooting
+
+- If deployment fails, check the logs with `fly logs`
+- Ensure your `go.mod` file is properly configured and all dependencies are listed
+- The Go buildpack will automatically handle building with `go build` without GoCV tags, using SQLite as the database
+- For hardware integration (serial ports, RTSP), note that Fly.io runs in containers, so physical hardware access may require different setup
+- Make sure the application listens on the PORT environment variable (default 8080)
+
+For more detailed documentation, visit [Fly.io Docs](https://fly.io/docs/).
