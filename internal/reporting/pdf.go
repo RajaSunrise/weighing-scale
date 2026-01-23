@@ -10,7 +10,7 @@ import (
 	"stoneweigh/internal/models"
 )
 
-// dateToIndonesian formats time to "02 Januari 2006"
+// dateToIndonesian formats time to "02 Januari 2006 15:04"
 func dateToIndonesian(t time.Time) string {
 	months := []string{
 		"", "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -20,217 +20,181 @@ func dateToIndonesian(t time.Time) string {
 }
 
 // GenerateInvoice creates a PDF invoice for a weighing transaction (Indonesian & Modern)
+// It is designed to fit in the top half of an A4 page (approx 148mm height).
 func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	log.Printf("Generating PDF for ticket %s", record.TicketNumber)
-	log.Printf("  - PlateNumber: '%s'", record.PlateNumber)
-	log.Printf("  - DriverName: '%s'", record.DriverName)
-	log.Printf("  - CompanyName: '%s'", record.CompanyName)
-	log.Printf("  - Product: '%s'", record.Product)
-	log.Printf("  - GrossWeight: %.2f", record.GrossWeight)
-	log.Printf("  - TareWeight: %.2f", record.TareWeight)
-	log.Printf("  - NetWeight: %.2f", record.NetWeight)
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 
 	// --- Colors ---
-	// Primary Blue: #196DEC -> 25, 109, 236
-	// Light Blue: #F0F7FF -> 240, 247, 255
+	// Primary Amber: #d97706 -> 217, 119, 6
+	// Light Background: #f6f7f8 -> 246, 247, 248
 	// Dark Grey: #333333 -> 51, 51, 51
 
-	// --- Header Section ---
+	primaryR, primaryG, primaryB := 217, 119, 6
+	bgR, bgG, bgB := 246, 247, 248
+	textR, textG, textB := 51, 51, 51
+
+	// --- Header Section (Top Banner) ---
 	// Background Banner
-	pdf.SetFillColor(25, 109, 236)
-	pdf.Rect(0, 0, 210, 30, "F")
+	pdf.SetFillColor(primaryR, primaryG, primaryB)
+	pdf.Rect(0, 0, 210, 25, "F")
 
-	pdf.SetFont("Arial", "B", 24)
+	// Company Name
+	pdf.SetFont("Arial", "B", 20)
 	pdf.SetTextColor(255, 255, 255) // White
-	pdf.SetXY(10, 8)
-	pdf.Cell(0, 10, "Timbang Batu Lombok")
+	pdf.SetXY(10, 5)
+	pdf.Cell(0, 10, "PT. KAYA RAYA BAROKAH")
 
-	pdf.SetFont("Arial", "", 10)
+	// Subtitle / Address
+	pdf.SetFont("Arial", "", 9)
 	pdf.SetTextColor(255, 255, 255)
-	pdf.SetXY(10, 18)
+	pdf.SetXY(10, 14)
+	pdf.Cell(0, 5, "Lombok Timur, Nusa Tenggara Barat")
+	pdf.Ln(4)
 	pdf.Cell(0, 5, "Solusi Penimbangan Digital Terintegrasi")
 
-	// Reset Position
-	pdf.SetY(40)
-	pdf.SetTextColor(51, 51, 51)
-	pdf.SetFont("Arial", "", 10)
-	pdf.Cell(0, 5, "Jalan Tambang Raya No. 123, Lombok Barat")
-	pdf.Ln(5)
-	pdf.Cell(0, 5, "Telp: 087805815285 | Email: indraaryadi@gmail.com")
-	pdf.Ln(10)
+	// --- Title Section ---
+	pdf.SetY(30)
+	pdf.SetTextColor(primaryR, primaryG, primaryB)
+	pdf.SetFont("Arial", "B", 14)
+	pdf.Cell(0, 8, "SURAT JALAN / BUKTI TIMBANG")
+	pdf.Ln(8)
 
-	// Divider Line
-	pdf.SetDrawColor(200, 200, 200)
-	pdf.SetLineWidth(0.5)
-	pdf.Line(10, 60, 200, 60)
-	pdf.Ln(10)
+	// --- Transaction Details (Grid) ---
+	// We use a light box for details
+	detailsTopY := pdf.GetY()
 
-	// --- Title & Ticket Info ---
-	pdf.SetY(65)
-	pdf.SetTextColor(25, 109, 236)
-	pdf.SetFont("Arial", "B", 18)
-	pdf.Cell(0, 10, "SURAT JALAN / BUKTI TIMBANG")
-	pdf.Ln(12)
+	// Box Background
+	pdf.SetFillColor(bgR, bgG, bgB)
+	pdf.SetDrawColor(primaryR, primaryG, primaryB)
+	pdf.SetLineWidth(0.1)
+	// Rect(x, y, w, h, style)
+	// Height approx 35mm
+	pdf.RoundedRect(10, detailsTopY, 190, 32, 2, "FD", "1234")
 
-	// Ticket Details Box
-	pdf.SetFillColor(240, 247, 255)
-	pdf.SetDrawColor(25, 109, 236)
-	pdf.SetLineWidth(0.2)
-	pdf.RoundedRect(10, 80, 190, 25, 2, "1234", "FD")
+	pdf.SetTextColor(textR, textG, textB)
+	pdf.SetY(detailsTopY + 3)
 
-	pdf.SetY(85)
-	pdf.SetTextColor(51, 51, 51)
+	// Helper to print label: value pair
+	printPair := func(x, y float64, label, value string, isBoldValue bool) {
+		pdf.SetXY(x, y)
+		pdf.SetFont("Arial", "", 8)
+		pdf.Cell(25, 5, label)
 
-	// Row 1 inside box
-	pdf.SetX(15)
-	pdf.SetFont("Arial", "B", 11)
-	pdf.Cell(25, 6, "No. Tiket")
-	pdf.SetFont("Courier", "B", 12)
-	pdf.Cell(60, 6, ": "+record.TicketNumber)
-
-	pdf.SetX(110)
-	pdf.SetFont("Arial", "B", 11)
-	pdf.Cell(25, 6, "Tanggal")
-	pdf.SetFont("Arial", "", 11)
-	pdf.Cell(60, 6, ": "+dateToIndonesian(record.WeighedAt))
-	pdf.Ln(10)
-
-	// --- Main Details ---
-	pdf.SetY(115)
-
-	// Helper to print label: value
-	printRow := func(label, value string, xOffset float64) {
-		pdf.SetX(xOffset)
-		pdf.SetFont("Arial", "B", 10)
-		pdf.Cell(35, 6, label)
-		pdf.SetFont("Arial", "", 10)
-		pdf.Cell(55, 6, ": "+value)
+		pdf.SetXY(x+25, y)
+		if isBoldValue {
+			pdf.SetFont("Arial", "B", 9)
+		} else {
+			pdf.SetFont("Arial", "", 9)
+		}
+		pdf.Cell(60, 5, ": "+value)
 	}
 
-	// Get values with defaults
+	// Prepare Data
 	plate := record.PlateNumber
-	if plate == "" || len(plate) == 0 {
-		plate = "-"
-	}
+	if plate == "" { plate = "-" }
 	driver := record.DriverName
-	if driver == "" || len(driver) == 0 {
-		driver = "-"
-	}
+	if driver == "" { driver = "-" }
 	company := record.CompanyName
-	if company == "" {
-		company = "-"
-	}
-	manager := record.ManagerName
-	if manager == "" {
-		manager = "-"
-	}
+	if company == "" { company = "-" }
 	product := record.Product
-	if product == "" {
-		product = "-"
-	}
+	if product == "" { product = "-" }
 
-	// Left Column
-	printRow("Nomor Polisi", plate, 10)
-	printRow("Supir", driver, 110)
-	pdf.Ln(8)
+	// Column 1 (Left)
+	col1X := 15.0
+	rowHeight := 6.0
+	currentY := detailsTopY + 2
 
-	printRow("Perusahaan", company, 10)
-	printRow("Operator", manager, 110)
-	pdf.Ln(8)
+	printPair(col1X, currentY, "No. Tiket", record.TicketNumber, true)
+	printPair(col1X, currentY+rowHeight, "Tanggal", dateToIndonesian(record.WeighedAt), false)
+	printPair(col1X, currentY+rowHeight*2, "Nomor Polisi", plate, true)
+	printPair(col1X, currentY+rowHeight*3, "Supir", driver, false)
 
-	printRow("Jenis Muatan", product, 10)
-	printRow("Status", record.Status, 110)
-	pdf.Ln(15)
+	// Column 2 (Right)
+	col2X := 110.0
+	printPair(col2X, currentY, "Perusahaan", company, false)
+	printPair(col2X, currentY+rowHeight, "Produk/Material", product, false)
+	printPair(col2X, currentY+rowHeight*2, "Status", record.Status, true)
+	// Operator/Manager
+	manager := record.ManagerName
+	if manager == "" { manager = "-" }
+	printPair(col2X, currentY+rowHeight*3, "Operator", manager, false)
 
 	// --- Weight Table ---
-	pdf.SetFont("Arial", "B", 12)
-	pdf.SetTextColor(25, 109, 236)
-	pdf.Cell(0, 10, "DATA PENIMBANGAN (Kg)")
-	pdf.Ln(10)
+	pdf.SetY(detailsTopY + 36)
 
 	// Table Header
-	pdf.SetFillColor(25, 109, 236)
+	pdf.SetFillColor(primaryR, primaryG, primaryB)
 	pdf.SetTextColor(255, 255, 255)
-	pdf.SetFont("Arial", "B", 11)
-	pdf.SetLineWidth(0.3)
+	pdf.SetFont("Arial", "B", 9)
+	pdf.SetLineWidth(0.2)
 	pdf.SetDrawColor(200, 200, 200)
 
-	pdf.CellFormat(63, 10, "Berat Kotor (Gross)", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(63, 10, "Berat Kosong (Tare)", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(64, 10, "Berat Bersih (Netto)", "1", 1, "C", true, 0, "")
+	pdf.CellFormat(63, 7, "Berat Kotor (Gross)", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(63, 7, "Berat Kosong (Tare)", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(64, 7, "Berat Bersih (Netto)", "1", 1, "C", true, 0, "")
 
 	// Table Content
 	pdf.SetFillColor(255, 255, 255)
-	pdf.SetTextColor(51, 51, 51)
-	pdf.SetFont("Courier", "B", 14)
+	pdf.SetTextColor(textR, textG, textB)
+	pdf.SetFont("Courier", "B", 12)
 
 	grossStr := fmt.Sprintf("%.0f", record.GrossWeight)
-	if record.GrossWeight == 0 {
-		grossStr = "0"
-	}
 	tareStr := fmt.Sprintf("%.0f", record.TareWeight)
-	if record.TareWeight == 0 {
-		tareStr = "0"
-	}
 	netStr := fmt.Sprintf("%.0f", record.NetWeight)
-	if record.NetWeight == 0 {
-		netStr = "0"
-	}
 
 	// Gross
-	pdf.CellFormat(63, 15, grossStr, "1", 0, "C", false, 0, "")
+	pdf.CellFormat(63, 10, grossStr, "1", 0, "C", false, 0, "")
 	// Tare
-	pdf.CellFormat(63, 15, tareStr, "1", 0, "C", false, 0, "")
-	// Net (Green Text)
-	pdf.SetTextColor(0, 150, 0)
-	pdf.CellFormat(64, 15, netStr, "1", 1, "C", false, 0, "")
+	pdf.CellFormat(63, 10, tareStr, "1", 0, "C", false, 0, "")
+	// Net (Green Text for Netto)
+	pdf.SetTextColor(0, 128, 0)
+	pdf.CellFormat(64, 10, netStr, "1", 1, "C", false, 0, "")
 
 	// --- Signatures ---
-	pdf.SetTextColor(51, 51, 51)
-	pdf.Ln(25)
+	pdf.SetTextColor(textR, textG, textB)
+	pdf.Ln(4) // Small gap
 
 	ySig := pdf.GetY()
 
-	// Box for signatures
-	pdf.SetDrawColor(230, 230, 230)
-	pdf.Rect(10, ySig, 190, 50, "D")
-
 	// Driver Sig
-	pdf.SetY(ySig + 5)
+	pdf.SetY(ySig)
 	pdf.SetX(20)
-	pdf.SetFont("Arial", "", 10)
-	pdf.Cell(80, 5, "Diserahkan Ke (Supir),")
+	pdf.SetFont("Arial", "", 8)
+	pdf.Cell(60, 4, "Diserahkan (Supir),")
 
 	// Manager Sig
-	pdf.SetX(120)
-	pdf.Cell(80, 5, "Diterima Oleh (Pengelola),")
+	pdf.SetX(130)
+	pdf.Cell(60, 4, "Diterima (Pengelola),")
+
+	// Space for signature
+	pdf.Ln(15)
 
 	// Names
-	pdf.SetY(ySig + 40)
-	pdf.SetFont("Arial", "B", 10)
-
-	driverSig := record.DriverName
-	if driverSig == "" {
-		driverSig = "-"
-	}
+	pdf.SetFont("Arial", "B", 9)
 	pdf.SetX(20)
-	pdf.Cell(80, 5, "( "+driverSig+" )")
-	pdf.Line(20, ySig+45, 80, ySig+45)
+	pdf.Cell(60, 4, "( "+driver+" )")
 
-	pdf.SetX(120)
-	pdf.Cell(80, 5, "( "+record.ManagerName+" )")
-	pdf.Line(120, ySig+45, 180, ySig+45)
+	pdf.SetX(130)
+	pdf.Cell(60, 4, "( "+manager+" )")
 
-	// --- Footer ---
-	pdf.SetY(265)
-	pdf.SetFont("Arial", "I", 8)
+	// --- Footer & Disclaimer ---
+	pdf.SetY(138)
+	pdf.SetFont("Arial", "I", 7)
 	pdf.SetTextColor(150, 150, 150)
-	pdf.Cell(0, 4, "Dokumen ini dicetak secara komputerisasi dan sah tanpa cap basah.")
-	pdf.Ln(4)
-	pdf.Cell(0, 4, fmt.Sprintf("Dicetak pada: %s", dateToIndonesian(time.Now())))
+	pdf.Cell(0, 4, fmt.Sprintf("Dicetak: %s | ID: %s", dateToIndonesian(time.Now()), record.TicketNumber))
+	pdf.Ln(3)
+	pdf.Cell(0, 4, "Dokumen ini sah tanpa cap basah.")
+
+	// --- Cut Line (Dashed) ---
+	pdf.SetY(148) // Approx half page
+	pdf.SetDrawColor(180, 180, 180)
+	pdf.SetLineWidth(0.5)
+	pdf.SetDashPattern([]float64{3, 3}, 0)
+	pdf.Line(0, 148, 210, 148)
+	pdf.SetDashPattern([]float64{}, 0) // Reset
 
 	// Ensure directory exists
 	if _, err := os.Stat("web/static/reports"); os.IsNotExist(err) {
@@ -238,7 +202,9 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	}
 
 	filename := fmt.Sprintf("web/static/reports/inv_%s.pdf", record.TicketNumber)
+	// Auto print JS
 	pdf.SetJavascript("this.print(true);")
+
 	err := pdf.OutputFileAndClose(filename)
 	if err != nil {
 		return "", err
