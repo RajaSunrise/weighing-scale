@@ -63,27 +63,35 @@
         @media print {
             @page {
                 size: landscape;
-                margin: 12mm 10mm;
+                margin: 15mm 10mm;
             }
-            
+
+            /* Hide browser URL and headers */
+            @page :first {
+                margin-top: 0;
+            }
+
             /* Hide all non-essential elements */
             body * {
                 visibility: hidden;
             }
-            
+
             /* Only show the printable area */
             .print-area, .print-area * {
                 visibility: visible;
             }
-            
+
             .print-area {
                 position: absolute;
                 left: 0;
                 top: 0;
                 width: 100%;
                 background: white;
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
             }
-            
+
             /* Reset body */
             body {
                 background-color: white !important;
@@ -91,34 +99,72 @@
                 font-family: 'Arial', 'Helvetica', sans-serif !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
             }
-            
-            /* Hide navigation and sidebar */
-            nav, aside, header.flex, form, button, .logo-brand, .logo-user, .no-print {
+
+            /* Hide navigation, sidebar, and all non-print elements */
+            nav, aside, header.flex, form, button, .logo-brand, .logo-user, .no-print,
+            .flex.justify-between.items-center:has(form), .h-full.flex.flex-col.p-6.gap-6 > header {
                 display: none !important;
                 visibility: hidden !important;
+            }
+
+            /* Ensure no URL appears */
+            a[href]:after {
+                content: none !important;
+            }
+
+            /* Hide any browser-generated headers/footers */
+            @page {
+                @top-center { content: none; }
+                @bottom-center { content: none; }
+                @top-left { content: none; }
+                @top-right { content: none; }
+                @bottom-left { content: none; }
+                @bottom-right { content: none; }
+            }
+
+            /* Additional print optimizations */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* Ensure images print correctly */
+            img {
+                max-width: 100% !important;
+                height: auto !important;
             }
 
             /* Print Header - appears on every page */
             .print-header {
                 display: block !important;
-                text-align: center;
-                margin-bottom: 15px;
-                padding-bottom: 12px;
+                margin-bottom: 20px;
+                padding-bottom: 15px;
                 border-bottom: 3px solid #000;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
             }
-            
+
             .print-header h1 {
-                font-size: 16pt;
+                font-size: 18pt;
                 font-weight: bold;
-                margin: 0 0 5px 0;
+                margin: 0;
                 color: #000;
             }
-            
+
             .print-header p {
-                font-size: 10pt;
+                font-size: 11pt;
                 margin: 0;
                 color: #333;
+            }
+
+            .print-header img {
+                max-height: 40px;
+                width: auto;
+                object-fit: contain;
             }
 
             /* Table Container */
@@ -134,33 +180,38 @@
                 margin: 0 !important;
                 table-layout: fixed;
                 page-break-inside: auto;
+                border: 2px solid #000 !important;
             }
-            
+
             /* Strong borders */
             th, td {
-                border: 2px solid #000 !important;
-                padding: 6px 4px !important;
+                border: 1px solid #000 !important;
+                padding: 8px 6px !important;
                 font-size: 9pt !important;
                 color: #000 !important;
                 vertical-align: middle !important;
                 text-align: left !important;
                 word-wrap: break-word;
+                line-height: 1.3;
             }
-            
+
             /* Header styling - repeat on every page */
             thead {
                 display: table-header-group;
-                background-color: #e0e0e0 !important;
+                background-color: #f0f0f0 !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
             }
-            
+
             thead th {
-                background-color: #e0e0e0 !important;
+                background-color: #f0f0f0 !important;
                 font-weight: bold !important;
                 font-size: 9pt !important;
                 color: #000 !important;
-                border: 2px solid #000 !important;
-                padding: 8px 4px !important;
+                border: 1px solid #000 !important;
+                padding: 10px 6px !important;
                 text-transform: uppercase;
+                text-align: center !important;
             }
             
             /* Allow row breaks across pages */
@@ -179,34 +230,34 @@
             
             /* Alternating row colors */
             tbody tr:nth-child(even):not(.total-row) {
-                background-color: #f5f5f5 !important;
+                background-color: #f8f8f8 !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
             }
-            
+
             tbody tr:nth-child(odd):not(.total-row) {
                 background-color: #ffffff !important;
             }
-            
-            /* Total row styling - ONLY on last page, NOT repeated */
-            tfoot {
-                display: table-footer-group;
-                page-break-inside: avoid !important;
-            }
-            
+
+            /* Total row styling - appears only at the end */
             tr.total-row {
-                background-color: #d9d9d9 !important;
+                background-color: #e8e8e8 !important;
                 font-weight: bold !important;
-                border-top: 4px double #000 !important;
-                border-bottom: 4px double #000 !important;
+                border-top: 3px solid #000 !important;
+                border-bottom: 3px solid #000 !important;
                 page-break-before: avoid !important;
                 page-break-inside: avoid !important;
                 page-break-after: avoid !important;
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
             }
-            
+
             tr.total-row td {
                 font-size: 10pt !important;
-                padding: 10px 4px !important;
-                border: 2px solid #000 !important;
+                padding: 12px 6px !important;
+                border: 1px solid #000 !important;
                 font-weight: bold !important;
+                background-color: #e8e8e8 !important;
             }
             
             /* Column alignment */
@@ -259,8 +310,27 @@
     <div class="bg-surface-dark border border-border-dark rounded-xl flex-1 overflow-hidden flex flex-col print-area">
         <!-- Print Header (only visible when printing) -->
         <div class="print-header" style="display: none;">
-            <h1>LAPORAN TRANSAKSI PENIMBANGAN</h1>
-            <p>Periode: {{ .StartDate }} s/d {{ .EndDate }}</p>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <img src="/static/images/logo-invoice.png" alt="Logo" style="height: 40px; width: auto;">
+                    <div>
+                        <h1 style="margin: 0; font-size: 18pt; font-weight: bold; color: #000;">LAPORAN TRANSAKSI PENIMBANGAN</h1>
+                        <p style="margin: 5px 0 0 0; font-size: 11pt; color: #333;">PT. KAYA RAYA BAROKAH</p>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <p style="margin: 0; font-size: 10pt; color: #666;">Lombok Timur, Nusa Tenggara Barat</p>
+                    <p style="margin: 2px 0 0 0; font-size: 10pt; color: #666;">Solusi Penimbangan Digital Terintegrasi</p>
+                </div>
+            </div>
+            <div style="border-bottom: 2px solid #000; margin-bottom: 15px;"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <p style="margin: 0; font-size: 11pt; color: #000;"><strong>Periode:</strong> {{ .StartDate }} s/d {{ .EndDate }}</p>
+                {{ if .SelectedCompany }}
+                <p style="margin: 0; font-size: 11pt; color: #000;"><strong>Perusahaan:</strong> {{ .SelectedCompany }}</p>
+                {{ end }}
+                <p style="margin: 0; font-size: 11pt; color: #000;"><strong>Tanggal Cetak:</strong> {{ .PrintDate.Format "02 January 2006 15:04" }}</p>
+            </div>
         </div>
         
         <div class="overflow-x-auto h-full table-container">
@@ -305,17 +375,15 @@
                         </td>
                     </tr>
                     {{ end }}
+                 <!-- Total Row - ONLY appears at the END (last page only) -->
+                 {{ if gt (len .Records) 0 }}
+                 <tr class="bg-primary/20 font-bold border-t-2 border-primary total-row">
+                     <td colspan="7" class="px-6 py-4 text-right text-primary-light">TOTAL NETTO (kg)</td>
+                     <td class="px-6 py-4 text-right font-mono text-primary text-lg">{{ printf "%.0f" .TotalNetWeight }}</td>
+                     <td class="px-6 py-4"></td>
+                 </tr>
+                 {{ end }}
                 </tbody>
-                <!-- Total Row - ONLY appears at the END (last page only) -->
-                {{ if gt (len .Records) 0 }}
-                <tfoot>
-                    <tr class="bg-primary/20 font-bold border-t-2 border-primary total-row">
-                        <td colspan="7" class="px-6 py-4 text-right text-primary-light">TOTAL NETTO (kg)</td>
-                        <td class="px-6 py-4 text-right font-mono text-primary text-lg">{{ printf "%.0f" .TotalNetWeight }}</td>
-                        <td class="px-6 py-4"></td>
-                    </tr>
-                </tfoot>
-                {{ end }}
             </table>
         </div>
     </div>
@@ -333,10 +401,16 @@
         let title = `Laporan_Transaksi_${start}_sd_${end}`;
         if (company) {
             // Sanitize company name for filename
-            const safeCompany = company.replace(/[^a-zA-Z0-9]/g, '_');
+            const safeCompany = company.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
             title += `_${safeCompany}`;
         }
         document.title = title;
+
+        // Ensure no URL appears in print by setting meta tags
+        const meta = document.createElement('meta');
+        meta.name = 'robots';
+        meta.content = 'noindex,nofollow';
+        document.head.appendChild(meta);
     })();
 
     let myChart = null;

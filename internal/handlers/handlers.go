@@ -168,17 +168,18 @@ func (s *Server) ShowReports(c *gin.Context) {
 	s.DB.Order("name asc").Find(&companies)
 
 	c.HTML(http.StatusOK, "reports.html", gin.H{
-		"title":         "Reports",
-		"active":        "reports",
-		"showNav":       true,
-		"CurrentUser":   fullName,
-		"Records":       records,
-		"StartDate":     startDate,
-		"EndDate":       endDate,
-		"TotalNetWeight": totalNet,
-		"Companies":     companies,
+		"title":           "Reports",
+		"active":          "reports",
+		"showNav":         true,
+		"CurrentUser":     fullName,
+		"Records":         records,
+		"StartDate":       startDate,
+		"EndDate":         endDate,
+		"TotalNetWeight":  totalNet,
+		"Companies":       companies,
 		"SelectedCompany": companyFilter,
-		"csrf_token":    csrf.GetToken(c),
+		"PrintDate":       time.Now(),
+		"csrf_token":      csrf.GetToken(c),
 	})
 }
 
@@ -212,7 +213,7 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 
 	net := input.Gross - input.Tare
 	// Use UnixNano to prevent collision on rapid submissions
-	ticket, err:= pkg.GenerateTicketID(12)
+	ticket, err := pkg.GenerateTicketID(12)
 	if err != nil {
 		panic(err)
 	}
