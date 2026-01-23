@@ -95,7 +95,7 @@ func TestPublicRoutes(t *testing.T) {
 			name:           "Home Page",
 			path:           "/",
 			expectedStatus: http.StatusOK,
-			expectedText:   []string{"Pondasi Kokoh", "Mitra Batu Split. Hak Cipta Dilindungi Undang-Undang."},
+			expectedText:   []string{"Pondasi Kokoh", "PT. KAYA RAYA BAROKAH. Hak Cipta Dilindungi Undang-Undang."},
 		},
 		{
 			name:           "Product Page",

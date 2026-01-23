@@ -54,5 +54,5 @@ func TestPublicRoute(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "Pondasi Kokoh")
 
 	// Check for dynamic footer year
-	assert.Contains(t, w.Body.String(), "Mitra Batu Split. Hak Cipta Dilindungi Undang-Undang.")
+	assert.Contains(t, w.Body.String(), "PT. KAYA RAYA BAROKAH. Hak Cipta Dilindungi Undang-Undang.")
 }
