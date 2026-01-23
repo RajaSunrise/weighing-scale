@@ -23,7 +23,7 @@ func main() {
 	os.Setenv("OPENCV_FFMPEG_CAPTURE_OPTIONS", "rtsp_transport;tcp")
 
 	// Set timezone to Asia/Jakarta
-	if tz, err := time.LoadLocation("Asia/Jakarta"); err == nil {
+	if tz, err := time.LoadLocation("Asia/Makasar"); err == nil {
 		time.Local = tz
 		log.Println("Timezone set to Asia/Jakarta")
 	}
