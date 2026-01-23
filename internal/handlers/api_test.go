@@ -153,51 +153,36 @@ func TestDashboardStats(t *testing.T) {
 		"json": func(v any) template.JS { return "" },
 		"currentYear": func() int { return 2026 },
 	})
-	tmpl.Parse(`{{define "dashboard.html"}}Dashboard: {{.Stats.TodayCount}}{{end}}`)
+	tmpl.Parse(`{{define "dashboard.html"}}Dashboard: Count={{.Stats.TodayCount}}, Weight={{.Stats.TodayWeight}}{{end}}`)
 	r.SetHTMLTemplate(tmpl)
 
 	// Seed Data
-
-	// Note: We need to make sure WeighedAt is exactly today or later in UTC
-	// GORM's SQLite memory might handle timezones differently.
-	// We'll set time to 12:00 PM today to be safe
-	// Using time.Local can be tricky if the environment is UTC but test thinks it's Local.
-	// Let's use Add(1 * time.Hour) to ensure it's "today" relative to Truncate(24*h) if run shortly after midnight?
-	// Or explicitly set to Today 12:00 UTC?
-
-	// Better approach: use time.Now() for records that should be counted
-	// and time.Now().Add(-25 * time.Hour) for records that shouldn't.
-
-	// Ensure 'now' is definitely after 'startOfDay' calculated in handler
-	// Handler uses time.Now().Truncate(24h).
-	// If test runs at 00:00:00, Truncate might be confusing if timezone differs.
-	// We force the records to be "Recent" enough.
-
-	// Use explicit future date for reliable "Today" check in tests if time zone is weird
-	// But handlers use time.Now()
-	// Let's use Yesterday, Today, Tomorrow.
-
 	now := time.Now()
-	// Force it to be definitely today by adding a small offset to ensure we aren't at 00:00:00 boundary issues?
-	// Or maybe GORM/SQLite is storing UTC and handlers is comparing Local?
 
-	// Let's try 2 records for sure, and one old.
+	// r1 and r2 are "today"
+	r1 := models.WeighingRecord{
+		TicketNumber: "T1", PlateNumber: "B 1111", DriverName: "D1", GrossWeight: 200, TareWeight: 100,
+		NetWeight: 100, WeighedAt: now,
+	}
+	r2 := models.WeighingRecord{
+		TicketNumber: "T2", PlateNumber: "B 2222", DriverName: "D2", GrossWeight: 300, TareWeight: 100,
+		NetWeight: 200, WeighedAt: now.Add(1 * time.Minute),
+	}
+	// r3 is "2 days ago"
+	r3 := models.WeighingRecord{
+		TicketNumber: "T3", PlateNumber: "B 3333", DriverName: "D3", GrossWeight: 400, TareWeight: 100,
+		NetWeight: 300, WeighedAt: now.Add(-48 * time.Hour),
+	}
 
-	r1 := models.WeighingRecord{NetWeight: 100, WeighedAt: now}
-	r2 := models.WeighingRecord{NetWeight: 200, WeighedAt: now.Add(1 * time.Minute)}
-	r3 := models.WeighingRecord{NetWeight: 300, WeighedAt: now.Add(-48 * time.Hour)}
-
-	db.Create(&r1)
-	db.Create(&r2)
-	db.Create(&r3)
+	assert.NoError(t, db.Create(&r1).Error)
+	assert.NoError(t, db.Create(&r2).Error)
+	assert.NoError(t, db.Create(&r3).Error)
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/dashboard", nil)
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	// We relax the assertion because GORM+SQLite in-memory sometimes behaves weirdly with timezones
-	// finding only 1 record (the future one?) or confusing local/utc.
-	// Checking that the page renders and contains "Dashboard:" is sufficient for coverage.
-	assert.Contains(t, w.Body.String(), "Dashboard:")
+	// Assert strict values: Count should be 2, Weight should be 300 (100+200)
+	assert.Contains(t, w.Body.String(), "Dashboard: Count=2, Weight=300")
 }

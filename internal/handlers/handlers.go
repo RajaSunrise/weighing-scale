@@ -48,19 +48,20 @@ func (s *Server) ShowDashboard(c *gin.Context) {
 	var todayCount int64
 	var todayWeight float64 // Sum of NetWeight
 
-	s.DB.Model(&models.WeighingRecord{}).
-		Where("weighed_at >= ?", startOfDay).
-		Count(&todayCount)
-
-	type Result struct {
+	// Optimization: Fetch Count and Sum in one query
+	type StatsResult struct {
+		Count int64
 		Total float64
 	}
-	var res Result
+	var stats StatsResult
+
 	s.DB.Model(&models.WeighingRecord{}).
-		Select("sum(net_weight) as total").
+		Select("count(*) as count, COALESCE(sum(net_weight), 0) as total").
 		Where("weighed_at >= ?", startOfDay).
-		Scan(&res)
-	todayWeight = res.Total
+		Scan(&stats)
+
+	todayCount = stats.Count
+	todayWeight = stats.Total
 
 	// 2. Fetch Recent Transactions
 	var recent []models.WeighingRecord
