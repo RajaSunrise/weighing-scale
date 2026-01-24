@@ -5,7 +5,6 @@ import (
 	"stoneweigh/internal/database"
 	"stoneweigh/internal/hardware"
 	"stoneweigh/internal/models"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,15 +40,9 @@ func HandleRemoteScaleData(c *gin.Context) {
 		return
 	}
 
-	// 4. Broadcast to ScaleManager
-	// We inject this directly into the DataChannel which the SSE handler listens to.
+	// 4. Update ScaleManager
 	if hardware.Manager != nil {
-		hardware.Manager.DataChannel <- hardware.ScaleData{
-			ScaleID:   station.ID,
-			Weight:    payload.Weight,
-			Connected: true,
-			Timestamp: time.Now().Unix(),
-		}
+		hardware.Manager.UpdateScale(station.ID, payload.Weight, true)
 	} else {
 		// Should not happen if server is running correctly
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Scale manager not initialized"})
