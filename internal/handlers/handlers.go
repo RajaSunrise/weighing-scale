@@ -363,17 +363,32 @@ func (s *Server) StreamScaleData(c *gin.Context) {
 	c.Stream(func(w io.Writer) bool {
 		if _, ok := <-ticker.C; ok {
 			s.ScaleMgr.Mu.Lock()
+			type scaleSnapshot struct {
+				ID        uint
+				Weight    float64
+				Connected bool
+			}
+			snapshots := make([]scaleSnapshot, 0, len(s.ScaleMgr.Scales))
+
 			for id, scale := range s.ScaleMgr.Scales {
 				// Only send data if allowed
 				if role == "admin" || allowedIDs[id] {
-					c.SSEvent("message", gin.H{
-						"scale_id":  id,
-						"weight":    scale.LastWeight,
-						"connected": scale.Connected,
+					snapshots = append(snapshots, scaleSnapshot{
+						ID:        id,
+						Weight:    scale.LastWeight,
+						Connected: scale.Connected,
 					})
 				}
 			}
 			s.ScaleMgr.Mu.Unlock()
+
+			for _, snap := range snapshots {
+				c.SSEvent("message", gin.H{
+					"scale_id":  snap.ID,
+					"weight":    snap.Weight,
+					"connected": snap.Connected,
+				})
+			}
 			return true
 		}
 		return false
