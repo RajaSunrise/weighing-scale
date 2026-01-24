@@ -68,9 +68,6 @@ func (sm *ScaleManager) ReloadConfig(db *gorm.DB) {
 	}
 	sm.Mu.Unlock()
 
-	// 2. Add or Update stations
-	// For simplicity, we'll stop and restart even if unchanged,
-	// or we could check diffs. Let's restart to ensure clean state.
 	for _, station := range stations {
 		sm.AddOrUpdateScale(station)
 	}
@@ -132,7 +129,8 @@ func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 			return
 		}
 
-		if !conn.Connected {
+		// Check if PORT is nil, regardless of "Connected" status (which might be set by remote API)
+		if conn.Port == nil {
 			// Attempt connection
 			// Default serial settings if not specified
 			baud := conn.Config.BaudRate
@@ -147,8 +145,6 @@ func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 
 			port, err := serial.Open(conn.Config.ScalePort, mode)
 			if err != nil {
-				// Failed to connect, wait and retry
-				sm.UpdateScale(scaleID, 0, false)
 
 				// Sleep with check for stop
 				select {
@@ -160,8 +156,14 @@ func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 			}
 
 			conn.Port = port
-			conn.Connected = true
+
+			sm.UpdateScale(scaleID, conn.LastWeight, true) // Keep last weight? Or 0?
 			log.Printf("Connected to Scale %d (%s) on %s", scaleID, conn.Config.Name, conn.Config.ScalePort)
+		}
+
+		// Double check Port is not nil before creating scanner
+		if conn.Port == nil {
+			continue
 		}
 
 		// Read loop
@@ -183,8 +185,12 @@ func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 		if err := scanner.Err(); err != nil {
 			log.Printf("Error reading scale %d: %v", scaleID, err)
 			conn.Port.Close()
-			conn.Connected = false
+			conn.Port = nil // Ensure we reset to nil so loop tries to reconnect
 			sm.UpdateScale(scaleID, 0, false)
+		} else {
+			// EOF or explicit break (unlikely with serial unless closed)
+			conn.Port.Close()
+			conn.Port = nil
 		}
 	}
 }
