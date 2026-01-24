@@ -48,9 +48,10 @@ func main() {
 	// 2. Initialize Hardware (Scales)
 	hardware.InitScaleManager()
 
+	// Seed Default Hardware Configs
+	seedWeighingStations(db)
+
 	// Load configs from DB
-	// If no configs exist, maybe seed default ones for MVP (optional)
-	// But `ReloadConfig` will handle empty lists gracefully.
 	hardware.Manager.ReloadConfig(db)
 
 	if os.Getenv("ENABLE_DEMO_SCALE") == "true" {
@@ -102,6 +103,28 @@ func seedAdmin(db *gorm.DB) {
 			log.Printf("Failed to seed admin: %v", err)
 		} else {
 			log.Printf("Admin user '%s' seeded successfully", username)
+		}
+	}
+}
+
+func seedWeighingStations(db *gorm.DB) {
+	var count int64
+	if err := db.Model(&models.WeighingStation{}).Count(&count).Error; err != nil {
+		log.Printf("Failed to count weighing stations: %v", err)
+		return
+	}
+
+	if count == 0 {
+		station := models.WeighingStation{
+			Name:      "Pos Penimbangan 1",
+			ScalePort: "/dev/ttyUSB0",
+			BaudRate:  9600,
+			Enabled:   true,
+		}
+		if err := db.Create(&station).Error; err != nil {
+			log.Printf("Failed to seed weighing station: %v", err)
+		} else {
+			log.Printf("Default weighing station seeded successfully")
 		}
 	}
 }
