@@ -10,6 +10,21 @@ import (
 )
 
 func TestGenerateInvoice(t *testing.T) {
+	// Fix CWD for finding assets in web/static
+	// Walk up until we find go.mod
+	wd, _ := os.Getwd()
+	originalWD := wd
+	defer os.Chdir(originalWD)
+
+	for {
+		if _, err := os.Stat("go.mod"); err == nil {
+			break
+		}
+		if err := os.Chdir(".."); err != nil {
+			break
+		}
+	}
+
 	// Setup test data
 	record := models.WeighingRecord{
 		TicketNumber: "T-TEST-001",
