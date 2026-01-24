@@ -128,12 +128,16 @@ func (s *Server) UpdateUserAssignments(c *gin.Context) {
 	}
 
 	// Add new
-	for _, sid := range input.StationIDs {
-		assign := models.UserStationAssignment{
-			UserID:            stringToUint(userID),
-			WeighingStationID: sid,
+	if len(input.StationIDs) > 0 {
+		assignments := make([]models.UserStationAssignment, 0, len(input.StationIDs))
+		uid := stringToUint(userID)
+		for _, sid := range input.StationIDs {
+			assignments = append(assignments, models.UserStationAssignment{
+				UserID:            uid,
+				WeighingStationID: sid,
+			})
 		}
-		if err := tx.Create(&assign).Error; err != nil {
+		if err := tx.Create(&assignments).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add assignment"})
 			return
