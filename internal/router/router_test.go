@@ -31,7 +31,7 @@ func TestPublicRoute(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	// Create a server with nil dependencies
-	server := handlers.NewServer(nil, nil, nil)
+	server := handlers.NewServer(nil, nil, nil, nil)
 
 	// Recover from panics during setup (e.g. bad template path)
 	defer func() {

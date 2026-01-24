@@ -52,7 +52,7 @@ func setupServer(t *testing.T) (*gin.Engine, *gorm.DB) {
 	// The mock version of NewANPRService takes 1 arg.
 	anprService := cv.NewANPRService("mock_model.onnx")
 
-	server := NewServer(db, scaleMgr, anprService)
+	server := NewServer(db, scaleMgr, anprService, nil)
 
 	// Setup Router with Session Middleware (needed for Handlers)
 	r := gin.New()

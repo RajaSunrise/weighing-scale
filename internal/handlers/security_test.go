@@ -31,7 +31,7 @@ func setupTestServer(t *testing.T) (*gin.Engine, *Server) {
 
 	// Mock dependencies
 	hardware.InitScaleManager()
-	server := NewServer(db, hardware.Manager, cv.NewANPRService("mock.onnx"))
+	server := NewServer(db, hardware.Manager, cv.NewANPRService("mock.onnx"), nil)
 
 	r := gin.New()
 	store := cookie.NewStore([]byte("secret"))

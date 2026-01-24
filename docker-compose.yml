@@ -9,6 +9,8 @@ services:
       - DB_DRIVER=sqlite
       - DB_NAME=stoneweigh.db
       - ENABLE_DEMO_SCALE=true
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
       - ./logs:/app/logs:z
       - ./data:/app/data:z
@@ -21,3 +23,30 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:alpine
+    container_name: stoneweigh-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          memory: 64M
+
+volumes:
+  redis_data:
