@@ -8,13 +8,14 @@ import (
 	"image/color"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/otiai10/gosseract/v2"
 	"gocv.io/x/gocv"
 )
 
@@ -23,6 +24,8 @@ type ANPRService struct {
 	Net       gocv.Net
 	IsLoaded  bool
 	ModelPath string
+	OCRClient *gosseract.Client
+	Mu        sync.Mutex
 }
 
 func NewANPRService(modelPath string) *ANPRService {
@@ -88,15 +91,35 @@ func NewANPRService(modelPath string) *ANPRService {
 	net.SetPreferableBackend(gocv.NetBackendDefault)
 	net.SetPreferableTarget(gocv.NetTargetCPU)
 
+	// Initialize Tesseract Client
+	client := gosseract.NewClient()
+	if err := client.SetLanguage("eng"); err != nil {
+		log.Printf("Warning: Failed to set OCR language to 'eng': %v", err)
+	}
+
 	return &ANPRService{
 		Net:       net,
 		IsLoaded:  true,
 		ModelPath: modelPath,
+		OCRClient: client,
 	}
+}
+
+// Close releases resources used by the service
+func (s *ANPRService) Close() error {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	if s.OCRClient != nil {
+		return s.OCRClient.Close()
+	}
+	return nil
 }
 
 // CaptureAndDetect connects to a CCTV stream (RTSP) or camera ID and returns the detected text and snapshot path
 func (s *ANPRService) CaptureAndDetect(cameraSource string) (string, string, error) {
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+
 	if !s.IsLoaded {
 		return "", "", fmt.Errorf("ANPR model not loaded")
 	}
@@ -161,29 +184,41 @@ func (s *ANPRService) CaptureAndDetect(cameraSource string) (string, string, err
 		gocv.Resize(region, &ocrImg, image.Point{}, 2.0, 2.0, gocv.InterpolationCubic)
 		region.Close() // Close region explicitly
 
-		cropFilename := fmt.Sprintf("web/static/images/snap_crop_%d.jpg", SystemClock())
-		gocv.IMWrite(cropFilename, ocrImg)
-
 		filename = fmt.Sprintf("web/static/images/snap_%d.jpg", SystemClock())
 		gocv.IMWrite(filename, img)
 
-		// Run OCR on crop
-		out, err := exec.Command("tesseract", cropFilename, "stdout", "--psm", "7", "-l", "eng").Output()
+		// Run OCR on crop using library
+		s.OCRClient.SetPageSegMode(7)
+		buf, err := gocv.IMEncode(".bmp", ocrImg)
 		if err == nil {
-			detectedText = strings.TrimSpace(string(out))
-		} else {
-			log.Printf("OCR Failed on crop: %v", err)
+			if err := s.OCRClient.SetImageFromBytes(buf.GetBytes()); err == nil {
+				out, err := s.OCRClient.Text()
+				if err == nil {
+					detectedText = strings.TrimSpace(out)
+				} else {
+					log.Printf("OCR Failed on crop: %v", err)
+				}
+			} else {
+				log.Printf("OCR SetImage failed: %v", err)
+			}
+			buf.Close()
 		}
-
-		defer os.Remove(cropFilename)
 
 	} else {
 		filename = fmt.Sprintf("web/static/images/snap_%d.jpg", SystemClock())
 		gocv.IMWrite(filename, img)
 
-		out, err := exec.Command("tesseract", filename, "stdout", "--psm", "11").Output()
+		// Run OCR on full image
+		s.OCRClient.SetPageSegMode(11)
+		buf, err := gocv.IMEncode(".bmp", img)
 		if err == nil {
-			detectedText = strings.TrimSpace(string(out))
+			if err := s.OCRClient.SetImageFromBytes(buf.GetBytes()); err == nil {
+				out, err := s.OCRClient.Text()
+				if err == nil {
+					detectedText = strings.TrimSpace(out)
+				}
+			}
+			buf.Close()
 		}
 	}
 
