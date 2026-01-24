@@ -1,4 +1,4 @@
-FROM golang:1.25-alpine AS builder
+FROM golang:1.23-alpine3.20 AS builder
 
 RUN apk add --no-cache \
     git \
@@ -22,7 +22,7 @@ COPY . .
 
 RUN go build -tags gocv -o main ./cmd/server
 
-FROM alpine:latest
+FROM alpine:3.20
 
 RUN apk add --no-cache \
     opencv \

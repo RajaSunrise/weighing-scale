@@ -45,16 +45,23 @@ func Connect() {
 		// Let's stick to the code's pattern but also allow DB_DSN overriding.
 
 		var dsn string
-		if os.Getenv("DB_DSN") != "" && !strings.HasSuffix(os.Getenv("DB_DSN"), ".db") {
-			dsn = os.Getenv("DB_DSN")
+		dsnEnv := os.Getenv("DB_DSN")
+		if dsnEnv != "" && !strings.HasSuffix(dsnEnv, ".db") {
+			dsn = dsnEnv
 		} else {
+			host := os.Getenv("DB_HOST")
+			user := os.Getenv("DB_USER")
+			password := os.Getenv("DB_PASSWORD")
+			dbname := os.Getenv("DB_NAME")
+			port := os.Getenv("DB_PORT")
+
+			if host == "" || user == "" || dbname == "" {
+				log.Fatal("DB_DSN is not set, and one of DB_HOST, DB_USER, DB_NAME is missing. Please configure the database connection.")
+			}
+
 			dsn = fmt.Sprintf(
 				"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta",
-				os.Getenv("DB_HOST"),
-				os.Getenv("DB_USER"),
-				os.Getenv("DB_PASSWORD"),
-				os.Getenv("DB_NAME"),
-				os.Getenv("DB_PORT"),
+				host, user, password, dbname, port,
 			)
 		}
 

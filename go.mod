@@ -1,6 +1,6 @@
 module stoneweigh
 
-go 1.25
+go 1.23
 
 require (
 	github.com/gin-contrib/sessions v1.0.4
