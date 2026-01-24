@@ -108,3 +108,51 @@ func TestVehicleConstraints(t *testing.T) {
 	err = db.Create(&v2).Error
 	assert.Error(t, err)
 }
+
+func TestRTSPURLValidation(t *testing.T) {
+	db := setupTestDB(t)
+
+	// Test Valid URLs
+	validURLs := []string{
+		"rtsp://192.168.1.100:554/stream",
+		"http://192.168.1.100/video.mjpg",
+		"tcp://127.0.0.1:1234",
+	}
+
+	for _, u := range validURLs {
+		cam := StationCamera{Name: "Cam Valid", RTSPURL: u}
+		err := db.Create(&cam).Error
+		assert.NoError(t, err, "Should accept valid URL: "+u)
+	}
+
+	// Test Invalid URLs
+	invalidURLs := []string{
+		"file:///etc/passwd",
+		"ftp://example.com/file",
+		"gopher://example.com",
+		"javascript:alert(1)",
+	}
+
+	for _, u := range invalidURLs {
+		cam := StationCamera{Name: "Cam Invalid", RTSPURL: u}
+		err := db.Create(&cam).Error
+		assert.Error(t, err, "Should reject invalid URL: "+u)
+		if err != nil {
+			assert.Contains(t, err.Error(), "invalid URL scheme")
+		}
+	}
+
+	// Test Malformed URL
+	cam := StationCamera{Name: "Cam Malformed", RTSPURL: "::not-a-url"}
+	err := db.Create(&cam).Error
+	assert.Error(t, err)
+
+	// Test Legacy WeighingStation CameraURL
+	wsValid := WeighingStation{Name: "WS Valid", CameraURL: "rtsp://valid"}
+	err = db.Create(&wsValid).Error
+	assert.NoError(t, err)
+
+	wsInvalid := WeighingStation{Name: "WS Invalid", CameraURL: "file:///invalid"}
+	err = db.Create(&wsInvalid).Error
+	assert.Error(t, err)
+}

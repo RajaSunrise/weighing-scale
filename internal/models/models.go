@@ -2,6 +2,8 @@ package models
 
 import (
 	"errors"
+	"net/url"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -56,6 +58,10 @@ type StationCamera struct {
 	RTSPURL           string          `json:"rtsp_url"`
 }
 
+func (sc *StationCamera) BeforeSave(tx *gorm.DB) error {
+	return validateRTSPURL(sc.RTSPURL)
+}
+
 type WeighingStation struct {
 	gorm.Model
 	Name      string          `json:"name"`       // e.g., "Main Gate"
@@ -67,6 +73,38 @@ type WeighingStation struct {
 
 	// Deprecated: Kept for migration, assume data moved to Cameras[0]
 	CameraURL string `json:"camera_url,omitempty"`
+}
+
+func (ws *WeighingStation) BeforeSave(tx *gorm.DB) error {
+	if ws.CameraURL != "" {
+		return validateRTSPURL(ws.CameraURL)
+	}
+	return nil
+}
+
+func validateRTSPURL(rawURL string) error {
+	if rawURL == "" {
+		return nil
+	}
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return errors.New("invalid URL format")
+	}
+
+	scheme := strings.ToLower(parsed.Scheme)
+	allowed := map[string]bool{
+		"rtsp":  true,
+		"rtsps": true,
+		"http":  true,
+		"https": true,
+		"tcp":   true,
+		"udp":   true,
+	}
+
+	if !allowed[scheme] {
+		return errors.New("invalid URL scheme: must be rtsp, rtsps, http, https, tcp, or udp")
+	}
+	return nil
 }
 
 type ScaleConfig struct {
