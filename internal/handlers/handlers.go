@@ -171,24 +171,26 @@ func (s *Server) ShowReports(c *gin.Context) {
 	// Set end to end of day
 	end = end.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
 
-	query := s.DB.Model(&models.WeighingRecord{}).
-		Where("weighed_at BETWEEN ? AND ?", start, end).
-		Order("weighed_at desc")
+	// Define filter scope to reuse in both queries
+	filterScope := func(db *gorm.DB) *gorm.DB {
+		db = db.Where("weighed_at BETWEEN ? AND ?", start, end)
+		if companyFilter != "" {
+			db = db.Where("company_name = ?", companyFilter)
+		}
+		return db
+	}
 
-	// Apply Company Filter
-	if companyFilter != "" {
-		// Filter by company name since it's stored in record
-		query = query.Where("company_name = ?", companyFilter)
+	// Calculate totals via DB aggregation
+	var totalNet float64
+	// Use Table() instead of Model() for aggregation to avoid GORM scanning issues into struct
+	if err := s.DB.Table("weighing_records").Scopes(filterScope).
+		Select("COALESCE(SUM(net_weight), 0)").Row().Scan(&totalNet); err != nil {
+		log.Printf("Failed to calculate total weight: %v", err)
 	}
 
 	var records []models.WeighingRecord
-	query.Find(&records)
-
-	// Calculate totals
-	var totalNet float64
-	for _, r := range records {
-		totalNet += r.NetWeight
-	}
+	s.DB.Model(&models.WeighingRecord{}).Scopes(filterScope).
+		Order("weighed_at desc").Find(&records)
 
 	// Fetch distinct companies for filter dropdown
 	var companies []models.Company
