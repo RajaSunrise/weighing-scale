@@ -12,6 +12,7 @@ import (
 	"stoneweigh/internal/cv"
 	"stoneweigh/internal/database"
 	"stoneweigh/internal/handlers"
+	"stoneweigh/internal/infrastructure/cache"
 	"stoneweigh/internal/hardware"
 	"stoneweigh/internal/models"
 	"stoneweigh/internal/pkg/logger"
@@ -59,10 +60,13 @@ func main() {
 	// 3. Initialize CV
 	anpr := cv.NewANPRService("models/platdetection.onnx")
 
-	// 4. Initialize Handlers
-	server := handlers.NewServer(db, hardware.Manager, anpr)
+	// 4. Initialize Redis
+	rdb := cache.NewRedisClient()
 
-	// 5. Setup Router
+	// 5. Initialize Handlers
+	server := handlers.NewServer(db, hardware.Manager, anpr, rdb)
+
+	// 6. Setup Router
 	r := router.SetupRouter(server)
 
 	port := os.Getenv("PORT")

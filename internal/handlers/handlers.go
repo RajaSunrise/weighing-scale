@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	csrf "github.com/utrack/gin-csrf"
 	"gorm.io/gorm"
 )
@@ -24,10 +26,11 @@ type Server struct {
 	DB          *gorm.DB
 	ScaleMgr    *hardware.ScaleManager
 	ANPRService *cv.ANPRService
+	Redis       *redis.Client
 }
 
-func NewServer(db *gorm.DB, sm *hardware.ScaleManager, anpr *cv.ANPRService) *Server {
-	return &Server{DB: db, ScaleMgr: sm, ANPRService: anpr}
+func NewServer(db *gorm.DB, sm *hardware.ScaleManager, anpr *cv.ANPRService, rdb *redis.Client) *Server {
+	return &Server{DB: db, ScaleMgr: sm, ANPRService: anpr, Redis: rdb}
 }
 
 // === VIEW HANDLERS ===
@@ -41,27 +44,51 @@ func (s *Server) ShowDashboard(c *gin.Context) {
 
 	// 1. Fetch Stats for Today
 	startOfDay := time.Now().Truncate(24 * time.Hour)
-	// SQLite in memory might have timezone issues in tests.
-	// If using GORM with SQLite, time is stored as string/timestamp.
-	// To be safe in tests, we rely on GORM's comparison.
 
 	var todayCount int64
 	var todayWeight float64 // Sum of NetWeight
 
-	// Optimization: Fetch Count and Sum in one query
-	type StatsResult struct {
-		Count int64
-		Total float64
+	cacheKey := "dashboard:stats:today"
+	cached := false
+
+	// Try Cache
+	if s.Redis != nil {
+		val, err := s.Redis.Get(c, cacheKey).Result()
+		if err == nil {
+			var cachedStats struct {
+				Count int64
+				Total float64
+			}
+			if err := json.Unmarshal([]byte(val), &cachedStats); err == nil {
+				todayCount = cachedStats.Count
+				todayWeight = cachedStats.Total
+				cached = true
+			}
+		}
 	}
-	var stats StatsResult
 
-	s.DB.Model(&models.WeighingRecord{}).
-		Select("count(*) as count, COALESCE(sum(net_weight), 0) as total").
-		Where("weighed_at >= ?", startOfDay).
-		Scan(&stats)
+	if !cached {
+		// Optimization: Fetch Count and Sum in one query
+		type StatsResult struct {
+			Count int64
+			Total float64
+		}
+		var stats StatsResult
 
-	todayCount = stats.Count
-	todayWeight = stats.Total
+		s.DB.Model(&models.WeighingRecord{}).
+			Select("count(*) as count, COALESCE(sum(net_weight), 0) as total").
+			Where("weighed_at >= ?", startOfDay).
+			Scan(&stats)
+
+		todayCount = stats.Count
+		todayWeight = stats.Total
+
+		// Save to Cache (5 minutes)
+		if s.Redis != nil {
+			data, _ := json.Marshal(stats)
+			s.Redis.Set(c, cacheKey, data, 5*time.Minute)
+		}
+	}
 
 	// 2. Fetch Recent Transactions
 	var recent []models.WeighingRecord
@@ -244,6 +271,11 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 	if err := s.DB.Create(&record).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save record"})
 		return
+	}
+
+	// Invalidate Dashboard Cache
+	if s.Redis != nil {
+		s.Redis.Del(c, "dashboard:stats:today")
 	}
 
 	// Fix PDF Path for Frontend:

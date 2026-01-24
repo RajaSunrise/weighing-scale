@@ -105,6 +105,15 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 			return time.Now().Year()
 		},
 	})
+
+	// Cache Control for Static Files (1 day)
+	r.Use(func(c *gin.Context) {
+		if len(c.Request.URL.Path) >= 7 && c.Request.URL.Path[:7] == "/static" {
+			c.Header("Cache-Control", "public, max-age=86400")
+		}
+		c.Next()
+	})
+
 	r.Static("/static", "./web/static")
 	// Fix for legacy/broken links pointing to /web/static
 	r.Static("/web/static", "./web/static")
