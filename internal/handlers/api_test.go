@@ -40,6 +40,7 @@ func setupServer(t *testing.T) (*gin.Engine, *gorm.DB) {
 		&models.UserStationAssignment{},
 		&models.WeighingRecord{},
 		&models.Company{},
+		&models.Vehicle{},
 	)
 	assert.NoError(t, err)
 
@@ -74,6 +75,20 @@ func setupServer(t *testing.T) (*gin.Engine, *gorm.DB) {
 	r.POST("/api/anpr/trigger", server.TriggerANPR)
 	r.GET("/dashboard", server.ShowDashboard)
 	r.GET("/reports", server.ShowReports)
+
+	// Auth Routes
+	r.POST("/login", server.Login)
+	r.GET("/logout", server.Logout)
+	r.GET("/api/captcha", server.GetCaptcha)
+
+	// Vehicle & Master Data Routes
+	r.POST("/api/vehicles", server.CreateVehicle)
+	r.PUT("/api/vehicles/:id", server.UpdateVehicle)
+	r.DELETE("/api/vehicles/:id", server.DeleteVehicle)
+	r.GET("/api/vehicles/details", server.GetVehicleDetails)
+	r.GET("/api/vehicles/search", server.SearchVehicles)
+	r.POST("/api/companies", server.CreateCompany)
+	r.GET("/api/reports/charts", server.GetReportCharts)
 
 	return r, db
 }
