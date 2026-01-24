@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -35,10 +36,11 @@ func main() {
 	token := flag.String("token", "", "Authentication Token (Required)")
 	comPort := flag.String("port", "COM1", "Serial Port (e.g., COM1 or /dev/ttyUSB0)")
 	baudRate := flag.Int("baud", 9600, "Baud Rate")
+	testMode := flag.Bool("test", false, "Run in test mode (manual input without serial connection)")
 	flag.Parse()
 
 	if *token == "" {
-		fmt.Println("Usage: scale_sender --token <TOKEN> --port <PORT> --server <URL>")
+		fmt.Println("Usage: scale_sender --token <TOKEN> [--port <PORT>] [--server <URL>] [--test]")
 		log.Fatal("Error: --token is required")
 	}
 
@@ -51,48 +53,67 @@ func main() {
 
 	log.Printf("Starting Scale Sender...")
 	log.Printf("Server: %s", config.ServerURL)
-	log.Printf("Port: %s @ %d", config.ComPort, config.BaudRate)
 
-	// 2. Open Serial Port
-	mode := &serial.Mode{
-		BaudRate: config.BaudRate,
-		DataBits: 8,
-		Parity:   serial.NoParity,
-		StopBits: serial.OneStopBit,
-	}
-
-	// Retry loop for connection
-	for {
-		log.Printf("Connecting to serial port %s...", config.ComPort)
-		port, err := serial.Open(config.ComPort, mode)
-		if err != nil {
-			log.Printf("Failed to open port: %v. Retrying in 5s...", err)
-			time.Sleep(5 * time.Second)
-			continue
+	if *testMode {
+		log.Println("Running in test mode. Enter weights manually (e.g., '5.5 kg' or just '5.5'). Press Ctrl+C to exit.")
+		runTestMode(config)
+	} else {
+		log.Printf("Port: %s @ %d", config.ComPort, config.BaudRate)
+		// 2. Open Serial Port
+		mode := &serial.Mode{
+			BaudRate: config.BaudRate,
+			DataBits: 8,
+			Parity:   serial.NoParity,
+			StopBits: serial.OneStopBit,
 		}
+		// Retry loop for connection
+		for {
+			log.Printf("Connecting to serial port %s...", config.ComPort)
+			port, err := serial.Open(config.ComPort, mode)
+			if err != nil {
+				log.Printf("Failed to open port: %v. Retrying in 5s...", err)
+				time.Sleep(5 * time.Second)
+				continue
+			}
+			log.Println("Serial port connected. Starting reading loop...")
+			readAndSend(port, config)
+			port.Close()
+			log.Println("Connection lost. Retrying in 5s...")
+			time.Sleep(5 * time.Second)
+		}
+	}
+}
 
-		log.Println("Serial port connected. Starting reading loop...")
-		readAndSend(port, config)
-		port.Close()
+func runTestMode(config Config) {
+	scanner := bufio.NewScanner(os.Stdin)
+	client := &http.Client{Timeout: 2 * time.Second}
 
-		log.Println("Connection lost. Retrying in 5s...")
-		time.Sleep(5 * time.Second)
+	for scanner.Scan() {
+		text := scanner.Text()
+		weight := parseWeight(text)
+		// Send to Server
+		err := sendToServer(client, config, weight)
+		if err != nil {
+			log.Printf("Failed to send: %v", err)
+		} else {
+			log.Printf("Sent test weight: %.2f kg", weight)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		log.Printf("Input read error: %v", err)
 	}
 }
 
 func readAndSend(port serial.Port, config Config) {
 	scanner := bufio.NewScanner(port)
 	client := &http.Client{Timeout: 2 * time.Second}
-
 	// Buffer to prevent flooding the server?
 	// Real-time requirement suggests sending immediately.
 	// However, if the scale sends 20 times a second, HTTP overhead might be high.
 	// But let's stick to simple first: send every read.
-
 	for scanner.Scan() {
 		text := scanner.Text()
 		weight := parseWeight(text)
-
 		// Send to Server
 		err := sendToServer(client, config, weight)
 		if err != nil {
@@ -110,25 +131,20 @@ func sendToServer(client *http.Client, config Config, weight float64) error {
 	if err != nil {
 		return err
 	}
-
 	req, err := http.NewRequest("POST", config.ServerURL, bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
-
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Scale-Token", config.Token)
-
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("server returned status: %d", resp.StatusCode)
 	}
-
 	return nil
 }
 
@@ -140,7 +156,6 @@ func parseWeight(raw string) float64 {
 		}
 		return -1
 	}, raw)
-
 	if val, err := strconv.ParseFloat(clean, 64); err == nil {
 		return val
 	}

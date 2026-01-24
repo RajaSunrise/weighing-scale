@@ -213,7 +213,7 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	pdf.SetXY(15, ySig+2)
 	pdf.SetFont("Arial", "I", 8)
 	pdf.SetTextColor(mediumGreyR, mediumGreyG, mediumGreyB)
-	pdf.CellFormat(80, 4, "Diserahkan oleh (Supir)", "", 1, "C", false, 0, "")
+	pdf.CellFormat(80, 4, "Diserahkan ke (Supir)", "", 1, "C", false, 0, "")
 
 	pdf.SetXY(15, ySig+15)
 	pdf.SetFont("Arial", "B", 9)
@@ -225,7 +225,7 @@ func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	pdf.SetXY(115, ySig+2)
 	pdf.SetFont("Arial", "I", 8)
 	pdf.SetTextColor(mediumGreyR, mediumGreyG, mediumGreyB)
-	pdf.CellFormat(80, 4, "Diterima oleh (Pengelola)", "", 1, "C", false, 0, "")
+	pdf.CellFormat(80, 4, "Diberikan oleh (Pengelola)", "", 1, "C", false, 0, "")
 
 	pdf.SetXY(115, ySig+15)
 	pdf.SetFont("Arial", "B", 9)
