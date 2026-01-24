@@ -17,6 +17,9 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		&StationCamera{},
 		&User{},
 		&Vehicle{},
+		&Company{},
+		&UserStationAssignment{},
+		&Invoice{},
 	)
 	assert.NoError(t, err)
 	return db

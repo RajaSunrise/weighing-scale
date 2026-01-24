@@ -55,7 +55,7 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 		Path:     "/",
 		Secure:   secureCookies,        // Dynamic based on env
 		HttpOnly: true,                 // Security: prevent XSS
-		SameSite: http.SameSiteLaxMode, // Allow same-site cookies
+		SameSite: http.SameSiteLaxMode, // Allow same-site cookies (Lax provides CSRF protection for GET)
 	})
 	r.Use(sessions.Sessions("stoneweigh_session", store))
 

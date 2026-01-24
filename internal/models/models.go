@@ -127,6 +127,13 @@ type Company struct {
 	Phone         string `json:"phone"`
 }
 
+func (c *Company) BeforeCreate(tx *gorm.DB) error {
+	if strings.TrimSpace(c.Name) == "" {
+		return errors.New("company name cannot be empty")
+	}
+	return nil
+}
+
 // Vehicle represents master data for known vehicles
 type Vehicle struct {
 	gorm.Model

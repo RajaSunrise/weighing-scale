@@ -34,7 +34,7 @@ jobs:
 
       - name: Run Tests (inside container)
         run: |
-          docker run --rm app-builder:latest go test -v -tags gocv ./...
+          docker run --rm -e SESSION_SECRET="ci-secret-key" app-builder:latest go test -v -tags gocv ./...
 
       - name: Build Final Image
         uses: docker/build-push-action@v6
