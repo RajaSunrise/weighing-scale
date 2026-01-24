@@ -161,7 +161,7 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 	scanner.Split(split)
 
 	// Increase buffer for high-res images
-	buf := make([]byte, 1024*1024) // 1MB
+	buf := make([]byte, 1024*1024)   // 1MB
 	scanner.Buffer(buf, 5*1024*1024) // 5MB max
 
 	for scanner.Scan() {
@@ -172,7 +172,7 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 			frame := scanner.Bytes()
 
 			// Write boundary
-			_, err := c.Writer.Write([]byte(fmt.Sprintf("--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", len(frame))))
+			_, err := c.Writer.Write(fmt.Appendf(nil, "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", len(frame)))
 			if err != nil {
 				return
 			}
@@ -196,6 +196,6 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 // Stub for shared streams if needed, but for fallback we just spawn one process per request
 // to keep it simple and stateless.
 var (
-	streamMap  = make(map[string]*interface{})
+	streamMap  = make(map[string]*any)
 	streamLock sync.Mutex
 )

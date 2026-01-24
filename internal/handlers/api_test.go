@@ -97,7 +97,7 @@ func TestSaveTransaction(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w2.Code)
 
-	var response map[string]interface{}
+	var response map[string]any
 	err := json.Unmarshal(w2.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.Equal(t, "Transaction saved", response["message"])
@@ -139,7 +139,7 @@ func TestTriggerANPR(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	var resp map[string]interface{}
+	var resp map[string]any
 	json.Unmarshal(w.Body.Bytes(), &resp)
 
 	assert.Contains(t, []string{"success", "simulated"}, resp["status"])
@@ -152,8 +152,8 @@ func TestDashboardStats(t *testing.T) {
 	t.Setenv("SESSION_SECRET", "test")
 	tmpl := template.New("")
 	tmpl.Funcs(template.FuncMap{
-		"dict": func(v ...interface{}) (map[string]interface{}, error) { return nil, nil },
-		"json": func(v any) template.JS { return "" },
+		"dict":        func(v ...any) (map[string]any, error) { return nil, nil },
+		"json":        func(v any) template.JS { return "" },
 		"currentYear": func() int { return 2026 },
 	})
 	tmpl.Parse(`{{define "dashboard.html"}}Dashboard: Count={{.Stats.TodayCount}}, Weight={{.Stats.TodayWeight}}{{end}}`)

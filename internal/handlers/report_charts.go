@@ -87,7 +87,7 @@ func (s *Server) GetReportCharts(c *gin.Context) {
 			weekSum := 0.0
 			weekLabel := cur.Format("02 Jan")
 			// Sum next 7 days
-			for i := 0; i < 7; i++ {
+			for i := range 7 {
 				dKey := cur.AddDate(0, 0, i).Format("2006-01-02")
 				weekSum += dayMap[dKey]
 			}

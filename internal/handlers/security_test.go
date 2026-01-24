@@ -55,7 +55,7 @@ func TestCreateUser_PasswordPolicy(t *testing.T) {
 	r.ServeHTTP(w1, req1)
 
 	assert.Equal(t, http.StatusBadRequest, w1.Code)
-	var resp1 map[string]interface{}
+	var resp1 map[string]any
 	json.Unmarshal(w1.Body.Bytes(), &resp1)
 	assert.Contains(t, resp1["error"], "at least 8 characters")
 
@@ -67,7 +67,7 @@ func TestCreateUser_PasswordPolicy(t *testing.T) {
 	r.ServeHTTP(w2, req2)
 
 	assert.Equal(t, http.StatusBadRequest, w2.Code)
-	var resp2 map[string]interface{}
+	var resp2 map[string]any
 	json.Unmarshal(w2.Body.Bytes(), &resp2)
 	assert.Contains(t, resp2["error"], "at least one number")
 
@@ -79,7 +79,7 @@ func TestCreateUser_PasswordPolicy(t *testing.T) {
 	r.ServeHTTP(w3, req3)
 
 	assert.Equal(t, http.StatusOK, w3.Code)
-	var resp3 map[string]interface{}
+	var resp3 map[string]any
 	json.Unmarshal(w3.Body.Bytes(), &resp3)
 	assert.Equal(t, "User created", resp3["message"])
 }
