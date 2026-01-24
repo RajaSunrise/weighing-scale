@@ -16,23 +16,15 @@ import (
 // ScaleManager handles connections to multiple scales
 type ScaleManager struct {
 	Scales      map[uint]*ScaleConnection
-	DataChannel chan ScaleData // Channel to broadcast updates
 	Mu          sync.Mutex
 	stopChans   map[uint]chan bool // To stop monitoring goroutines
 }
 
 type ScaleConnection struct {
-	Config models.WeighingStation // UPDATED: Use WeighingStation
+	Config models.WeighingStation
 	Port   serial.Port
 	LastWeight float64
 	Connected  bool
-}
-
-type ScaleData struct {
-	ScaleID   uint    `json:"scale_id"`
-	Weight    float64 `json:"weight"`
-	Connected bool    `json:"connected"`
-	Timestamp int64   `json:"timestamp"`
 }
 
 var Manager *ScaleManager
@@ -40,7 +32,6 @@ var Manager *ScaleManager
 func InitScaleManager() {
 	Manager = &ScaleManager{
 		Scales:      make(map[uint]*ScaleConnection),
-		DataChannel: make(chan ScaleData, 100),
 		stopChans:   make(map[uint]chan bool),
 	}
 }
@@ -113,6 +104,16 @@ func (sm *ScaleManager) AddOrUpdateScale(config models.WeighingStation) {
 	go sm.monitorScale(config.ID, stop)
 }
 
+// UpdateScale safely updates the scale state
+func (sm *ScaleManager) UpdateScale(id uint, weight float64, connected bool) {
+	sm.Mu.Lock()
+	defer sm.Mu.Unlock()
+	if conn, ok := sm.Scales[id]; ok {
+		conn.LastWeight = weight
+		conn.Connected = connected
+	}
+}
+
 // monitorScale constantly tries to read from the scale
 func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 	for {
@@ -131,7 +132,8 @@ func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 			return
 		}
 
-		if !conn.Connected {
+		// Check if PORT is nil, regardless of "Connected" status (which might be set by remote API)
+		if conn.Port == nil {
 			// Attempt connection
 			// Default serial settings if not specified
 			baud := conn.Config.BaudRate
@@ -147,7 +149,13 @@ func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 			port, err := serial.Open(conn.Config.ScalePort, mode)
 			if err != nil {
 				// Failed to connect, wait and retry
-				sm.DataChannel <- ScaleData{ScaleID: scaleID, Connected: false, Timestamp: time.Now().Unix()}
+				// Note: We do NOT set Connected=false here if it was set to true by remote API,
+				// or we do? If remote API is feeding data, we are "Connected" effectively.
+				// But monitorScale is responsible for Serial.
+				// Let's only update status if we assume Serial is the primary source.
+				// If we failed to open serial, we can't read from it.
+				// If remote is feeding, we shouldn't kill it.
+				// So we just log and sleep.
 
 				// Sleep with check for stop
 				select {
@@ -159,8 +167,16 @@ func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 			}
 
 			conn.Port = port
-			conn.Connected = true
+			// Only set Connected=true if we just opened the port.
+			// But UpdateScale handles the "global" state.
+			// If we successfully opened the port, we are definitely connected.
+			sm.UpdateScale(scaleID, conn.LastWeight, true) // Keep last weight? Or 0?
 			log.Printf("Connected to Scale %d (%s) on %s", scaleID, conn.Config.Name, conn.Config.ScalePort)
+		}
+
+		// Double check Port is not nil before creating scanner
+		if conn.Port == nil {
+			continue
 		}
 
 		// Read loop
@@ -176,21 +192,18 @@ func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 			text := scanner.Text()
 			weight := parseWeight(text)
 
-			conn.LastWeight = weight
-
-			// Broadcast
-			sm.DataChannel <- ScaleData{
-				ScaleID:   scaleID,
-				Weight:    weight,
-				Connected: true,
-				Timestamp: time.Now().Unix(),
-			}
+			sm.UpdateScale(scaleID, weight, true)
 		}
 
 		if err := scanner.Err(); err != nil {
 			log.Printf("Error reading scale %d: %v", scaleID, err)
 			conn.Port.Close()
-			conn.Connected = false
+			conn.Port = nil // Ensure we reset to nil so loop tries to reconnect
+			sm.UpdateScale(scaleID, 0, false)
+		} else {
+			// EOF or explicit break (unlikely with serial unless closed)
+			conn.Port.Close()
+			conn.Port = nil
 		}
 	}
 }
@@ -206,7 +219,7 @@ func (sm *ScaleManager) StartDemoMode() {
 			sm.Mu.Lock()
 			// Simulate random weights for Scale 1 (or any existing scale)
 			// Iterate through all scales and simulate if not connected
-			for id, conn := range sm.Scales {
+			for _, conn := range sm.Scales {
 				if !conn.Connected {
 					// Toggle between empty (0) and loaded (~25000)
 					now := time.Now().Unix()
@@ -215,14 +228,6 @@ func (sm *ScaleManager) StartDemoMode() {
 					} else {
 						// Jitter
 						conn.LastWeight = 24500 + float64(now%100)
-					}
-
-					// Broadcast fake data
-					sm.DataChannel <- ScaleData{
-						ScaleID:   id,
-						Weight:    conn.LastWeight,
-						Connected: true,
-						Timestamp: time.Now().Unix(),
 					}
 				}
 			}
