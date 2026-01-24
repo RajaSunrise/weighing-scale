@@ -39,6 +39,7 @@ func setupServer(t *testing.T) (*gin.Engine, *gorm.DB) {
 		&models.StationCamera{},
 		&models.UserStationAssignment{},
 		&models.WeighingRecord{},
+		&models.Company{},
 	)
 	assert.NoError(t, err)
 
@@ -62,12 +63,55 @@ func setupServer(t *testing.T) (*gin.Engine, *gorm.DB) {
 	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
 
+	// Mock CSRF Token (needed for ShowReports)
+	r.Use(func(c *gin.Context) {
+		c.Set("csrfSecret", "test-secret")
+		c.Next()
+	})
+
 	// Register Routes
 	r.POST("/api/transaction", server.SaveTransaction)
 	r.POST("/api/anpr/trigger", server.TriggerANPR)
 	r.GET("/dashboard", server.ShowDashboard)
+	r.GET("/reports", server.ShowReports)
 
 	return r, db
+}
+
+func TestShowReports(t *testing.T) {
+	r, db := setupServer(t)
+
+	// Mock Template
+	t.Setenv("SESSION_SECRET", "test")
+	tmpl := template.New("")
+	tmpl.Funcs(template.FuncMap{
+		"dict":        func(v ...any) (map[string]any, error) { return nil, nil },
+		"json":        func(v any) template.JS { return "" },
+		"currentYear": func() int { return 2026 },
+	})
+	// We only care about TotalNetWeight being passed correctly
+	tmpl.Parse(`{{define "reports.html"}}Reports: Total={{.TotalNetWeight}} Records={{len .Records}}{{end}}`)
+	r.SetHTMLTemplate(tmpl)
+
+	// Seed Data
+	now := time.Now()
+	// Create records for today
+	r1 := models.WeighingRecord{
+		TicketNumber: "T1", PlateNumber: "B 1", DriverName: "D1", GrossWeight: 100, NetWeight: 50, WeighedAt: now,
+	}
+	r2 := models.WeighingRecord{
+		TicketNumber: "T2", PlateNumber: "B 2", DriverName: "D2", GrossWeight: 200, NetWeight: 150, WeighedAt: now,
+	}
+	assert.NoError(t, db.Create(&r1).Error)
+	assert.NoError(t, db.Create(&r2).Error)
+
+	w := httptest.NewRecorder()
+	// Default range is "today" in ShowReports if params empty
+	req, _ := http.NewRequest("GET", "/reports", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "Reports: Total=200 Records=2")
 }
 
 func TestSaveTransaction(t *testing.T) {
