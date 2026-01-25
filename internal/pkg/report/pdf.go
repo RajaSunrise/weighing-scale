@@ -5,12 +5,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/jung-kurt/gofpdf"
+	"github.com/go-pdf/fpdf"
 	"stoneweigh/internal/models"
 )
 
 func GenerateTicketPDF(txn models.WeighingRecord) (string, error) {
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 	pdf.SetFont("Arial", "B", 16)
 	pdf.Cell(40, 10, "TICKET TIMBANGAN")

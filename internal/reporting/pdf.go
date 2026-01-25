@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/jung-kurt/gofpdf"
+	"github.com/go-pdf/fpdf"
 	"stoneweigh/internal/models"
 )
 
@@ -23,7 +23,7 @@ func dateToIndonesian(t time.Time) string {
 func GenerateInvoice(record models.WeighingRecord) (string, error) {
 	log.Printf("Generating PDF for ticket %s", record.TicketNumber)
 
-	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 
 	// Colors
