@@ -13,6 +13,7 @@ import (
 
 	"stoneweigh/internal/models"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,17 +35,20 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 
 	// Lookup Camera URL from Database
 	var url string
+	var targetStationID uint
 
 	if camID != "" {
 		// Priority 1: Specific Camera ID
 		var cam models.StationCamera
 		if err := s.DB.First(&cam, camID).Error; err == nil {
 			url = cam.RTSPURL
+			targetStationID = cam.WeighingStationID
 		}
 	} else if stationID != "" {
 		// Priority 2: Station ID (Legacy / Default Camera)
 		var station models.WeighingStation
 		if err := s.DB.Preload("Cameras").First(&station, stationID).Error; err == nil {
+			targetStationID = station.ID
 			if len(station.Cameras) > 0 {
 				url = station.Cameras[0].RTSPURL
 			} else {
@@ -60,8 +64,17 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 
 	// Verify User Access (Defense in Depth)
 	// Users should only see cameras for stations they are assigned to.
-	// (Skipping complex check here for brevity, assuming AuthRequired covers basic access,
-	// but strictly no SSRF is possible now as we only control URLs in DB).
+	session := sessions.Default(c)
+	role := session.Get("role")
+	userID := session.Get("user_id")
+
+	if role != "admin" {
+		var assignment models.UserStationAssignment
+		if err := s.DB.Where("user_id = ? AND weighing_station_id = ?", userID, targetStationID).First(&assignment).Error; err != nil {
+			c.String(http.StatusForbidden, "Access denied to this camera")
+			return
+		}
+	}
 
 	// Set headers for MJPEG
 	c.Writer.Header().Set("Content-Type", "multipart/x-mixed-replace; boundary=frame")
