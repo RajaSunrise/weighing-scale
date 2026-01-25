@@ -180,17 +180,15 @@ func (s *Server) ShowReports(c *gin.Context) {
 		return db
 	}
 
-	// Calculate totals via DB aggregation
-	var totalNet float64
-	// Use Table() instead of Model() for aggregation to avoid GORM scanning issues into struct
-	if err := s.DB.Table("weighing_records").Scopes(filterScope).
-		Select("COALESCE(SUM(net_weight), 0)").Row().Scan(&totalNet); err != nil {
-		log.Printf("Failed to calculate total weight: %v", err)
-	}
-
 	var records []models.WeighingRecord
 	s.DB.Model(&models.WeighingRecord{}).Scopes(filterScope).
 		Order("weighed_at desc").Find(&records)
+
+	// Optimization: Calculate total in memory to save a DB query
+	var totalNet float64
+	for _, r := range records {
+		totalNet += r.NetWeight
+	}
 
 	// Fetch distinct companies for filter dropdown
 	var companies []models.Company
