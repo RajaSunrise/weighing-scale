@@ -82,4 +82,16 @@ func TestCreateUser_PasswordPolicy(t *testing.T) {
 	var resp3 map[string]any
 	json.Unmarshal(w3.Body.Bytes(), &resp3)
 	assert.Equal(t, "User created", resp3["message"])
+
+	// Case 4: Weak Password (No Uppercase)
+	payloadWeak3 := `{"username": "noupper", "password": "password123", "full_name": "No Upper", "role": "operator"}`
+	w4 := httptest.NewRecorder()
+	req4, _ := http.NewRequest("POST", "/api/users", strings.NewReader(payloadWeak3))
+	req4.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w4, req4)
+
+	assert.Equal(t, http.StatusBadRequest, w4.Code)
+	var resp4 map[string]any
+	json.Unmarshal(w4.Body.Bytes(), &resp4)
+	assert.Contains(t, resp4["error"], "uppercase letter")
 }
