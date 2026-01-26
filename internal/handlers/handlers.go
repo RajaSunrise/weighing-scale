@@ -92,7 +92,26 @@ func (s *Server) ShowDashboard(c *gin.Context) {
 
 	// 2. Fetch Recent Transactions
 	var recent []models.WeighingRecord
-	s.DB.Order("weighed_at desc").Limit(10).Find(&recent)
+
+	recentCacheKey := "dashboard:recent"
+	recentCached := false
+
+	if s.Redis != nil {
+		val, err := s.Redis.Get(c, recentCacheKey).Result()
+		if err == nil {
+			if err := json.Unmarshal([]byte(val), &recent); err == nil {
+				recentCached = true
+			}
+		}
+	}
+
+	if !recentCached {
+		s.DB.Order("weighed_at desc").Limit(10).Find(&recent)
+		if s.Redis != nil {
+			data, _ := json.Marshal(recent)
+			s.Redis.Set(c, recentCacheKey, data, 5*time.Minute)
+		}
+	}
 
 	c.HTML(http.StatusOK, "dashboard.html", gin.H{
 		"title":       "Dashboard",
@@ -276,6 +295,7 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 	// Invalidate Dashboard Cache
 	if s.Redis != nil {
 		s.Redis.Del(c, "dashboard:stats:today")
+		s.Redis.Del(c, "dashboard:recent")
 	}
 
 	// Fix PDF Path for Frontend:
