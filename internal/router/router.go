@@ -142,9 +142,6 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	r.POST("/login", loginLimiter, server.Login)
 	r.GET("/logout", server.Logout)
 	r.GET("/api/captcha", server.GetCaptcha) // New endpoint for refreshing captcha
-	r.GET("/test-search", func(c *gin.Context) {
-		c.File("test_search.html")
-	})
 
 	// 6. Protected Routes
 	protected := r.Group("/")

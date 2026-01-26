@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 	"stoneweigh/internal/models"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/gin-contrib/sessions"
@@ -159,14 +160,20 @@ func validatePassword(p string) error {
 		return errors.New("Password must be at least 8 characters long")
 	}
 	hasNumber := false
+	hasUpper := false
 	for _, c := range p {
 		if c >= '0' && c <= '9' {
 			hasNumber = true
-			break
+		}
+		if unicode.IsUpper(c) {
+			hasUpper = true
 		}
 	}
 	if !hasNumber {
 		return errors.New("Password must contain at least one number")
+	}
+	if !hasUpper {
+		return errors.New("Password must contain at least one uppercase letter")
 	}
 	return nil
 }
