@@ -15,11 +15,9 @@ type RemoteScalePayload struct {
 
 // HandleRemoteScaleData receives weight data from a remote client
 func HandleRemoteScaleData(c *gin.Context) {
-	// 1. Get Token from Header (preferred) or Query
+	// 1. Get Token from Header (preferred)
+	// SECURITY: Do not accept tokens via query parameters (leaks in logs/history)
 	token := c.GetHeader("X-Scale-Token")
-	if token == "" {
-		token = c.Query("token")
-	}
 
 	if token == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Token authentication required"})
