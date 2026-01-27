@@ -332,6 +332,7 @@ func (s *Server) TriggerANPR(c *gin.Context) {
 	camID := c.Query("camera_id")
 
 	cameraURL := "0" // Default to webcam
+	var targetStationID uint
 
 	// Priority 1: Specific Camera ID
 	if camID != "" {
@@ -340,6 +341,10 @@ func (s *Server) TriggerANPR(c *gin.Context) {
 			if cam.RTSPURL != "" {
 				cameraURL = cam.RTSPURL
 			}
+			targetStationID = cam.WeighingStationID
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Camera not found"})
+			return
 		}
 	} else if scaleID != "" {
 		// Priority 2: Fallback to first camera of station (Legacy/Default)
@@ -350,6 +355,30 @@ func (s *Server) TriggerANPR(c *gin.Context) {
 			} else if station.CameraURL != "" {
 				cameraURL = station.CameraURL
 			}
+			targetStationID = station.ID
+		} else {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Station not found"})
+			return
+		}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing station or camera ID"})
+		return
+	}
+
+	// SECURITY CHECK: Ensure user is allowed to access this station's hardware
+	session := sessions.Default(c)
+	role := session.Get("role")
+	userID := session.Get("user_id")
+
+	if role != "admin" {
+		var count int64
+		s.DB.Model(&models.UserStationAssignment{}).
+			Where("user_id = ? AND weighing_station_id = ?", userID, targetStationID).
+			Count(&count)
+
+		if count == 0 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to this station hardware"})
+			return
 		}
 	}
 

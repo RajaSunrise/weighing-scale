@@ -188,6 +188,22 @@ func TestSaveTransaction_InvalidJSON(t *testing.T) {
 func TestTriggerANPR(t *testing.T) {
 	r, db := setupServer(t)
 
+	// Helper to set session
+	r.POST("/login_mock", func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Set("user_id", uint(1))
+		session.Set("username", "Admin")
+		session.Set("role", "admin")
+		session.Save()
+		c.Status(200)
+	})
+
+	// 1. Establish Session
+	w_login := httptest.NewRecorder()
+	req_login, _ := http.NewRequest("POST", "/login_mock", nil)
+	r.ServeHTTP(w_login, req_login)
+	cookie := w_login.Header().Get("Set-Cookie")
+
 	// Setup Data: Station with Camera
 	station := models.WeighingStation{Name: "Station 1", Enabled: true}
 	db.Create(&station)
@@ -197,6 +213,7 @@ func TestTriggerANPR(t *testing.T) {
 	// Test 1: By Camera ID (Success Mock)
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("POST", "/api/anpr/trigger?camera_id=1", nil)
+	req.Header.Set("Cookie", cookie)
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
