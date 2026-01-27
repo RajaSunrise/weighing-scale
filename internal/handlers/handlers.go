@@ -248,6 +248,29 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 		return
 	}
 
+	// Validate Input Lengths
+	if err := validateLength(input.PlateNumber, "PlateNumber", 1, 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.DriverName, "DriverName", 1, 100); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.Company, "Company", 0, 100); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.Product, "Product", 0, 100); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	// Sanitize
+	if err := validateSafeString(input.PlateNumber, "PlateNumber"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	log.Printf("Transaction Data - Plate: %s, Driver: %s, Company: %s, Product: %s, Gross: %.2f, Tare: %.2f",
 		input.PlateNumber, input.DriverName, input.Company, input.Product, input.Gross, input.Tare)
 
