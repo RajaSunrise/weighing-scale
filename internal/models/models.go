@@ -171,8 +171,8 @@ type User struct {
 // We will enforce: No assignment = No access to operate.
 type UserStationAssignment struct {
 	gorm.Model
-	UserID            uint            `json:"user_id"`
+	UserID            uint            `json:"user_id" gorm:"index:idx_user_station,unique"`
 	User              User            `json:"user"`
-	WeighingStationID uint            `json:"weighing_station_id"`
+	WeighingStationID uint            `json:"weighing_station_id" gorm:"index:idx_user_station,unique"`
 	WeighingStation   WeighingStation `json:"weighing_station"`
 }
