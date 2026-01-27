@@ -29,7 +29,13 @@ func setupTestServer(t *testing.T) (*gin.Engine, *Server) {
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 	assert.NoError(t, err)
 
-	err = db.AutoMigrate(&models.User{})
+	err = db.AutoMigrate(
+		&models.User{},
+		&models.WeighingStation{},
+		&models.StationCamera{},
+		&models.UserStationAssignment{},
+		&models.WeighingRecord{},
+	)
 	assert.NoError(t, err)
 
 	// Mock dependencies
@@ -40,7 +46,86 @@ func setupTestServer(t *testing.T) (*gin.Engine, *Server) {
 	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
 
+	// Mock CSRF Token (needed for some handlers)
+	r.Use(func(c *gin.Context) {
+		c.Set("csrfSecret", "test-secret")
+		c.Next()
+	})
+
 	return r, server
+}
+
+func TestSaveTransaction_IDOR(t *testing.T) {
+	r, server := setupTestServer(t)
+	// Register route
+	r.POST("/api/transaction", server.SaveTransaction)
+
+	db := server.DB
+
+	// Setup Data
+	// 1. Create Stations
+	stationAllowed := models.WeighingStation{Name: "Station A", Enabled: true}
+	stationForbidden := models.WeighingStation{Name: "Station B", Enabled: true}
+	db.Create(&stationAllowed)
+	db.Create(&stationForbidden)
+
+	// 2. Create User
+	user := models.User{Username: "operator", Role: "operator"}
+	db.Create(&user)
+
+	// 3. Assign User to Station A ONLY
+	assignment := models.UserStationAssignment{UserID: user.ID, WeighingStationID: stationAllowed.ID}
+	db.Create(&assignment)
+
+	// Helper to login as operator
+	r.POST("/login_test_idor", func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Set("user_id", user.ID)
+		session.Set("username", user.Username)
+		session.Set("role", user.Role)
+		session.Save()
+		c.Status(200)
+	})
+
+	// Establish Session
+	wLogin := httptest.NewRecorder()
+	reqLogin, _ := http.NewRequest("POST", "/login_test_idor", nil)
+	r.ServeHTTP(wLogin, reqLogin)
+	cookie := wLogin.Header().Get("Set-Cookie")
+
+	// Test Case 1: Access Allowed Station (Should Success)
+	payloadAllowed := map[string]any{
+		"scale_id":     stationAllowed.ID,
+		"plate_number": "B 1234 OK",
+		"driver_name":  "Driver OK",
+		"gross":        10000,
+		"tare":         5000,
+	}
+	bodyAllowed, _ := json.Marshal(payloadAllowed)
+	w1 := httptest.NewRecorder()
+	req1, _ := http.NewRequest("POST", "/api/transaction", strings.NewReader(string(bodyAllowed)))
+	req1.Header.Set("Content-Type", "application/json")
+	req1.Header.Set("Cookie", cookie)
+	r.ServeHTTP(w1, req1)
+
+	assert.Equal(t, http.StatusOK, w1.Code, "Operator should be able to write to assigned station")
+
+	// Test Case 2: Access Forbidden Station (Should Fail with 403)
+	payloadForbidden := map[string]any{
+		"scale_id":     stationForbidden.ID,
+		"plate_number": "B 666 BAD",
+		"driver_name":  "Driver BAD",
+		"gross":        10000,
+		"tare":         5000,
+	}
+	bodyForbidden, _ := json.Marshal(payloadForbidden)
+	w2 := httptest.NewRecorder()
+	req2, _ := http.NewRequest("POST", "/api/transaction", strings.NewReader(string(bodyForbidden)))
+	req2.Header.Set("Content-Type", "application/json")
+	req2.Header.Set("Cookie", cookie)
+	r.ServeHTTP(w2, req2)
+
+	assert.Equal(t, http.StatusForbidden, w2.Code, "Operator should NOT be able to write to unassigned station")
 }
 
 func TestCreateUser_PasswordPolicy(t *testing.T) {

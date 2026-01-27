@@ -257,6 +257,22 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 		managerName = val.(string)
 	}
 
+	// SECURITY CHECK: Ensure user is allowed to write to this station
+	role := session.Get("role")
+	userID := session.Get("user_id")
+
+	if role != "admin" {
+		var count int64
+		s.DB.Model(&models.UserStationAssignment{}).
+			Where("user_id = ? AND weighing_station_id = ?", userID, input.ScaleID).
+			Count(&count)
+
+		if count == 0 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied to this station"})
+			return
+		}
+	}
+
 	net := input.Gross - input.Tare
 	// Use UnixNano to prevent collision on rapid submissions
 	ticket, err := pkg.GenerateTicketID(12)
