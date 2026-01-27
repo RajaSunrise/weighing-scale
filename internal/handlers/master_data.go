@@ -58,6 +58,23 @@ func (s *Server) CreateVehicle(c *gin.Context) {
 		return
 	}
 
+	if err := validateLength(input.PlateNumber, "PlateNumber", 1, 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.DriverName, "DriverName", 1, 100); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.OwnerCompany, "OwnerCompany", 0, 100); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.SIM, "SIM", 0, 50); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	// If CompanyID is provided, fetch the company name to populate OwnerCompany for legacy/display compatibility
 	if input.CompanyID != nil && *input.CompanyID > 0 {
 		var comp models.Company
@@ -121,6 +138,23 @@ func (s *Server) UpdateVehicle(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := validateLength(input.PlateNumber, "PlateNumber", 1, 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.DriverName, "DriverName", 1, 100); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.OwnerCompany, "OwnerCompany", 0, 100); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.SIM, "SIM", 0, 50); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -223,6 +257,23 @@ func (s *Server) CreateCompany(c *gin.Context) {
 		return
 	}
 
+	if err := validateLength(input.Name, "Name", 1, 100); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.Address, "Address", 0, 255); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.ContactPerson, "ContactPerson", 0, 100); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.Phone, "Phone", 0, 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	company := models.Company{
 		Name:          input.Name,
 		Address:       input.Address,
@@ -255,6 +306,23 @@ func (s *Server) UpdateCompany(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := validateLength(input.Name, "Name", 1, 100); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.Address, "Address", 0, 255); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.ContactPerson, "ContactPerson", 0, 100); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateLength(input.Phone, "Phone", 0, 20); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
