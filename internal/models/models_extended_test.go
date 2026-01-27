@@ -85,6 +85,14 @@ func TestUserStationAssignment(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "operator1", loadedAssign.User.Username)
 	assert.Equal(t, "Station A", loadedAssign.WeighingStation.Name)
+
+	// Test Duplicate Assignment (Constraint Check)
+	assignDuplicate := UserStationAssignment{
+		UserID:            user.ID,
+		WeighingStationID: station.ID,
+	}
+	err = db.Create(&assignDuplicate).Error
+	assert.Error(t, err, "Duplicate assignment should be rejected")
 }
 
 func TestStationCameraValidationDetailed(t *testing.T) {
