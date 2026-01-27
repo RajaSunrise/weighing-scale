@@ -135,7 +135,9 @@ func TestSaveTransaction(t *testing.T) {
 	// Helper to set session
 	r.POST("/login_mock", func(c *gin.Context) {
 		session := sessions.Default(c)
+		session.Set("user_id", uint(1))
 		session.Set("username", "TestManager")
+		session.Set("role", "admin")
 		session.Save()
 		c.Status(200)
 	})
