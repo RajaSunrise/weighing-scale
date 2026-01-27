@@ -448,8 +448,17 @@ func (s *Server) StreamScaleData(c *gin.Context) {
 	ticker := time.NewTicker(200 * time.Millisecond)
 	defer ticker.Stop()
 
+	// State tracking for optimization
+	type scaleState struct {
+		Weight    float64
+		Connected bool
+	}
+	lastStates := make(map[uint]scaleState)
+	ticksSinceLastSend := 0
+
 	c.Stream(func(w io.Writer) bool {
 		if _, ok := <-ticker.C; ok {
+			ticksSinceLastSend++
 			s.ScaleMgr.Mu.Lock()
 			type scaleSnapshot struct {
 				ID        uint
@@ -470,13 +479,32 @@ func (s *Server) StreamScaleData(c *gin.Context) {
 			}
 			s.ScaleMgr.Mu.Unlock()
 
+			sentData := false
 			for _, snap := range snapshots {
-				c.SSEvent("message", gin.H{
-					"scale_id":  snap.ID,
-					"weight":    snap.Weight,
-					"connected": snap.Connected,
-				})
+				// PERF: Only send if changed
+				last, exists := lastStates[snap.ID]
+				if !exists || last.Weight != snap.Weight || last.Connected != snap.Connected {
+					c.SSEvent("message", gin.H{
+						"scale_id":  snap.ID,
+						"weight":    snap.Weight,
+						"connected": snap.Connected,
+					})
+					lastStates[snap.ID] = scaleState{
+						Weight:    snap.Weight,
+						Connected: snap.Connected,
+					}
+					sentData = true
+				}
 			}
+
+			if sentData {
+				ticksSinceLastSend = 0
+			} else if ticksSinceLastSend >= 150 { // ~30 seconds (150 * 200ms)
+				// Keep-Alive to prevent load balancer timeouts
+				c.SSEvent("ping", "keepalive")
+				ticksSinceLastSend = 0
+			}
+
 			return true
 		}
 		return false
