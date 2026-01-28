@@ -47,7 +47,8 @@ func (s *Server) GetLogsAPI(c *gin.Context) {
 		return
 	}
 
-	var lines []string
+	// Pre-allocate slice for better performance
+	lines := make([]string, 0, 100)
 	const bufferSize = 4096
 	buffer := make([]byte, bufferSize)
 
@@ -91,7 +92,7 @@ func (s *Server) GetLogsAPI(c *gin.Context) {
 		// The rest are complete lines (in forward order)
 		// We process them in reverse to add to our result
 		for i := len(parts) - 1; i > 0; i-- {
-			lines = append([]string{string(parts[i])}, lines...)
+			lines = append(lines, string(parts[i]))
 			if len(lines) >= 100 {
 				break
 			}
@@ -100,7 +101,12 @@ func (s *Server) GetLogsAPI(c *gin.Context) {
 
 	// Add the final leftover as the first line if we still need lines
 	if len(lines) < 100 {
-		lines = append([]string{string(leftover)}, lines...)
+		lines = append(lines, string(leftover))
+	}
+
+	// Reverse the lines to get them in chronological order
+	for i, j := 0, len(lines)-1; i < j; i, j = i+1, j-1 {
+		lines[i], lines[j] = lines[j], lines[i]
 	}
 
 	c.JSON(http.StatusOK, lines)
