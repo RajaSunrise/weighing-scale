@@ -205,8 +205,8 @@ func (s *Server) ShowReports(c *gin.Context) {
 
 	// Optimization: Calculate total in memory to save a DB query
 	var totalNet float64
-	for _, r := range records {
-		totalNet += r.NetWeight
+	for i := range records {
+		totalNet += records[i].NetWeight
 	}
 
 	// Fetch distinct companies for filter dropdown

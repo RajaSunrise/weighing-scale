@@ -58,13 +58,16 @@ func (s *Server) GetReportCharts(c *gin.Context) {
 	}
 
 	// Map results: "YYYY-MM-DD" -> Total
-	dayMap := make(map[string]float64)
+	// Optimization: Pre-allocate map
+	dayMap := make(map[string]float64, len(stats))
 	for _, stat := range stats {
 		dayMap[stat.DateStr] = stat.Total
 	}
 
-	labels := []string{}
-	data := []float64{}
+	// Optimization: Pre-allocate slices to avoid resizing
+	// Max iterations is ~31 (Daily), so 32 is safe.
+	labels := make([]string, 0, 32)
+	data := make([]float64, 0, 32)
 
 	if period == "daily" {
 		cur := now.AddDate(0, 0, -30)
