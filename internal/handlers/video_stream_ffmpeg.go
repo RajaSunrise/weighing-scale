@@ -76,6 +76,15 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 		}
 	}
 
+	// Rate Limit: Prevent DoS via process exhaustion
+	select {
+	case streamSemaphore <- struct{}{}:
+		defer func() { <-streamSemaphore }()
+	default:
+		c.String(http.StatusTooManyRequests, "Too many active streams")
+		return
+	}
+
 	// Set headers for MJPEG
 	c.Writer.Header().Set("Content-Type", "multipart/x-mixed-replace; boundary=frame")
 	c.Writer.Header().Set("Cache-Control", "no-cache")
@@ -209,6 +218,7 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 // Stub for shared streams if needed, but for fallback we just spawn one process per request
 // to keep it simple and stateless.
 var (
-	streamMap  = make(map[string]*any)
-	streamLock sync.Mutex
+	streamMap       = make(map[string]*any)
+	streamLock      sync.Mutex
+	streamSemaphore = make(chan struct{}, 5) // Limit concurrent FFmpeg processes
 )
