@@ -54,3 +54,8 @@ func (s *ANPRService) CaptureAndDetect(cameraSource string) (string, string, err
 	// Return the simulated plate
 	return plate, "/static/images/placeholder_truck.jpg", nil
 }
+
+// Close releases resources held by ANPRService (Mock)
+func (s *ANPRService) Close() error {
+	return nil
+}

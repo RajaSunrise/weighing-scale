@@ -8,13 +8,14 @@ import (
 	"image/color"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/otiai10/gosseract/v2"
 	"gocv.io/x/gocv"
 )
 
@@ -23,6 +24,8 @@ type ANPRService struct {
 	Net       gocv.Net
 	IsLoaded  bool
 	ModelPath string
+	OcrClient *gosseract.Client
+	OcrMutex  sync.Mutex
 }
 
 func NewANPRService(modelPath string) *ANPRService {
@@ -88,10 +91,15 @@ func NewANPRService(modelPath string) *ANPRService {
 	net.SetPreferableBackend(gocv.NetBackendDefault)
 	net.SetPreferableTarget(gocv.NetTargetCPU)
 
+	// Initialize Gosseract Client
+	client := gosseract.NewClient()
+	client.SetLanguage("eng")
+
 	return &ANPRService{
 		Net:       net,
 		IsLoaded:  true,
 		ModelPath: modelPath,
+		OcrClient: client,
 	}
 }
 
@@ -161,29 +169,43 @@ func (s *ANPRService) CaptureAndDetect(cameraSource string) (string, string, err
 		gocv.Resize(region, &ocrImg, image.Point{}, 2.0, 2.0, gocv.InterpolationCubic)
 		region.Close() // Close region explicitly
 
-		cropFilename := fmt.Sprintf("web/static/images/snap_crop_%d.jpg", SystemClock())
-		gocv.IMWrite(cropFilename, ocrImg)
+		// Convert crop to bytes for Gosseract
+		buf, err := gocv.IMEncode(".jpg", ocrImg)
+		if err == nil {
+			s.OcrMutex.Lock()
+			s.OcrClient.SetPageSegMode(gosseract.PSM_SINGLE_LINE) // --psm 7
+			s.OcrClient.SetImageFromBytes(buf.GetBytes())
+			out, errOcr := s.OcrClient.Text()
+			s.OcrMutex.Unlock()
+			buf.Close()
+
+			if errOcr == nil {
+				detectedText = strings.TrimSpace(out)
+			} else {
+				log.Printf("OCR Failed on crop: %v", errOcr)
+			}
+		}
 
 		filename = fmt.Sprintf("web/static/images/snap_%d.jpg", SystemClock())
 		gocv.IMWrite(filename, img)
-
-		// Run OCR on crop
-		out, err := exec.Command("tesseract", cropFilename, "stdout", "--psm", "7", "-l", "eng").Output()
-		if err == nil {
-			detectedText = strings.TrimSpace(string(out))
-		} else {
-			log.Printf("OCR Failed on crop: %v", err)
-		}
-
-		defer os.Remove(cropFilename)
 
 	} else {
 		filename = fmt.Sprintf("web/static/images/snap_%d.jpg", SystemClock())
 		gocv.IMWrite(filename, img)
 
-		out, err := exec.Command("tesseract", filename, "stdout", "--psm", "11").Output()
+		// Full image OCR
+		buf, err := gocv.IMEncode(".jpg", img)
 		if err == nil {
-			detectedText = strings.TrimSpace(string(out))
+			s.OcrMutex.Lock()
+			s.OcrClient.SetPageSegMode(gosseract.PSM_SPARSE_TEXT) // --psm 11
+			s.OcrClient.SetImageFromBytes(buf.GetBytes())
+			out, errOcr := s.OcrClient.Text()
+			s.OcrMutex.Unlock()
+			buf.Close()
+
+			if errOcr == nil {
+				detectedText = strings.TrimSpace(out)
+			}
 		}
 	}
 
@@ -335,4 +357,14 @@ func cleanPlateText(text string) string {
 
 func SystemClock() int64 {
 	return time.Now().UnixNano()
+}
+
+// Close releases resources held by ANPRService
+func (s *ANPRService) Close() error {
+	s.OcrMutex.Lock()
+	defer s.OcrMutex.Unlock()
+	if s.OcrClient != nil {
+		return s.OcrClient.Close()
+	}
+	return nil
 }
