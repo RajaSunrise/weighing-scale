@@ -138,6 +138,7 @@ func (s *Server) UpdateUserAssignments(c *gin.Context) {
 				WeighingStationID: sid,
 			})
 		}
+		// Batch insert optimization: Create(&assignments) inserts all records in a single query
 		if err := tx.Create(&assignments).Error; err != nil {
 			tx.Rollback()
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add assignment"})
