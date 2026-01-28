@@ -457,16 +457,21 @@ func (s *Server) StreamScaleData(c *gin.Context) {
 	lastStates := make(map[uint]scaleState)
 	ticksSinceLastSend := 0
 
+	// Reuse buffer to reduce GC pressure
+	type scaleSnapshot struct {
+		ID        uint
+		Weight    float64
+		Connected bool
+	}
+	snapshots := make([]scaleSnapshot, 0, 32)
+
 	c.Stream(func(w io.Writer) bool {
 		if _, ok := <-ticker.C; ok {
 			ticksSinceLastSend++
 			s.ScaleMgr.Mu.Lock()
-			type scaleSnapshot struct {
-				ID        uint
-				Weight    float64
-				Connected bool
-			}
-			snapshots := make([]scaleSnapshot, 0, len(s.ScaleMgr.Scales))
+
+			// Reset slice, keeping capacity
+			snapshots = snapshots[:0]
 
 			for id, scale := range s.ScaleMgr.Scales {
 				// Only send data if allowed
