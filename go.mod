@@ -8,7 +8,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/jung-kurt/gofpdf v1.16.2
 	github.com/mojocn/base64Captcha v1.3.8
-	github.com/redis/go-redis/v9 v9.17.2
+	github.com/redis/go-redis/v9 v9.17.3
 	github.com/stretchr/testify v1.11.1
 	github.com/utrack/gin-csrf v0.0.0-20190424104817-40fb8d2c8fca
 	go.bug.st/serial v1.6.4
