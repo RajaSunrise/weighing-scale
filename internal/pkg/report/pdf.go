@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/jung-kurt/gofpdf"
+	gofpdf "github.com/go-pdf/fpdf"
 	"stoneweigh/internal/models"
 )
 
