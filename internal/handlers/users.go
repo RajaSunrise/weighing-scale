@@ -59,6 +59,19 @@ func (s *Server) CreateUser(c *gin.Context) {
 		return
 	}
 
+	if err := validateUsername(input.Username); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.FullName, "FullName"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateRole(input.Role); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	// Validate Password Strength
 	if err := validatePassword(input.Password); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
