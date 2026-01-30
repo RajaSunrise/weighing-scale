@@ -75,6 +75,23 @@ func (s *Server) CreateVehicle(c *gin.Context) {
 		return
 	}
 
+	if err := validateSafeString(input.PlateNumber, "PlateNumber"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.DriverName, "DriverName"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.OwnerCompany, "OwnerCompany"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.SIM, "SIM"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	// If CompanyID is provided, fetch the company name to populate OwnerCompany for legacy/display compatibility
 	if input.CompanyID != nil && *input.CompanyID > 0 {
 		var comp models.Company
@@ -155,6 +172,23 @@ func (s *Server) UpdateVehicle(c *gin.Context) {
 		return
 	}
 	if err := validateLength(input.SIM, "SIM", 0, 50); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := validateSafeString(input.PlateNumber, "PlateNumber"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.DriverName, "DriverName"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.OwnerCompany, "OwnerCompany"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.SIM, "SIM"); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -274,6 +308,23 @@ func (s *Server) CreateCompany(c *gin.Context) {
 		return
 	}
 
+	if err := validateSafeString(input.Name, "Name"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.Address, "Address"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.ContactPerson, "ContactPerson"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.Phone, "Phone"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	company := models.Company{
 		Name:          input.Name,
 		Address:       input.Address,
@@ -323,6 +374,23 @@ func (s *Server) UpdateCompany(c *gin.Context) {
 		return
 	}
 	if err := validateLength(input.Phone, "Phone", 0, 20); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := validateSafeString(input.Name, "Name"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.Address, "Address"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.ContactPerson, "ContactPerson"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.Phone, "Phone"); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

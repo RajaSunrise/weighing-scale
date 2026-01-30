@@ -271,6 +271,18 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if err := validateSafeString(input.DriverName, "DriverName"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.Company, "Company"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := validateSafeString(input.Product, "Product"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	log.Printf("Transaction Data - Plate: %s, Driver: %s, Company: %s, Product: %s, Gross: %.2f, Tare: %.2f",
 		input.PlateNumber, input.DriverName, input.Company, input.Product, input.Gross, input.Tare)

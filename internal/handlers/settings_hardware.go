@@ -29,6 +29,11 @@ func (s *Server) CreateStation(c *gin.Context) {
 		return
 	}
 
+	if err := validateSafeString(input.Name, "Name"); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	if err := s.DB.Create(&input).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create station"})
 		return
@@ -50,6 +55,11 @@ func (s *Server) UpdateStation(c *gin.Context) {
 
 	var input models.WeighingStation
 	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := validateSafeString(input.Name, "Name"); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
