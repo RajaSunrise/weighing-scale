@@ -155,7 +155,7 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 	// Split on FFD9 (EOI).
 
 	scanner := bufio.NewScanner(reader)
-	// Split function to find JPEG boundaries
+	// Optimized split function to find JPEG boundaries
 	split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		if atEOF && len(data) == 0 {
 			return 0, nil, nil
@@ -164,20 +164,32 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 		// Find SOI (FF D8)
 		soi := bytes.Index(data, []byte{0xFF, 0xD8})
 		if soi == -1 {
-			// No SOI found, request more data
+			// Optimization: If no SOI found, discard all but the last byte
+			// (in case the last byte is 0xFF and next is 0xD8)
+			if len(data) > 1 {
+				return len(data) - 1, nil, nil
+			}
 			return 0, nil, nil
 		}
 
-		// Find EOI (FF D9) after SOI
-		eoi := bytes.Index(data[soi:], []byte{0xFF, 0xD9})
+		// Optimization: If SOI is not at the start, discard data before it
+		if soi > 0 {
+			return soi, nil, nil
+		}
+
+		// Find EOI (FF D9) after SOI (starts at 0)
+		if len(data) < 2 {
+			return 0, nil, nil
+		}
+
+		eoi := bytes.Index(data[2:], []byte{0xFF, 0xD9})
 		if eoi == -1 {
-			// No EOI found, request more data
 			return 0, nil, nil
 		}
 
-		// Full JPEG found
-		end := soi + eoi + 2
-		return end, data[soi:end], nil
+		// eoi is relative to data[2:], so actual index is 2 + eoi
+		end := 2 + eoi + 2
+		return end, data[0:end], nil
 	}
 
 	scanner.Split(split)
