@@ -34,7 +34,7 @@ func TestHandleRemoteScaleData(t *testing.T) {
 	station := models.WeighingStation{
 		Name:    "Test Station",
 		Enabled: true,
-		Token:   token,
+		Token:   &token,
 	}
 	assert.NoError(t, db.Create(&station).Error)
 

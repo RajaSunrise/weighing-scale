@@ -69,7 +69,14 @@ type WeighingStation struct {
 	BaudRate  int             `json:"baud_rate"`  // e.g., 9600
 	Cameras   []StationCamera `json:"cameras"`    // Multiple CCTVs
 	Enabled   bool            `json:"enabled"`
-	Token     string          `json:"token"`      // Security token for remote data push
+	/**
+	 * SECURITY FIX: MEDIUM – Potential Authentication Bypass / Token Collision
+	 * Risk: Duplicate or predictable tokens could allow unauthorized remote data submission.
+	 * Attack vector: Multiple stations sharing a token or performance degradation during token lookup.
+	 * Mitigation: Enforce uniqueness at the database level using a unique index on the Token field.
+	 * References: CWE-287
+	 */
+	Token     *string         `json:"token" gorm:"uniqueIndex"` // Security token for remote data push
 
 	// Deprecated: Kept for migration, assume data moved to Cameras[0]
 	CameraURL string `json:"camera_url,omitempty"`

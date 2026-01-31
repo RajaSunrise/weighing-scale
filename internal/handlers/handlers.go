@@ -196,6 +196,35 @@ func (s *Server) ShowReports(c *gin.Context) {
 		if companyFilter != "" {
 			db = db.Where("company_name = ?", companyFilter)
 		}
+
+		/**
+		 * SECURITY FIX: HIGH – Broken Object Level Authorization (BOLA) in Reports
+		 * Risk: Operators can view weighing records from stations they are not assigned to, leading to data leakage.
+		 * Attack vector: An authenticated operator accesses the reports page to see transactions from all stations.
+		 * Mitigation: Enforce a filter on scale_id based on the user's station assignments for non-admin roles.
+		 * References: OWASP [A01:2025], CWE-285
+		 */
+		role := session.Get("role")
+		userID := session.Get("user_id")
+
+		if role != "admin" {
+			if userID == nil {
+				// FAIL CLOSED: If for some reason userID is missing from session, deny access to all records
+				return db.Where("1 = 0")
+			}
+			var stationIDs []uint
+			s.DB.Model(&models.UserStationAssignment{}).
+				Where("user_id = ?", userID).
+				Pluck("weighing_station_id", &stationIDs)
+
+			if len(stationIDs) > 0 {
+				db = db.Where("scale_id IN ?", stationIDs)
+			} else {
+				// No assignments means no access to records
+				db = db.Where("1 = 0")
+			}
+		}
+
 		return db
 	}
 
@@ -203,11 +232,11 @@ func (s *Server) ShowReports(c *gin.Context) {
 	s.DB.Model(&models.WeighingRecord{}).Scopes(filterScope).
 		Order("weighed_at desc").Find(&records)
 
-	// Optimization: Use DB aggregation (faster than iterating large datasets in memory)
+	// Optimization: Calculate total net weight in memory to avoid a redundant DB query.
+	// Since we've already fetched all records for display, O(N) iteration is efficient.
 	var totalNet float64
-	if err := s.DB.Model(&models.WeighingRecord{}).Scopes(filterScope).
-		Select("COALESCE(SUM(net_weight), 0)").Row().Scan(&totalNet); err != nil {
-		log.Printf("Failed to calculate total net weight: %v", err)
+	for _, r := range records {
+		totalNet += r.NetWeight
 	}
 
 	// Fetch distinct companies for filter dropdown

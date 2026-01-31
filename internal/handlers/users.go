@@ -134,8 +134,14 @@ func (s *Server) UpdateUserAssignments(c *gin.Context) {
 	}
 
 	tx := s.DB.Begin()
-	// Clear existing
-	if err := tx.Where("user_id = ?", userID).Delete(&models.UserStationAssignment{}).Error; err != nil {
+	/**
+	 * SECURITY FIX: MEDIUM – Denial of Service / Logic Flaw in User Assignment
+	 * Risk: Soft-deleted assignment records with unique constraints prevent re-assigning users to stations.
+	 * Attack vector: Admin attempts to re-assign a station to a user after previously removing it; the operation fails.
+	 * Mitigation: Use physical deletion (Unscoped) to clear old assignments, ensuring the unique index is freed.
+	 * References: CWE-730
+	 */
+	if err := tx.Unscoped().Where("user_id = ?", userID).Delete(&models.UserStationAssignment{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update assignments"})
 		return

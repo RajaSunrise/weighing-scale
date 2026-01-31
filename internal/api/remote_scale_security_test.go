@@ -34,7 +34,7 @@ func TestHandleRemoteScaleData_Security_QueryParam(t *testing.T) {
 	station := models.WeighingStation{
 		Name:    "Secure Station",
 		Enabled: true,
-		Token:   token,
+		Token:   &token,
 	}
 	assert.NoError(t, db.Create(&station).Error)
 
