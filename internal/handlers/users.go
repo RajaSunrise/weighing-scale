@@ -134,8 +134,8 @@ func (s *Server) UpdateUserAssignments(c *gin.Context) {
 	}
 
 	tx := s.DB.Begin()
-	// Clear existing
-	if err := tx.Where("user_id = ?", userID).Delete(&models.UserStationAssignment{}).Error; err != nil {
+
+	if err := tx.Unscoped().Where("user_id = ?", userID).Delete(&models.UserStationAssignment{}).Error; err != nil {
 		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update assignments"})
 		return

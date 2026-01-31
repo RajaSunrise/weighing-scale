@@ -96,6 +96,20 @@ func setupServer(t *testing.T) (*gin.Engine, *gorm.DB) {
 func TestShowReports(t *testing.T) {
 	r, db := setupServer(t)
 
+	// Helper to login as admin to bypass BOLA for this test
+	r.POST("/login_admin", func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Set("user_id", uint(999))
+		session.Set("role", "admin")
+		session.Save()
+		c.Status(200)
+	})
+
+	wLogin := httptest.NewRecorder()
+	reqLogin, _ := http.NewRequest("POST", "/login_admin", nil)
+	r.ServeHTTP(wLogin, reqLogin)
+	cookie := wLogin.Header().Get("Set-Cookie")
+
 	// Mock Template
 	t.Setenv("SESSION_SECRET", "test")
 	tmpl := template.New("")
@@ -123,6 +137,7 @@ func TestShowReports(t *testing.T) {
 	w := httptest.NewRecorder()
 	// Default range is "today" in ShowReports if params empty
 	req, _ := http.NewRequest("GET", "/reports", nil)
+	req.Header.Set("Cookie", cookie)
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
