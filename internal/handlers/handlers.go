@@ -197,13 +197,7 @@ func (s *Server) ShowReports(c *gin.Context) {
 			db = db.Where("company_name = ?", companyFilter)
 		}
 
-		/**
-		 * SECURITY FIX: HIGH – Broken Object Level Authorization (BOLA) in Reports
-		 * Risk: Operators can view weighing records from stations they are not assigned to, leading to data leakage.
-		 * Attack vector: An authenticated operator accesses the reports page to see transactions from all stations.
-		 * Mitigation: Enforce a filter on scale_id based on the user's station assignments for non-admin roles.
-		 * References: OWASP [A01:2025], CWE-285
-		 */
+
 		role := session.Get("role")
 		userID := session.Get("user_id")
 
