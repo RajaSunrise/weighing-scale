@@ -203,11 +203,13 @@ func (s *Server) ShowReports(c *gin.Context) {
 	s.DB.Model(&models.WeighingRecord{}).Scopes(filterScope).
 		Order("weighed_at desc").Find(&records)
 
-	// Optimization: Use DB aggregation (faster than iterating large datasets in memory)
+	// Optimization: Calculate total in memory since we already fetched the records.
+	// Previously this used a second DB query (SUM aggregation), but since we are
+	// fetching all records for display anyway (no pagination), we can sum them here
+	// to save a DB round-trip.
 	var totalNet float64
-	if err := s.DB.Model(&models.WeighingRecord{}).Scopes(filterScope).
-		Select("COALESCE(SUM(net_weight), 0)").Row().Scan(&totalNet); err != nil {
-		log.Printf("Failed to calculate total net weight: %v", err)
+	for _, r := range records {
+		totalNet += r.NetWeight
 	}
 
 	// Fetch distinct companies for filter dropdown
