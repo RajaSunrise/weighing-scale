@@ -12,6 +12,9 @@ import (
 	"stoneweigh/internal/pkg/captcha"
 )
 
+// Pre-calculated bcrypt hash (cost 10) for "dummy" to prevent timing attacks
+const dummyHash = "$2a$10$dvlxIvfO4J9B9HPYx32SoO9/pfX.sQ7r/4Eu/16EHhhUh3S4PlYmq"
+
 // ShowLogin renders the login page
 func (s *Server) ShowLogin(c *gin.Context) {
 	session := sessions.Default(c)
@@ -74,12 +77,19 @@ func (s *Server) Login(c *gin.Context) {
 	}
 
 	var user models.User
-	if err := s.DB.Where("username = ?", input.Username).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-		return
+	err := s.DB.Where("username = ?", input.Username).First(&user).Error
+
+	// Timing attack mitigation:
+	// Always perform password comparison, even if user is not found.
+	// This prevents attackers from enumerating valid usernames by measuring response time.
+	hashToCompare := user.PasswordHash
+	if err != nil {
+		hashToCompare = dummyHash
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(input.Password)); err != nil {
+	errPassword := bcrypt.CompareHashAndPassword([]byte(hashToCompare), []byte(input.Password))
+
+	if err != nil || errPassword != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
