@@ -42,7 +42,6 @@ func TestHandleRemoteScaleData_Security_QueryParam(t *testing.T) {
 	hardware.Manager.Mu.Lock()
 	hardware.Manager.Scales[station.ID] = &hardware.ScaleConnection{
 		Config: station,
-		Connected: false,
 	}
 	hardware.Manager.Mu.Unlock()
 

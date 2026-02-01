@@ -513,8 +513,8 @@ func (s *Server) StreamScaleData(c *gin.Context) {
 				if role == "admin" || allowedIDs[id] {
 					snapshots = append(snapshots, scaleSnapshot{
 						ID:        id,
-						Weight:    scale.LastWeight,
-						Connected: scale.Connected,
+						Weight:    scale.GetWeight(),
+						Connected: scale.IsConnected(),
 					})
 				}
 			}

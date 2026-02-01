@@ -3,9 +3,11 @@ package hardware
 import (
 	"bufio"
 	"log"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.bug.st/serial"
@@ -21,18 +23,38 @@ type ScaleManager struct {
 }
 
 type ScaleConnection struct {
-	Config models.WeighingStation
-	Port   serial.Port
-	LastWeight float64
-	Connected  bool
+	Config         models.WeighingStation
+	Port           serial.Port
+	lastWeightBits uint64 // atomic float64
+	connectedInt   int32  // atomic bool (0 or 1)
+}
+
+func (sc *ScaleConnection) SetWeight(w float64) {
+	atomic.StoreUint64(&sc.lastWeightBits, math.Float64bits(w))
+}
+
+func (sc *ScaleConnection) GetWeight() float64 {
+	return math.Float64frombits(atomic.LoadUint64(&sc.lastWeightBits))
+}
+
+func (sc *ScaleConnection) SetConnected(connected bool) {
+	var val int32
+	if connected {
+		val = 1
+	}
+	atomic.StoreInt32(&sc.connectedInt, val)
+}
+
+func (sc *ScaleConnection) IsConnected() bool {
+	return atomic.LoadInt32(&sc.connectedInt) == 1
 }
 
 var Manager *ScaleManager
 
 func InitScaleManager() {
 	Manager = &ScaleManager{
-		Scales:      make(map[uint]*ScaleConnection),
-		stopChans:   make(map[uint]chan bool),
+		Scales:    make(map[uint]*ScaleConnection),
+		stopChans: make(map[uint]chan bool),
 	}
 }
 
@@ -109,8 +131,8 @@ func (sm *ScaleManager) UpdateScale(id uint, weight float64, connected bool) {
 	sm.Mu.Lock()
 	defer sm.Mu.Unlock()
 	if conn, ok := sm.Scales[id]; ok {
-		conn.LastWeight = weight
-		conn.Connected = connected
+		conn.SetWeight(weight)
+		conn.SetConnected(connected)
 	}
 }
 
@@ -132,11 +154,13 @@ func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 			return
 		}
 
-		if !conn.Connected {
+		if !conn.IsConnected() {
 			// Attempt connection
 			// Default serial settings if not specified
 			baud := conn.Config.BaudRate
-			if baud == 0 { baud = 9600 }
+			if baud == 0 {
+				baud = 9600
+			}
 
 			mode := &serial.Mode{
 				BaudRate: baud,
@@ -148,7 +172,8 @@ func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 			port, err := serial.Open(conn.Config.ScalePort, mode)
 			if err != nil {
 				// Failed to connect, wait and retry
-				sm.UpdateScale(scaleID, 0, false)
+				conn.SetConnected(false)
+				conn.SetWeight(0)
 
 				// Sleep with check for stop
 				select {
@@ -160,7 +185,7 @@ func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 			}
 
 			conn.Port = port
-			conn.Connected = true
+			conn.SetConnected(true)
 			log.Printf("Connected to Scale %d (%s) on %s", scaleID, conn.Config.Name, conn.Config.ScalePort)
 		}
 
@@ -177,14 +202,16 @@ func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 			text := scanner.Text()
 			weight := parseWeight(text)
 
-			sm.UpdateScale(scaleID, weight, true)
+			// OPTIMIZATION: Update directly using atomics to avoid Global Lock contention
+			conn.SetWeight(weight)
+			conn.SetConnected(true)
 		}
 
 		if err := scanner.Err(); err != nil {
 			log.Printf("Error reading scale %d: %v", scaleID, err)
 			conn.Port.Close()
-			conn.Connected = false
-			sm.UpdateScale(scaleID, 0, false)
+			conn.SetConnected(false)
+			conn.SetWeight(0)
 		}
 	}
 }
@@ -201,14 +228,14 @@ func (sm *ScaleManager) StartDemoMode() {
 			// Simulate random weights for Scale 1 (or any existing scale)
 			// Iterate through all scales and simulate if not connected
 			for _, conn := range sm.Scales {
-				if !conn.Connected {
+				if !conn.IsConnected() {
 					// Toggle between empty (0) and loaded (~25000)
 					now := time.Now().Unix()
 					if (now/20)%2 == 0 {
-						conn.LastWeight = 0
+						conn.SetWeight(0)
 					} else {
 						// Jitter
-						conn.LastWeight = 24500 + float64(now%100)
+						conn.SetWeight(24500 + float64(now%100))
 					}
 				}
 			}
