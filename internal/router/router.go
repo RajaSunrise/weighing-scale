@@ -145,7 +145,7 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 
 	// 6. Protected Routes
 	protected := r.Group("/")
-	protected.Use(middleware.AuthRequired())
+	protected.Use(middleware.AuthRequired(server.DB))
 	{
 		// Dashboard & Weighing
 		// Note: The root "/" is now the public site. Dashboard is at /dashboard.

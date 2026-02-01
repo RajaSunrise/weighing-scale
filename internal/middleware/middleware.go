@@ -6,9 +6,12 @@ import (
 	"sync"
 	"time"
 
+	"stoneweigh/internal/models"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
+	"gorm.io/gorm"
 )
 
 // RequestLogger logs the details of each request
@@ -53,12 +56,12 @@ func RequestLogger() gin.HandlerFunc {
 	}
 }
 
-// AuthRequired checks if the user is logged in
-func AuthRequired() gin.HandlerFunc {
+// AuthRequired checks if the user is logged in AND exists in DB
+func AuthRequired(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		session := sessions.Default(c)
-		user := session.Get("user_id")
-		if user == nil {
+		userID := session.Get("user_id")
+		if userID == nil {
 			// Check if it's an API call or HTML request
 			if c.GetHeader("Accept") == "application/json" {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -68,6 +71,25 @@ func AuthRequired() gin.HandlerFunc {
 			}
 			return
 		}
+
+		// Security Enhancement: Verify user actually exists
+		// This prevents deleted users from maintaining access via valid session cookie
+		var count int64
+		db.Model(&models.User{}).Where("id = ?", userID).Count(&count)
+		if count == 0 {
+			// User no longer exists (deleted by admin)
+			session.Clear()
+			session.Save()
+
+			if c.GetHeader("Accept") == "application/json" {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Session invalid"})
+			} else {
+				c.Redirect(http.StatusFound, "/login")
+				c.Abort()
+			}
+			return
+		}
+
 		c.Next()
 	}
 }
