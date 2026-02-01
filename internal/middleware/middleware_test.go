@@ -2,16 +2,21 @@ package middleware
 
 import (
 	"encoding/gob"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"stoneweigh/internal/models"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/time/rate"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func init() {
@@ -25,6 +30,15 @@ func setupTestRouter() *gin.Engine {
 	store := cookie.NewStore([]byte("secret"))
 	r.Use(sessions.Sessions("mysession", store))
 	return r
+}
+
+func setupTestDB(t *testing.T) *gorm.DB {
+	dsn := fmt.Sprintf("file:memdb_mw%d?mode=memory&cache=shared", time.Now().UnixNano())
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+	assert.NoError(t, err)
+	err = db.AutoMigrate(&models.User{})
+	assert.NoError(t, err)
+	return db
 }
 
 func TestSecurityHeaders(t *testing.T) {
@@ -48,8 +62,9 @@ func TestSecurityHeaders(t *testing.T) {
 }
 
 func TestAuthRequired_NoSession(t *testing.T) {
+	db := setupTestDB(t)
 	r := setupTestRouter()
-	r.Use(AuthRequired())
+	r.Use(AuthRequired(db))
 	r.GET("/protected", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})
@@ -70,20 +85,25 @@ func TestAuthRequired_NoSession(t *testing.T) {
 }
 
 func TestAuthRequired_WithSession(t *testing.T) {
+	db := setupTestDB(t)
 	r := setupTestRouter()
 
 	// Helper to set session
 	r.GET("/login", func(c *gin.Context) {
 		session := sessions.Default(c)
+		// We use ID 1, which we will create in DB
 		session.Set("user_id", 1)
 		session.Save()
 		c.Status(http.StatusOK)
 	})
 
-	r.Use(AuthRequired())
+	r.Use(AuthRequired(db))
 	r.GET("/protected", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})
+
+	// Create user in DB so check passes
+	db.Create(&models.User{Model: gorm.Model{ID: 1}, Username: "test"})
 
 	// 1. Perform Login to get cookie
 	w := httptest.NewRecorder()
@@ -97,6 +117,36 @@ func TestAuthRequired_WithSession(t *testing.T) {
 	r.ServeHTTP(w2, req2)
 
 	assert.Equal(t, http.StatusOK, w2.Code)
+}
+
+func TestAuthRequired_DeletedUser(t *testing.T) {
+	db := setupTestDB(t)
+	r := setupTestRouter()
+
+	r.GET("/login", func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Set("user_id", 999) // User 999 does not exist
+		session.Save()
+		c.Status(http.StatusOK)
+	})
+
+	r.Use(AuthRequired(db))
+	r.GET("/protected", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/login", nil)
+	r.ServeHTTP(w, req)
+
+	w2 := httptest.NewRecorder()
+	req2, _ := http.NewRequest("GET", "/protected", nil)
+	req2.Header.Set("Cookie", w.Header().Get("Set-Cookie"))
+	r.ServeHTTP(w2, req2)
+
+	// Should be redirected to login because user 999 is missing
+	assert.Equal(t, http.StatusFound, w2.Code)
+	assert.Equal(t, "/login", w2.Header().Get("Location"))
 }
 
 func TestRoleRequired(t *testing.T) {
