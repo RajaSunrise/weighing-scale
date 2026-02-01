@@ -1,0 +1,3 @@
+## 2025-05-23 - Global Mutex Contention in ScaleManager
+**Learning:** The `ScaleManager` used a single global `sync.Mutex` to protect the map of scales *and* the mutable state of each scale connection. High-frequency updates from serial ports (20+ Hz per scale) caused significant contention with the `StreamScaleData` handler (SSE), which also locked the global mutex to iterate scales.
+**Action:** Decoupled scale state updates from the global lock by using atomic operations (`sync/atomic`) for `LastWeight` and `Connected` fields on the `ScaleConnection` struct. Global lock is now only used for map topology changes (Add/Remove scales). Next time, prefer fine-grained locking or atomics for high-frequency state updates in shared resources.

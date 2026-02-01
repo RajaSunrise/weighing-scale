@@ -42,7 +42,6 @@ func TestHandleRemoteScaleData(t *testing.T) {
 	hardware.Manager.Mu.Lock()
 	hardware.Manager.Scales[station.ID] = &hardware.ScaleConnection{
 		Config: station,
-		Connected: false,
 	}
 	hardware.Manager.Mu.Unlock()
 
@@ -77,6 +76,6 @@ func TestHandleRemoteScaleData(t *testing.T) {
 	hardware.Manager.Mu.Unlock()
 
 	assert.True(t, exists)
-	assert.Equal(t, 123.45, scale.LastWeight)
-	assert.True(t, scale.Connected)
+	assert.Equal(t, 123.45, scale.GetWeight())
+	assert.True(t, scale.IsConnected())
 }
