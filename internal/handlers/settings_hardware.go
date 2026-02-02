@@ -29,7 +29,7 @@ func (s *Server) CreateStation(c *gin.Context) {
 		return
 	}
 
-	if err := validateSafeString(input.Name, "Name"); err != nil {
+	if err := validateStationInput(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -59,7 +59,7 @@ func (s *Server) UpdateStation(c *gin.Context) {
 		return
 	}
 
-	if err := validateSafeString(input.Name, "Name"); err != nil {
+	if err := validateStationInput(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -117,4 +117,46 @@ func (s *Server) ShowSettingsHardware(c *gin.Context) {
 		"CurrentUser": fullName,
 		"csrf_token":  csrf.GetToken(c),
 	})
+}
+
+func validateStationInput(input *models.WeighingStation) error {
+	if err := validateLength(input.Name, "Name", 1, 100); err != nil {
+		return err
+	}
+	if err := validateSafeString(input.Name, "Name"); err != nil {
+		return err
+	}
+
+	if err := validateLength(input.ScalePort, "ScalePort", 1, 50); err != nil {
+		return err
+	}
+	if err := validateSafeString(input.ScalePort, "ScalePort"); err != nil {
+		return err
+	}
+
+	if input.Token != nil && *input.Token != "" {
+		if err := validateLength(*input.Token, "Token", 0, 64); err != nil {
+			return err
+		}
+		if err := validateSafeString(*input.Token, "Token"); err != nil {
+			return err
+		}
+	}
+
+	for _, cam := range input.Cameras {
+		if err := validateLength(cam.Name, "Camera Name", 1, 50); err != nil {
+			return err
+		}
+		if err := validateSafeString(cam.Name, "Camera Name"); err != nil {
+			return err
+		}
+		if err := validateLength(cam.RTSPURL, "RTSP URL", 0, 255); err != nil {
+			return err
+		}
+		if err := validateSafeString(cam.RTSPURL, "RTSP URL"); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
