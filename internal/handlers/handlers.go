@@ -224,6 +224,7 @@ func (s *Server) ShowReports(c *gin.Context) {
 
 	var records []models.WeighingRecord
 	s.DB.Model(&models.WeighingRecord{}).Scopes(filterScope).
+		Select("id, weighed_at, ticket_number, plate_number, driver_name, product, gross_weight, tare_weight, net_weight, invoice_path").
 		Order("weighed_at desc").Find(&records)
 
 	// Optimization: Calculate total net weight in memory to avoid a redundant DB query.
