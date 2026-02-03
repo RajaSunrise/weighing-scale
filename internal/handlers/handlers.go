@@ -516,7 +516,7 @@ func (s *Server) StreamScaleData(c *gin.Context) {
 	c.Stream(func(w io.Writer) bool {
 		if _, ok := <-ticker.C; ok {
 			ticksSinceLastSend++
-			s.ScaleMgr.Mu.Lock()
+			s.ScaleMgr.Mu.RLock()
 
 			// Reset slice, keeping capacity
 			snapshots = snapshots[:0]
@@ -531,7 +531,7 @@ func (s *Server) StreamScaleData(c *gin.Context) {
 					})
 				}
 			}
-			s.ScaleMgr.Mu.Unlock()
+			s.ScaleMgr.Mu.RUnlock()
 
 			sentData := false
 			for _, snap := range snapshots {
