@@ -42,15 +42,15 @@ func (s *Server) ListVehicles(c *gin.Context) {
 // CreateVehicle API adds a new vehicle
 func (s *Server) CreateVehicle(c *gin.Context) {
 	var input struct {
-		PlateNumber  string  `json:"plate_number" binding:"required"`
-		DriverName   string  `json:"driver_name" binding:"required"`
-		DefaultTare  float64 `json:"default_tare"`
+		PlateNumber string  `json:"plate_number" binding:"required"`
+		DriverName  string  `json:"driver_name" binding:"required"`
+		DefaultTare float64 `json:"default_tare"`
 		// Legacy string field, but we can fill it from Company name if ID provided
-		OwnerCompany string  `json:"owner_company"`
+		OwnerCompany string `json:"owner_company"`
 
 		// New fields
-		SIM          string  `json:"sim"`
-		CompanyID    *uint   `json:"company_id"`
+		SIM       string `json:"sim"`
+		CompanyID *uint  `json:"company_id"`
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {

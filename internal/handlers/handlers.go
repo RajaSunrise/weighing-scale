@@ -197,7 +197,6 @@ func (s *Server) ShowReports(c *gin.Context) {
 			db = db.Where("company_name = ?", companyFilter)
 		}
 
-
 		role := session.Get("role")
 		userID := session.Get("user_id")
 
@@ -304,6 +303,20 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 	}
 	if err := validateSafeString(input.Product, "Product"); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Validate Weights
+	if input.Gross < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Gross weight cannot be negative"})
+		return
+	}
+	if input.Tare < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Tare weight cannot be negative"})
+		return
+	}
+	if input.Tare > input.Gross {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Tare weight cannot be greater than gross weight"})
 		return
 	}
 
