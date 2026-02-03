@@ -18,7 +18,7 @@ import (
 // ScaleManager handles connections to multiple scales
 type ScaleManager struct {
 	Scales      map[uint]*ScaleConnection
-	Mu          sync.Mutex
+	Mu          sync.RWMutex
 	stopChans   map[uint]chan bool // To stop monitoring goroutines
 }
 
@@ -146,9 +146,9 @@ func (sm *ScaleManager) monitorScale(scaleID uint, stopChan chan bool) {
 			// Continue
 		}
 
-		sm.Mu.Lock()
+		sm.Mu.RLock()
 		conn, exists := sm.Scales[scaleID]
-		sm.Mu.Unlock()
+		sm.Mu.RUnlock()
 
 		if !exists {
 			return
