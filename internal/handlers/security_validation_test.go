@@ -148,3 +148,77 @@ func TestSecurity_UserValidation(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
 }
+
+func TestSecurity_WeightValidation(t *testing.T) {
+	r, server := setupTestServer(t)
+	// Register route
+	r.POST("/api/transaction", server.SaveTransaction)
+
+	db := server.DB
+
+	// Setup Data
+	station := models.WeighingStation{Name: "Station Weight", Enabled: true}
+	db.Create(&station)
+
+	user := models.User{Username: "operator_w", Role: "operator"}
+	db.Create(&user)
+
+	assignment := models.UserStationAssignment{UserID: user.ID, WeighingStationID: station.ID}
+	db.Create(&assignment)
+
+	// Helper to login
+	r.POST("/login_test_weight", func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Set("user_id", user.ID)
+		session.Set("username", user.Username)
+		session.Set("role", user.Role)
+		session.Save()
+		c.Status(200)
+	})
+
+	// Login
+	wLogin := httptest.NewRecorder()
+	reqLogin, _ := http.NewRequest("POST", "/login_test_weight", nil)
+	r.ServeHTTP(wLogin, reqLogin)
+	cookie := wLogin.Header().Get("Set-Cookie")
+
+	// Helper for making requests
+	makeRequest := func(gross, tare float64) *httptest.ResponseRecorder {
+		payload := map[string]any{
+			"scale_id":     station.ID,
+			"plate_number": "B 1234 WGT",
+			"driver_name":  "Driver Weight",
+			"gross":        gross,
+			"tare":         tare,
+			"company":      "Weight Co",
+			"product":      "Rocks",
+		}
+		body, _ := json.Marshal(payload)
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/api/transaction", strings.NewReader(string(body)))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Cookie", cookie)
+		r.ServeHTTP(w, req)
+		return w
+	}
+
+	t.Run("Negative Gross", func(t *testing.T) {
+		w := makeRequest(-100, 50)
+		assert.Equal(t, http.StatusBadRequest, w.Code, "Should reject negative gross")
+	})
+
+	t.Run("Negative Tare", func(t *testing.T) {
+		w := makeRequest(100, -50)
+		assert.Equal(t, http.StatusBadRequest, w.Code, "Should reject negative tare")
+	})
+
+	t.Run("Tare Greater Than Gross", func(t *testing.T) {
+		w := makeRequest(100, 150)
+		assert.Equal(t, http.StatusBadRequest, w.Code, "Should reject tare > gross")
+	})
+
+	t.Run("Valid Weights", func(t *testing.T) {
+		w := makeRequest(100, 50)
+		assert.Equal(t, http.StatusOK, w.Code, "Should accept valid weights")
+	})
+}

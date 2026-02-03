@@ -190,7 +190,7 @@ func captureLoop(s *SharedStream) {
 		// Also use TCP for RTSP to prevent UDP timeout warnings
 		// Note: The OPENCV_FFMPEG_CAPTURE_OPTIONS env var is set globally in main.go to avoid race conditions here.
 		// However, if we need per-stream options in the future, we would need a different approach (e.g. videoio properties).
-		
+
 		// Prepare connection URL
 		connectUrl := s.URL
 		if strings.HasPrefix(connectUrl, "rtsp") {

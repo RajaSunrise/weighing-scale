@@ -42,21 +42,21 @@ func TestShowReports_BOLA(t *testing.T) {
 
 	now := time.Now()
 	assert.NoError(t, db.Create(&models.WeighingRecord{
-		PlateNumber: "S1-CAR",
-		ScaleID: s1.ID,
-		NetWeight: 100,
-		GrossWeight: 1000,
-		DriverName: "Test Driver",
-		WeighedAt: now,
+		PlateNumber:  "S1-CAR",
+		ScaleID:      s1.ID,
+		NetWeight:    100,
+		GrossWeight:  1000,
+		DriverName:   "Test Driver",
+		WeighedAt:    now,
 		TicketNumber: "T1",
 	}).Error)
 	assert.NoError(t, db.Create(&models.WeighingRecord{
-		PlateNumber: "S2-CAR",
-		ScaleID: s2.ID,
-		NetWeight: 200,
-		GrossWeight: 2000,
-		DriverName: "Test Driver",
-		WeighedAt: now,
+		PlateNumber:  "S2-CAR",
+		ScaleID:      s2.ID,
+		NetWeight:    200,
+		GrossWeight:  2000,
+		DriverName:   "Test Driver",
+		WeighedAt:    now,
 		TicketNumber: "T2",
 	}).Error)
 
