@@ -119,7 +119,6 @@ func TestRTSPURLValidation(t *testing.T) {
 	validURLs := []string{
 		"rtsp://192.168.1.100:554/stream",
 		"http://192.168.1.100/video.mjpg",
-		"tcp://127.0.0.1:1234",
 	}
 
 	for _, u := range validURLs {
@@ -134,15 +133,15 @@ func TestRTSPURLValidation(t *testing.T) {
 		"ftp://example.com/file",
 		"gopher://example.com",
 		"javascript:alert(1)",
+		"tcp://127.0.0.1:1234",    // Loopback blocked
+		"rtsp://localhost:554",    // Localhost blocked
+		"http://169.254.169.254/", // Link-local blocked
 	}
 
 	for _, u := range invalidURLs {
 		cam := StationCamera{Name: "Cam Invalid", RTSPURL: u}
 		err := db.Create(&cam).Error
 		assert.Error(t, err, "Should reject invalid URL: "+u)
-		if err != nil {
-			assert.Contains(t, err.Error(), "invalid URL scheme")
-		}
 	}
 
 	// Test Malformed URL
