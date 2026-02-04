@@ -222,7 +222,9 @@ func (s *Server) ShowReports(c *gin.Context) {
 	}
 
 	var records []models.WeighingRecord
-	s.DB.Model(&models.WeighingRecord{}).Scopes(filterScope).
+	s.DB.Model(&models.WeighingRecord{}).
+		Select("id, weighed_at, ticket_number, plate_number, driver_name, product, gross_weight, tare_weight, net_weight, invoice_path").
+		Scopes(filterScope).
 		Order("weighed_at desc").Find(&records)
 
 	// Optimization: Calculate total net weight in memory to avoid a redundant DB query.
@@ -234,7 +236,7 @@ func (s *Server) ShowReports(c *gin.Context) {
 
 	// Fetch distinct companies for filter dropdown
 	var companies []models.Company
-	s.DB.Order("name asc").Find(&companies)
+	s.DB.Model(&models.Company{}).Select("id, name").Order("name asc").Find(&companies)
 
 	c.HTML(http.StatusOK, "reports.html", gin.H{
 		"title":           "Reports",
