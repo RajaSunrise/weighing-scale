@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"net"
 	"net/url"
 	"strings"
 	"time"
@@ -105,6 +106,20 @@ func validateRTSPURL(rawURL string) error {
 	if !allowed[scheme] {
 		return errors.New("invalid URL scheme: must be rtsp, rtsps, http, https, tcp, or udp")
 	}
+
+	// SECURITY: Prevent SSRF to Loopback/Metadata
+	hostname := parsed.Hostname()
+	if strings.EqualFold(hostname, "localhost") {
+		return errors.New("URL cannot be loopback or local metadata")
+	}
+
+	ip := net.ParseIP(hostname)
+	if ip != nil {
+		if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
+			return errors.New("URL cannot be loopback or local metadata")
+		}
+	}
+
 	return nil
 }
 
