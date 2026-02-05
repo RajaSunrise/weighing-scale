@@ -10,6 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var lookupIP = net.LookupIP
+
 // WeighingRecord represents a single weighing transaction
 type WeighingRecord struct {
 	gorm.Model
@@ -117,6 +119,17 @@ func validateRTSPURL(rawURL string) error {
 	if ip != nil {
 		if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
 			return errors.New("URL cannot be loopback or local metadata")
+		}
+	} else {
+		// It is a hostname, resolve to check for SSRF
+		ips, err := lookupIP(hostname)
+		if err != nil {
+			return errors.New("cannot resolve hostname")
+		}
+		for _, resolvedIP := range ips {
+			if resolvedIP.IsLoopback() || resolvedIP.IsLinkLocalUnicast() || resolvedIP.IsUnspecified() {
+				return errors.New("URL cannot be loopback or local metadata")
+			}
 		}
 	}
 

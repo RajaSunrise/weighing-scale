@@ -1,6 +1,8 @@
 package models
 
 import (
+	"errors"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -73,8 +75,8 @@ func TestStationCameraRelation(t *testing.T) {
 	station := WeighingStation{Name: "Main Gate", Enabled: true}
 	db.Create(&station)
 
-	cam1 := StationCamera{Name: "Cam 1", RTSPURL: "rtsp://1", WeighingStationID: station.ID}
-	cam2 := StationCamera{Name: "Cam 2", RTSPURL: "rtsp://2", WeighingStationID: station.ID}
+	cam1 := StationCamera{Name: "Cam 1", RTSPURL: "rtsp://192.168.1.1", WeighingStationID: station.ID}
+	cam2 := StationCamera{Name: "Cam 2", RTSPURL: "rtsp://192.168.1.2", WeighingStationID: station.ID}
 	db.Create(&cam1)
 	db.Create(&cam2)
 
@@ -150,11 +152,57 @@ func TestRTSPURLValidation(t *testing.T) {
 	assert.Error(t, err)
 
 	// Test Legacy WeighingStation CameraURL
-	wsValid := WeighingStation{Name: "WS Valid", CameraURL: "rtsp://valid"}
+	wsValid := WeighingStation{Name: "WS Valid", CameraURL: "rtsp://192.168.1.1"}
 	err = db.Create(&wsValid).Error
 	assert.NoError(t, err)
 
 	wsInvalid := WeighingStation{Name: "WS Invalid", CameraURL: "file:///invalid"}
 	err = db.Create(&wsInvalid).Error
 	assert.Error(t, err)
+}
+
+func TestRTSPURL_DNSRebinding(t *testing.T) {
+	db := setupTestDB(t)
+
+	// Mock DNS Lookup
+	originalLookup := lookupIP
+	defer func() { lookupIP = originalLookup }()
+
+	lookupIP = func(host string) ([]net.IP, error) {
+		switch host {
+		case "malicious.internal":
+			return []net.IP{net.ParseIP("127.0.0.1")}, nil
+		case "cloud-metadata.internal":
+			return []net.IP{net.ParseIP("169.254.169.254")}, nil
+		case "safe-camera.local":
+			return []net.IP{net.ParseIP("192.168.1.50")}, nil
+		case "unspecified.internal":
+			return []net.IP{net.ParseIP("0.0.0.0")}, nil
+		default:
+			return nil, errors.New("host not found")
+		}
+	}
+
+	// Test Cases
+	tests := []struct {
+		url       string
+		shouldErr bool
+		name      string
+	}{
+		{"rtsp://safe-camera.local/stream", false, "Safe Hostname"},
+		{"http://malicious.internal/config", true, "Loopback Hostname"},
+		{"http://cloud-metadata.internal/latest", true, "LinkLocal Hostname"},
+		{"rtsp://unspecified.internal/stream", true, "Unspecified IP Hostname"},
+		{"rtsp://unknown-host.internal/stream", true, "Unknown Hostname"},
+	}
+
+	for _, tc := range tests {
+		cam := StationCamera{Name: tc.name, RTSPURL: tc.url}
+		err := db.Create(&cam).Error
+		if tc.shouldErr {
+			assert.Error(t, err, "Should reject: "+tc.url)
+		} else {
+			assert.NoError(t, err, "Should accept: "+tc.url)
+		}
+	}
 }
