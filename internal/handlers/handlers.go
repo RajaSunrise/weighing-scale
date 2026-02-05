@@ -22,6 +22,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const companiesCacheKey = "reports:companies:list"
+
 type Server struct {
 	DB          *gorm.DB
 	ScaleMgr    *hardware.ScaleManager
@@ -236,7 +238,25 @@ func (s *Server) ShowReports(c *gin.Context) {
 
 	// Fetch distinct companies for filter dropdown
 	var companies []models.Company
-	s.DB.Model(&models.Company{}).Select("id, name").Order("name asc").Find(&companies)
+
+	companiesCached := false
+
+	if s.Redis != nil {
+		val, err := s.Redis.Get(c, companiesCacheKey).Result()
+		if err == nil {
+			if err := json.Unmarshal([]byte(val), &companies); err == nil {
+				companiesCached = true
+			}
+		}
+	}
+
+	if !companiesCached {
+		s.DB.Model(&models.Company{}).Select("id, name").Order("name asc").Find(&companies)
+		if s.Redis != nil {
+			data, _ := json.Marshal(companies)
+			s.Redis.Set(c, companiesCacheKey, data, 24*time.Hour)
+		}
+	}
 
 	c.HTML(http.StatusOK, "reports.html", gin.H{
 		"title":           "Reports",
