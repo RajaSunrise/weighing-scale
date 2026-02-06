@@ -84,6 +84,8 @@ func (ws *WeighingStation) BeforeSave(tx *gorm.DB) error {
 	return nil
 }
 
+var lookupIP = net.LookupIP
+
 func validateRTSPURL(rawURL string) error {
 	if rawURL == "" {
 		return nil
@@ -117,6 +119,19 @@ func validateRTSPURL(rawURL string) error {
 	if ip != nil {
 		if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
 			return errors.New("URL cannot be loopback or local metadata")
+		}
+		return nil
+	}
+
+	// Resolve hostname to check for DNS rebinding / hidden local IPs
+	ips, err := lookupIP(hostname)
+	if err != nil {
+		return errors.New("failed to resolve hostname")
+	}
+
+	for _, resolvedIP := range ips {
+		if resolvedIP.IsLoopback() || resolvedIP.IsLinkLocalUnicast() || resolvedIP.IsUnspecified() {
+			return errors.New("URL resolves to restricted IP")
 		}
 	}
 

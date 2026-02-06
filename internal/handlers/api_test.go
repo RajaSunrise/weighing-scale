@@ -222,7 +222,7 @@ func TestTriggerANPR(t *testing.T) {
 	// Setup Data: Station with Camera
 	station := models.WeighingStation{Name: "Station 1", Enabled: true}
 	db.Create(&station)
-	camera := models.StationCamera{Name: "Cam 1", RTSPURL: "rtsp://mock", WeighingStationID: station.ID}
+	camera := models.StationCamera{Name: "Cam 1", RTSPURL: "rtsp://192.168.1.1", WeighingStationID: station.ID}
 	db.Create(&camera)
 
 	// Test 1: By Camera ID (Success Mock)
