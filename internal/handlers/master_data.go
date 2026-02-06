@@ -337,6 +337,11 @@ func (s *Server) CreateCompany(c *gin.Context) {
 		return
 	}
 
+	// Invalidate company list cache
+	if s.Redis != nil {
+		s.Redis.Del(c, companiesCacheKey)
+	}
+
 	c.JSON(http.StatusCreated, company)
 }
 
@@ -411,6 +416,11 @@ func (s *Server) UpdateCompany(c *gin.Context) {
 		return
 	}
 
+	// Invalidate company list cache
+	if s.Redis != nil {
+		s.Redis.Del(c, companiesCacheKey)
+	}
+
 	c.JSON(http.StatusOK, company)
 }
 
@@ -429,6 +439,11 @@ func (s *Server) DeleteCompany(c *gin.Context) {
 	if err := s.DB.Delete(&models.Company{}, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete company"})
 		return
+	}
+
+	// Invalidate company list cache
+	if s.Redis != nil {
+		s.Redis.Del(c, companiesCacheKey)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Company deleted"})
