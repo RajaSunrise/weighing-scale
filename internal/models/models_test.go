@@ -73,8 +73,8 @@ func TestStationCameraRelation(t *testing.T) {
 	station := WeighingStation{Name: "Main Gate", Enabled: true}
 	db.Create(&station)
 
-	cam1 := StationCamera{Name: "Cam 1", RTSPURL: "rtsp://1", WeighingStationID: station.ID}
-	cam2 := StationCamera{Name: "Cam 2", RTSPURL: "rtsp://2", WeighingStationID: station.ID}
+	cam1 := StationCamera{Name: "Cam 1", RTSPURL: "rtsp://192.168.1.1", WeighingStationID: station.ID}
+	cam2 := StationCamera{Name: "Cam 2", RTSPURL: "rtsp://192.168.1.2", WeighingStationID: station.ID}
 	db.Create(&cam1)
 	db.Create(&cam2)
 
@@ -150,7 +150,7 @@ func TestRTSPURLValidation(t *testing.T) {
 	assert.Error(t, err)
 
 	// Test Legacy WeighingStation CameraURL
-	wsValid := WeighingStation{Name: "WS Valid", CameraURL: "rtsp://valid"}
+	wsValid := WeighingStation{Name: "WS Valid", CameraURL: "rtsp://192.168.1.50"}
 	err = db.Create(&wsValid).Error
 	assert.NoError(t, err)
 

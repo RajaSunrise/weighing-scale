@@ -76,13 +76,13 @@ func TestTriggerANPR_IDOR(t *testing.T) {
 	// Station 1 (Assigned)
 	s1 := models.WeighingStation{Name: "Station 1", Enabled: true}
 	db.Create(&s1)
-	c1 := models.StationCamera{Name: "Cam 1", RTSPURL: "rtsp://1", WeighingStationID: s1.ID}
+	c1 := models.StationCamera{Name: "Cam 1", RTSPURL: "rtsp://192.168.1.1", WeighingStationID: s1.ID}
 	db.Create(&c1)
 
 	// Station 2 (Not Assigned)
 	s2 := models.WeighingStation{Name: "Station 2", Enabled: true}
 	db.Create(&s2)
-	c2 := models.StationCamera{Name: "Cam 2", RTSPURL: "rtsp://2", WeighingStationID: s2.ID}
+	c2 := models.StationCamera{Name: "Cam 2", RTSPURL: "rtsp://192.168.1.2", WeighingStationID: s2.ID}
 	db.Create(&c2)
 
 	// User
