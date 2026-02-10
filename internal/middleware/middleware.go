@@ -3,6 +3,7 @@ package middleware
 import (
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -27,6 +28,14 @@ func RequestLogger() gin.HandlerFunc {
 		c.Next()
 
 		path := c.Request.URL.Path
+		// SECURITY: Sanitize path to prevent Log Injection and XSS in log viewers
+		// We replace control characters and common HTML tags to be safe.
+		cleanPath := strings.Map(func(r rune) rune {
+			if r < 32 || r == '<' || r == '>' {
+				return ' ' // Replace with space
+			}
+			return r
+		}, path)
 
 		// Logic specifically for /health to log only once every 6 hours (unless error)
 		if path == "/health" {
@@ -51,7 +60,7 @@ func RequestLogger() gin.HandlerFunc {
 			latency,
 			clientIP,
 			method,
-			path,
+			cleanPath,
 		)
 	}
 }

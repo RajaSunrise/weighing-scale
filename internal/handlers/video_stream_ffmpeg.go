@@ -99,7 +99,8 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 	// -: Output to stdout
 
 	// Note: We use -rtsp_transport tcp to be more robust over internet
-	cmd := exec.Command("ffmpeg",
+	// SECURITY: Use CommandContext to ensure FFmpeg is killed if request is cancelled
+	cmd := exec.CommandContext(c.Request.Context(), "ffmpeg",
 		"-rtsp_transport", "tcp",
 		"-i", url,
 		"-f", "image2pipe",
@@ -198,28 +199,34 @@ func (s *Server) ProxyVideo(c *gin.Context) {
 	buf := make([]byte, 1024*1024)   // 1MB
 	scanner.Buffer(buf, 5*1024*1024) // 5MB max
 
-	for scanner.Scan() {
+	for {
+		// Use a non-blocking check for context before each scan
 		select {
 		case <-c.Request.Context().Done():
 			return
 		default:
-			frame := scanner.Bytes()
-
-			// Write boundary
-			_, err := c.Writer.Write(fmt.Appendf(nil, "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", len(frame)))
-			if err != nil {
-				return
-			}
-			_, err = c.Writer.Write(frame)
-			if err != nil {
-				return
-			}
-			_, err = c.Writer.Write([]byte("\r\n"))
-			if err != nil {
-				return
-			}
-			c.Writer.Flush()
 		}
+
+		if !scanner.Scan() {
+			break
+		}
+
+		frame := scanner.Bytes()
+
+		// Write boundary
+		_, err := c.Writer.Write(fmt.Appendf(nil, "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n", len(frame)))
+		if err != nil {
+			return
+		}
+		_, err = c.Writer.Write(frame)
+		if err != nil {
+			return
+		}
+		_, err = c.Writer.Write([]byte("\r\n"))
+		if err != nil {
+			return
+		}
+		c.Writer.Flush()
 	}
 
 	if err := scanner.Err(); err != nil {
