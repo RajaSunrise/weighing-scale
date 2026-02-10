@@ -34,14 +34,20 @@ async function loadLogs() {
         const res = await fetch('/api/logs');
         const lines = await res.json();
 
-        container.innerHTML = lines.map(line => {
-            // Simple color coding
-            let color = 'text-gray-300';
-            if (line.includes('ERROR') || line.includes('Fatal')) color = 'text-red-400';
-            if (line.includes('WARN')) color = 'text-yellow-400';
+        container.innerHTML = ''; // Clear container
+        lines.forEach(line => {
+            const div = document.createElement('div');
+            div.className = 'hover:bg-white/5 px-2 rounded';
 
-            return `<div class="${color} hover:bg-white/5 px-2 rounded">${line}</div>`;
-        }).join('');
+            // Simple color coding
+            let colorClass = 'text-gray-300';
+            if (line.includes('ERROR') || line.includes('Fatal')) colorClass = 'text-red-400';
+            else if (line.includes('WARN')) colorClass = 'text-yellow-400';
+
+            div.classList.add(colorClass);
+            div.textContent = line; // SECURITY: Use textContent to prevent XSS
+            container.appendChild(div);
+        });
 
         // Scroll to bottom
         container.scrollTop = container.scrollHeight;

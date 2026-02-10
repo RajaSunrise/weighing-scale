@@ -25,13 +25,13 @@ func validateLength(value string, fieldName string, min int, max int) error {
 // validateSafeString ensures the string contains only safe characters
 // It rejects control characters and HTML tags (< >) to prevent XSS
 func validateSafeString(value string, fieldName string) error {
-	// Check for control characters
-	if strings.ContainsAny(value, "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f") {
+	// SECURITY: Check for control characters including newlines to prevent Log Injection
+	if strings.ContainsAny(value, "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f") {
 		return fmt.Errorf("%s contains invalid control characters", fieldName)
 	}
-	// Check for HTML injection characters
-	if strings.ContainsAny(value, "<>") {
-		return fmt.Errorf("%s contains invalid characters (< or >)", fieldName)
+	// SECURITY: Check for HTML injection characters and ampersands
+	if strings.ContainsAny(value, "<>&") {
+		return fmt.Errorf("%s contains invalid characters (<, >, or &)", fieldName)
 	}
 	return nil
 }
