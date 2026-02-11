@@ -24,6 +24,14 @@ import (
 
 const companiesCacheKey = "reports:companies:list"
 
+/*
+  SECURITY: DoS Protection (Resource Exhaustion)
+  - Risk: System-wide Denial of Service via CPU/Memory exhaustion.
+  - Scenario: Attacker spams ANPR/OCR requests, spawning too many Tesseract processes.
+  - Mitigation: Semaphore-based concurrency limit (3 slots) to ensure OS stability.
+*/
+var anprSemaphore = make(chan struct{}, 3)
+
 type Server struct {
 	DB          *gorm.DB
 	ScaleMgr    *hardware.ScaleManager
@@ -456,6 +464,15 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 
 // TriggerANPR captures a frame and detects license plate
 func (s *Server) TriggerANPR(c *gin.Context) {
+	// SECURITY: Limit concurrent ANPR processes to prevent DoS
+	select {
+	case anprSemaphore <- struct{}{}:
+		defer func() { <-anprSemaphore }()
+	default:
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many concurrent ANPR requests. Please try again in a moment."})
+		return
+	}
+
 	scaleID := c.Query("scale_id")
 	camID := c.Query("camera_id")
 
