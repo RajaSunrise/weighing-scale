@@ -9,3 +9,13 @@
 **Vulnerability:** The system log viewer (`logs.html`) used `innerHTML` to render log lines. Since `RequestLogger` logged the raw request path, an attacker could inject `<script>` tags into the logs via a crafted URL path, which would execute when an admin viewed the logs.
 **Learning:** `innerHTML` is inherently dangerous when rendering data from potentially untrusted sources, including server logs. Even "internal" data like logs can be poisoned by external inputs.
 **Prevention:** Use `textContent` for rendering dynamic text in HTML. Sanitize all user-controlled data (like URL paths) before logging them to prevent log injection and secondary XSS.
+
+## 2026-02-11 - CSRF Bypass via Loose Path Matching
+**Vulnerability:** The CSRF middleware skipped protection for any path starting with `/api/external` using a loose slice check (`[:13]`). This allowed an attacker to bypass CSRF on sensitive endpoints by crafting paths like `/api/external_bypass` if such a route existed or could be exploited.
+**Learning:** Prefix matching for security exceptions must be boundary-aware.
+**Prevention:** Use exact path matching or ensure the prefix is followed by a path separator (e.g., `/api/external/`).
+
+## 2026-02-11 - SQL LIKE Injection in Autocomplete
+**Vulnerability:** User queries for vehicle plate numbers were directly concatenated into a `LIKE %...%` query without escaping special characters like `%` or `_`. This allowed users to perform broad searches that could disclose more data than intended or cause performance issues.
+**Learning:** GORM's parameter binding protects against traditional SQL injection but does not escape special characters within a `LIKE` string.
+**Prevention:** Explicitly escape `\`, `%`, and `_` in user-supplied strings before passing them to a `LIKE` query, and use the `ESCAPE` clause.

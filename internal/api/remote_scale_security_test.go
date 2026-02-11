@@ -78,4 +78,26 @@ func TestHandleRemoteScaleData_Security_QueryParam(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
+
+	t.Run("Reject Negative Weight", func(t *testing.T) {
+		payload := map[string]interface{}{"weight": -10.0}
+		body, _ := json.Marshal(payload)
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/api/external/scale", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Scale-Token", token)
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+
+	t.Run("Reject Excessive Weight", func(t *testing.T) {
+		payload := map[string]interface{}{"weight": 2000000.0}
+		body, _ := json.Marshal(payload)
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/api/external/scale", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Scale-Token", token)
+		r.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
 }

@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/sessions"
@@ -68,7 +69,9 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	// CSRF Protection (Skipping /api/external)
 	r.Use(func(c *gin.Context) {
 		// Skip CSRF for external API
-		if len(c.Request.URL.Path) >= 13 && c.Request.URL.Path[:13] == "/api/external" {
+		// SECURITY FIX: Explicit check to prevent bypass with paths like /api/external_foo
+		path := c.Request.URL.Path
+		if path == "/api/external" || strings.HasPrefix(path, "/api/external/") {
 			c.Next()
 			return
 		}

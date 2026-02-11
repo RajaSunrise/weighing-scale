@@ -8,6 +8,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	csrf "github.com/utrack/gin-csrf"
+	"gorm.io/gorm"
 )
 
 // === Weighing Station / Hardware Config ===
@@ -64,20 +65,30 @@ func (s *Server) UpdateStation(c *gin.Context) {
 		return
 	}
 
-	// Update fields
-	station.Name = input.Name
-	station.ScalePort = input.ScalePort
-	station.BaudRate = input.BaudRate
-	station.Enabled = input.Enabled
-	station.Token = input.Token
+	// SECURITY: Wrap updates in a transaction to ensure atomicity
+	err := s.DB.Transaction(func(tx *gorm.DB) error {
+		// Update fields
+		station.Name = input.Name
+		station.ScalePort = input.ScalePort
+		station.BaudRate = input.BaudRate
+		station.Enabled = input.Enabled
+		station.Token = input.Token
 
-	// Handle Cameras update
-	// 1. Delete existing cameras
-	s.DB.Where("weighing_station_id = ?", station.ID).Delete(&models.StationCamera{})
-	// 2. Add new ones
-	station.Cameras = input.Cameras
+		// Handle Cameras update
+		// 1. Delete existing cameras
+		if err := tx.Where("weighing_station_id = ?", station.ID).Delete(&models.StationCamera{}).Error; err != nil {
+			return err
+		}
+		// 2. Add new ones
+		station.Cameras = input.Cameras
 
-	if err := s.DB.Save(&station).Error; err != nil {
+		if err := tx.Save(&station).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update station"})
 		return
 	}
