@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"time"
 
+	"stoneweigh/internal/models"
+
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -38,18 +41,24 @@ func (s *Server) GetReportCharts(c *gin.Context) {
 		startDate = now.AddDate(0, 0, -30)
 	}
 
+	session := sessions.Default(c)
+
 	// Optimization: Aggregation via SQL instead of fetching all records
 	var stats []DailyStat
-	var err error
 
 	// Determine Dialect for Date Function
+	dateFunc := "TO_CHAR(weighed_at, 'YYYY-MM-DD')"
 	if s.DB.Dialector.Name() == "sqlite" {
-		// SQLite: DATE(weighed_at) returns string "YYYY-MM-DD"
-		err = s.DB.Raw("SELECT DATE(weighed_at) as date_str, SUM(net_weight) as total FROM weighing_records WHERE weighed_at >= ? GROUP BY 1", startDate).Scan(&stats).Error
-	} else {
-		// Postgres: TO_CHAR(weighed_at, 'YYYY-MM-DD') returns string
-		err = s.DB.Raw("SELECT TO_CHAR(weighed_at, 'YYYY-MM-DD') as date_str, SUM(net_weight) as total FROM weighing_records WHERE weighed_at >= ? GROUP BY 1", startDate).Scan(&stats).Error
+		dateFunc = "DATE(weighed_at)"
 	}
+
+	// SECURITY: Use GORM API with Scopes to apply station filtering (BOLA prevention)
+	err := s.DB.Model(&models.WeighingRecord{}).
+		Select(fmt.Sprintf("%s as date_str, SUM(net_weight) as total", dateFunc)).
+		Where("weighed_at >= ?", startDate).
+		Group("date_str").
+		Scopes(s.stationFilter(session)).
+		Scan(&stats).Error
 
 	if err != nil {
 		fmt.Printf("Error aggregating charts: %v\n", err)

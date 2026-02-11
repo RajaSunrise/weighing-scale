@@ -19,3 +19,8 @@
 **Vulnerability:** User queries for vehicle plate numbers were directly concatenated into a `LIKE %...%` query without escaping special characters like `%` or `_`. This allowed users to perform broad searches that could disclose more data than intended or cause performance issues.
 **Learning:** GORM's parameter binding protects against traditional SQL injection but does not escape special characters within a `LIKE` string.
 **Prevention:** Explicitly escape `\`, `%`, and `_` in user-supplied strings before passing them to a `LIKE` query, and use the `ESCAPE` clause.
+
+## 2026-02-11 – BOLA and Cache Poisoning in Dashboard and Report Charts
+**Vulnerability pattern:** Broken Object Level Authorization (BOLA) through global aggregation and shared Redis cache keys.
+**Learned constraint:** Always apply authorization scopes to aggregation queries (SUM, COUNT) and include user-specific identifiers in shared cache keys for non-admin users.
+**Prevention:** Centralize authorization logic in GORM Scopes and enforce role-based cache key prefixing.

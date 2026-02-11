@@ -241,6 +241,19 @@ func TestTriggerANPR(t *testing.T) {
 func TestDashboardStats(t *testing.T) {
 	r, db := setupServer(t)
 
+	// Admin Login (needed for global stats)
+	r.POST("/login_admin_stats", func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Set("user_id", uint(999))
+		session.Set("role", "admin")
+		session.Save()
+		c.Status(200)
+	})
+	wLogin := httptest.NewRecorder()
+	reqLogin, _ := http.NewRequest("POST", "/login_admin_stats", nil)
+	r.ServeHTTP(wLogin, reqLogin)
+	cookie := wLogin.Header().Get("Set-Cookie")
+
 	// Mock Template
 	t.Setenv("SESSION_SECRET", "test")
 	tmpl := template.New("")
@@ -276,6 +289,7 @@ func TestDashboardStats(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/dashboard", nil)
+	req.Header.Set("Cookie", cookie)
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
