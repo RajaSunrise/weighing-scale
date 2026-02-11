@@ -7,12 +7,28 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"stoneweigh/internal/models"
+
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetReportCharts(t *testing.T) {
 	r, db := setupServer(t)
+
+	// Admin Login
+	r.POST("/login_admin_charts", func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Set("user_id", uint(999))
+		session.Set("role", "admin")
+		session.Save()
+		c.Status(200)
+	})
+	wLogin := httptest.NewRecorder()
+	reqLogin, _ := http.NewRequest("POST", "/login_admin_charts", nil)
+	r.ServeHTTP(wLogin, reqLogin)
+	cookie := wLogin.Header().Get("Set-Cookie")
 
 	// Seed data
 	now := time.Now()
@@ -25,6 +41,7 @@ func TestGetReportCharts(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/reports/charts", nil)
+	req.Header.Set("Cookie", cookie)
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)

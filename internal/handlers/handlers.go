@@ -35,6 +35,36 @@ func NewServer(db *gorm.DB, sm *hardware.ScaleManager, anpr *cv.ANPRService, rdb
 	return &Server{DB: db, ScaleMgr: sm, ANPRService: anpr, Redis: rdb}
 }
 
+// stationFilter returns a GORM scope that filters records by weighing station ID
+// based on the user's role and assignments in the session.
+func (s *Server) stationFilter(session sessions.Session) func(*gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		role := session.Get("role")
+		if role == "admin" {
+			return db
+		}
+
+		userID := session.Get("user_id")
+		if userID == nil {
+			// FAIL CLOSED: If no user ID, deny access to all records
+			return db.Where("1 = 0")
+		}
+
+		var stationIDs []uint
+		// Fetch station assignments for this user
+		s.DB.Model(&models.UserStationAssignment{}).
+			Where("user_id = ?", userID).
+			Pluck("weighing_station_id", &stationIDs)
+
+		if len(stationIDs) > 0 {
+			return db.Where("scale_id IN ?", stationIDs)
+		}
+
+		// No assignments = no access
+		return db.Where("1 = 0")
+	}
+}
+
 // === VIEW HANDLERS ===
 
 func (s *Server) ShowDashboard(c *gin.Context) {
@@ -43,6 +73,8 @@ func (s *Server) ShowDashboard(c *gin.Context) {
 	if v := session.Get("full_name"); v != nil {
 		fullName = v.(string)
 	}
+	role := session.Get("role")
+	userID := session.Get("user_id")
 
 	// 1. Fetch Stats for Today
 	startOfDay := time.Now().Truncate(24 * time.Hour)
@@ -50,7 +82,13 @@ func (s *Server) ShowDashboard(c *gin.Context) {
 	var todayCount int64
 	var todayWeight float64 // Sum of NetWeight
 
-	cacheKey := "dashboard:stats:today"
+	// SECURITY: Use different cache keys for admin vs individual operators
+	// to prevent information leakage and cache poisoning.
+	cacheKey := "dashboard:stats:today:admin"
+	if role != "admin" {
+		cacheKey = fmt.Sprintf("dashboard:stats:today:u:%v", userID)
+	}
+
 	cached := false
 
 	// Try Cache
@@ -80,6 +118,7 @@ func (s *Server) ShowDashboard(c *gin.Context) {
 		s.DB.Model(&models.WeighingRecord{}).
 			Select("count(*) as count, COALESCE(sum(net_weight), 0) as total").
 			Where("weighed_at >= ?", startOfDay).
+			Scopes(s.stationFilter(session)).
 			Scan(&stats)
 
 		todayCount = stats.Count
@@ -95,7 +134,11 @@ func (s *Server) ShowDashboard(c *gin.Context) {
 	// 2. Fetch Recent Transactions
 	var recent []models.WeighingRecord
 
-	recentCacheKey := "dashboard:recent"
+	recentCacheKey := "dashboard:recent:admin"
+	if role != "admin" {
+		recentCacheKey = fmt.Sprintf("dashboard:recent:u:%v", userID)
+	}
+
 	recentCached := false
 
 	if s.Redis != nil {
@@ -108,7 +151,11 @@ func (s *Server) ShowDashboard(c *gin.Context) {
 	}
 
 	if !recentCached {
-		s.DB.Order("weighed_at desc").Limit(10).Find(&recent)
+		s.DB.Order("weighed_at desc").
+			Limit(10).
+			Scopes(s.stationFilter(session)).
+			Find(&recent)
+
 		if s.Redis != nil {
 			data, _ := json.Marshal(recent)
 			s.Redis.Set(c, recentCacheKey, data, 5*time.Minute)
@@ -199,28 +246,8 @@ func (s *Server) ShowReports(c *gin.Context) {
 			db = db.Where("company_name = ?", companyFilter)
 		}
 
-		role := session.Get("role")
-		userID := session.Get("user_id")
-
-		if role != "admin" {
-			if userID == nil {
-				// FAIL CLOSED: If for some reason userID is missing from session, deny access to all records
-				return db.Where("1 = 0")
-			}
-			var stationIDs []uint
-			s.DB.Model(&models.UserStationAssignment{}).
-				Where("user_id = ?", userID).
-				Pluck("weighing_station_id", &stationIDs)
-
-			if len(stationIDs) > 0 {
-				db = db.Where("scale_id IN ?", stationIDs)
-			} else {
-				// No assignments means no access to records
-				db = db.Where("1 = 0")
-			}
-		}
-
-		return db
+		// Apply role-based station filtering
+		return db.Scopes(s.stationFilter(session))
 	}
 
 	var records []models.WeighingRecord
@@ -405,8 +432,14 @@ func (s *Server) SaveTransaction(c *gin.Context) {
 
 	// Invalidate Dashboard Cache
 	if s.Redis != nil {
-		s.Redis.Del(c, "dashboard:stats:today")
-		s.Redis.Del(c, "dashboard:recent")
+		// Invalidate Admin Cache
+		s.Redis.Del(c, "dashboard:stats:today:admin")
+		s.Redis.Del(c, "dashboard:recent:admin")
+		// Invalidate current user's cache
+		if role != "admin" {
+			s.Redis.Del(c, fmt.Sprintf("dashboard:stats:today:u:%v", userID))
+			s.Redis.Del(c, fmt.Sprintf("dashboard:recent:u:%v", userID))
+		}
 	}
 
 	// Fix PDF Path for Frontend:
