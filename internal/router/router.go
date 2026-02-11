@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -69,9 +70,9 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	// CSRF Protection (Skipping /api/external)
 	r.Use(func(c *gin.Context) {
 		// Skip CSRF for external API
-		// SECURITY FIX: Explicit check to prevent bypass with paths like /api/external_foo
-		path := c.Request.URL.Path
-		if path == "/api/external" || strings.HasPrefix(path, "/api/external/") {
+		// SECURITY FIX: Normalize path using path.Clean to prevent bypass with traversal or multiple slashes
+		cleanPath := path.Clean(c.Request.URL.Path)
+		if cleanPath == "/api/external" || strings.HasPrefix(cleanPath, "/api/external/") {
 			c.Next()
 			return
 		}
@@ -109,10 +110,18 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 		},
 	})
 
-	// Cache Control for Static Files (1 day)
+	// Cache Control for Static Files (1 day for public assets, private for reports/snaps)
 	r.Use(func(c *gin.Context) {
-		if len(c.Request.URL.Path) >= 7 && c.Request.URL.Path[:7] == "/static" {
-			c.Header("Cache-Control", "public, max-age=86400")
+		p := c.Request.URL.Path
+		if strings.HasPrefix(p, "/static") {
+			// SECURITY FIX: Prevent public caching of sensitive reports and snapshots
+			if strings.HasPrefix(p, "/static/reports/") || strings.Contains(p, "/snap_") {
+				c.Header("Cache-Control", "private, no-store, must-revalidate")
+				c.Header("Pragma", "no-cache")
+				c.Header("Expires", "0")
+			} else {
+				c.Header("Cache-Control", "public, max-age=86400")
+			}
 		}
 		c.Next()
 	})
@@ -144,7 +153,10 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	loginLimiter := middleware.RateLimiter(rate.Limit(1.0/60.0), 5)
 	r.POST("/login", loginLimiter, server.Login)
 	r.GET("/logout", server.Logout)
-	r.GET("/api/captcha", server.GetCaptcha) // New endpoint for refreshing captcha
+
+	// Apply rate limiting to captcha (10 req/min, burst 20) to prevent memory exhaustion DoS
+	captchaLimiter := middleware.RateLimiter(rate.Limit(10.0/60.0), 20)
+	r.GET("/api/captcha", captchaLimiter, server.GetCaptcha) // New endpoint for refreshing captcha
 
 	// 6. Protected Routes
 	protected := r.Group("/")
