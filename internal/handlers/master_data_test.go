@@ -131,6 +131,35 @@ func TestSearchVehicles(t *testing.T) {
 	assert.Equal(t, "[]", w2.Body.String())
 }
 
+func TestSearchVehiclesEscaping(t *testing.T) {
+	r, db := setupServer(t)
+
+	// Clean existing to be sure
+	db.Unscoped().Where("1 = 1").Delete(&models.Vehicle{})
+
+	db.Create(&models.Vehicle{PlateNumber: "B 1000 X"})
+	db.Create(&models.Vehicle{PlateNumber: "B % 100"})
+	db.Create(&models.Vehicle{PlateNumber: "B _ 200"})
+
+	// Search for "%" - should only match "B % 100" if properly escaped
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/vehicles/search?q=%25", nil)
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "B % 100")
+	assert.NotContains(t, w.Body.String(), "B 1000 X")
+
+	// Search for "_" - should only match "B _ 200" if properly escaped
+	w2 := httptest.NewRecorder()
+	req2, _ := http.NewRequest("GET", "/api/vehicles/search?q=_", nil)
+	r.ServeHTTP(w2, req2)
+
+	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.Contains(t, w2.Body.String(), "B _ 200")
+	assert.NotContains(t, w2.Body.String(), "B 1000 X")
+}
+
 func TestCreateCompany(t *testing.T) {
 	r, _ := setupServer(t)
 

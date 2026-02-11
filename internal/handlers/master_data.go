@@ -254,7 +254,11 @@ func (s *Server) SearchVehicles(c *gin.Context) {
 
 	var vehicles []models.Vehicle
 	// Simple fuzzy search - case insensitive (already uppercased)
-	err := s.DB.Preload("Company").Where("plate_number LIKE ?", "%"+query+"%").Limit(10).Find(&vehicles).Error
+	// SECURITY: Escape special characters in LIKE query to prevent broad matches
+	replacer := strings.NewReplacer("\\", "\\\\", "%", "\\%", "_", "\\_")
+	escapedQuery := replacer.Replace(query)
+
+	err := s.DB.Preload("Company").Where("plate_number LIKE ? ESCAPE '\\'", "%"+escapedQuery+"%").Limit(10).Find(&vehicles).Error
 	if err != nil {
 		log.Printf("SearchVehicles error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Search failed"})

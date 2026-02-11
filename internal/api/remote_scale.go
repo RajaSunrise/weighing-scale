@@ -38,6 +38,12 @@ func HandleRemoteScaleData(c *gin.Context) {
 		return
 	}
 
+	// SECURITY: Range validation for weight to prevent data corruption or DoS
+	if payload.Weight < 0 || payload.Weight > 1000000 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Weight out of range (0-1,000,000)"})
+		return
+	}
+
 	// 4. Update ScaleManager
 	if hardware.Manager != nil {
 		hardware.Manager.UpdateScale(station.ID, payload.Weight, true)
