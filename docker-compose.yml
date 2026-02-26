@@ -16,7 +16,10 @@ services:
       - ./data:/app/data:z
       - ./web/static/images:/app/web/static/images:z
       - ./models:/app/models:z
-    user: "0:0"
+      # SECURITY: Do not run as root. Use a non-privileged UID/GID.
+      # Running as root inside the container means any container escape gives
+      # the attacker root on the host (especially without seccomp/apparmor).
+    user: "1000:1000"
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
       interval: 30s
@@ -41,7 +44,9 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      # SECURITY: Change this to a strong, randomly-generated password in production.
+      # Example: openssl rand -hex 20
+      POSTGRES_PASSWORD: CHANGE_ME_strong_db_password
       POSTGRES_DB: stoneweigh
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -61,7 +66,9 @@ services:
       retries: 5
 
   redis:
-    image: redis:latest
+    image: redis:7-alpine
+    # SECURITY: Pinned to a specific major version to avoid unexpected breaking changes
+    # and unpredictable security patch timelines from :latest.
     container_name: stoneweigh-redis
     restart: unless-stopped
     volumes:

@@ -109,7 +109,16 @@ func validateRTSPURL(rawURL string) error {
 		return errors.New("invalid URL scheme: must be rtsp, rtsps, http, https, tcp, or udp")
 	}
 
-	// SECURITY: Prevent SSRF to Loopback/Metadata
+	/*
+	  SECURITY: Prevent SSRF to Loopback, Link-Local, and Private IP ranges.
+	  - Risk: An attacker with admin access could configure an RTSP URL pointing to
+	    internal services (metadata API, internal dashboards, redis, postgres) to
+	    exfiltrate data or pivot into the internal network.
+	  - Attack scenario: Set camera URL to rtsp://169.254.169.254/latest/meta-data
+	    (AWS metadata), or rtsp://192.168.1.1/admin to probe internal routers.
+	  - Mitigation: Block all RFC-1918 private ranges, loopback, link-local unicast,
+	    unspecified addresses, and the CGNAT/shared range (100.64.0.0/10).
+	*/
 	hostname := parsed.Hostname()
 	if strings.EqualFold(hostname, "localhost") {
 		return errors.New("URL cannot be loopback or local metadata")
@@ -117,8 +126,8 @@ func validateRTSPURL(rawURL string) error {
 
 	ip := net.ParseIP(hostname)
 	if ip != nil {
-		if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
-			return errors.New("URL cannot be loopback or local metadata")
+		if isRestrictedIP(ip) {
+			return errors.New("URL cannot point to a loopback, private, or reserved IP")
 		}
 		return nil
 	}
@@ -130,12 +139,41 @@ func validateRTSPURL(rawURL string) error {
 	}
 
 	for _, resolvedIP := range ips {
-		if resolvedIP.IsLoopback() || resolvedIP.IsLinkLocalUnicast() || resolvedIP.IsUnspecified() {
-			return errors.New("URL resolves to restricted IP")
+		if isRestrictedIP(resolvedIP) {
+			return errors.New("URL resolves to a restricted IP")
 		}
 	}
 
 	return nil
+}
+
+// isRestrictedIP returns true if the IP is loopback, link-local, unspecified,
+// or any RFC-1918 / reserved private range that must not be reachable from user input.
+// Private ranges covered: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16,
+// 169.254.0.0/16 (link-local), 100.64.0.0/10 (CGNAT/shared).
+func isRestrictedIP(ip net.IP) bool {
+	if ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsUnspecified() {
+		return true
+	}
+	// RFC-1918 private ranges and CGNAT (Go 1.17+ has ip.IsPrivate() but
+	// explicitly checking ranges is more portable and audit-friendly).
+	privateRanges := []string{
+		"10.0.0.0/8",
+		"172.16.0.0/12",
+		"192.168.0.0/16",
+		"100.64.0.0/10", // CGNAT / shared address space
+		"fc00::/7",       // IPv6 ULA
+	}
+	for _, cidr := range privateRanges {
+		_, network, err := net.ParseCIDR(cidr)
+		if err != nil {
+			continue
+		}
+		if network.Contains(ip) {
+			return true
+		}
+	}
+	return false
 }
 
 type ScaleConfig struct {

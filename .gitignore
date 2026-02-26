@@ -5,3 +5,9 @@ server.pid
 web/static/reports/*.pdf
 
 .ruff_cache/
+
+# SECURITY: Never commit .env — it may contain real credentials, session secrets,
+# and database passwords. Use .env.example as the template.
+.env
+*.env
+!.env.example
