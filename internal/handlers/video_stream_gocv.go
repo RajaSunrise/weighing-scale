@@ -5,6 +5,7 @@ package handlers
 import (
 	"fmt"
 	"image"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -238,22 +239,32 @@ func captureLoop(s *SharedStream) {
 				gocv.Resize(img, &img, image.Point{X: 854, Y: 480}, 0, 0, gocv.InterpolationLinear)
 
 				// Encode to JPG with reduced quality (70) to save bandwidth
-				buf, err := gocv.IMEncodeWithParams(gocv.JPEGFileExt, img, []int{gocv.IMWriteJpegQuality, 70})
-				if err == nil {
-					// CRITICAL FIX: Copy data to Go memory
-					// buf.GetBytes() returns a slice backed by C++ memory which is freed on buf.Close()
-					data := buf.GetBytes()
-					dst := make([]byte, len(data))
-					copy(dst, data)
-
-					s.LastFrameMu.Lock()
-					s.LastFrame = dst
-					// Signal waiting clients
-					close(s.Signal)
-					s.Signal = make(chan struct{})
-					s.LastFrameMu.Unlock()
-					buf.Close()
+				encoded, err := gocv.IMEncodeWithParams(gocv.JPEGFileExt, img, []int{gocv.IMWriteJpegQuality, 70})
+				if err != nil {
+					log.Printf("GoCV IMEncode failed: %v", err)
+					continue
 				}
+
+				cMemBuf := encoded.GetBytes()
+				if cMemBuf == nil {
+					log.Printf("GoCV GetBytes failed")
+					encoded.Close()
+					continue
+				}
+
+				// CRITICAL FIX: Copy data to Go memory
+				// GoCV GetBytes() returns a slice pointing to C memory that gets freed
+				// when the Mat is closed or GC runs.
+				buf := make([]byte, len(cMemBuf))
+				copy(buf, cMemBuf)
+
+				s.LastFrameMu.Lock()
+				s.LastFrame = buf
+				// Signal waiting clients
+				close(s.Signal)
+				s.Signal = make(chan struct{})
+				s.LastFrameMu.Unlock()
+				encoded.Close()
 
 				// Cap framerate (slightly reduced sleep to allow higher FPS if needed, but keeping small delay)
 				time.Sleep(1 * time.Millisecond)
