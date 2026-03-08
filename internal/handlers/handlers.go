@@ -22,7 +22,10 @@ import (
 	"gorm.io/gorm"
 )
 
-const companiesCacheKey = "reports:companies:list"
+const (
+	companiesCacheKey = "reports:companies:list"
+	usersCacheKey     = "settings:users:list"
+)
 
 /*
   SECURITY: DoS Protection (Resource Exhaustion)
