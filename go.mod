@@ -8,7 +8,7 @@ require (
 	github.com/go-pdf/fpdf v0.9.0
 	github.com/joho/godotenv v1.5.1
 	github.com/mojocn/base64Captcha v1.3.8
-	github.com/redis/go-redis/v9 v9.17.3
+	github.com/redis/go-redis/v9 v9.18.0
 	github.com/stretchr/testify v1.11.1
 	github.com/utrack/gin-csrf v0.0.0-20190424104817-40fb8d2c8fca
 	go.bug.st/serial v1.6.4
@@ -61,6 +61,7 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.3.1 // indirect
 	go.mongodb.org/mongo-driver/v2 v2.5.0 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/arch v0.23.0 // indirect
 	golang.org/x/image v0.23.0 // indirect
 	golang.org/x/net v0.51.0 // indirect
