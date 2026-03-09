@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"stoneweigh/internal/models"
 	"strconv"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -35,6 +37,18 @@ func (s *Server) ShowUsers(c *gin.Context) {
 // GetUsers returns all users with their assignments
 func (s *Server) GetUsers(c *gin.Context) {
 	var users []models.User
+
+	// Try Cache
+	if s.Redis != nil {
+		val, err := s.Redis.Get(c, usersCacheKey).Result()
+		if err == nil {
+			if err := json.Unmarshal([]byte(val), &users); err == nil {
+				c.JSON(http.StatusOK, users)
+				return
+			}
+		}
+	}
+
 	if err := s.DB.Find(&users).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
 		return
@@ -43,6 +57,13 @@ func (s *Server) GetUsers(c *gin.Context) {
 	for i := range users {
 		users[i].PasswordHash = ""
 	}
+
+	// Save to Cache (1 hour)
+	if s.Redis != nil {
+		data, _ := json.Marshal(users)
+		s.Redis.Set(c, usersCacheKey, data, 1*time.Hour)
+	}
+
 	c.JSON(http.StatusOK, users)
 }
 
@@ -96,6 +117,11 @@ func (s *Server) CreateUser(c *gin.Context) {
 		return
 	}
 
+	// Invalidate Cache
+	if s.Redis != nil {
+		s.Redis.Del(c, usersCacheKey)
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "User created"})
 }
 
@@ -107,6 +133,11 @@ func (s *Server) DeleteUser(c *gin.Context) {
 	}
 	// Also delete assignments
 	s.DB.Where("user_id = ?", id).Delete(&models.UserStationAssignment{})
+
+	// Invalidate Cache
+	if s.Redis != nil {
+		s.Redis.Del(c, usersCacheKey)
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted"})
 }
@@ -160,6 +191,12 @@ func (s *Server) UpdateUserAssignments(c *gin.Context) {
 	}
 
 	tx.Commit()
+
+	// Invalidate Cache
+	if s.Redis != nil {
+		s.Redis.Del(c, usersCacheKey)
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Assignments updated"})
 }
 
