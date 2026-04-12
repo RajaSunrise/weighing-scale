@@ -17,6 +17,11 @@ type RemoteScalePayload struct {
 func HandleRemoteScaleData(c *gin.Context) {
 	// 1. Get Token from Header (preferred)
 	// SECURITY: Do not accept tokens via query parameters (leaks in logs/history)
+	if c.Query("token") != "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Query parameter tokens are not allowed"})
+		c.Abort()
+		return
+	}
 	token := c.GetHeader("X-Scale-Token")
 
 	if token == "" {
