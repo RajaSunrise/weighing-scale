@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,7 +15,7 @@ func TestSecurityFixes(t *testing.T) {
 	// Setup
 	os.Setenv("SESSION_SECRET", "testsecret")
 	server := &handlers.Server{} // Mock or empty server for routing tests
-	r := SetupRouter(server)
+	r := SetupRouter(context.Background(), server)
 
 	t.Run("CSRF Bypass via Path Traversal", func(t *testing.T) {
 		// Testing bypass attempt: /api/external//../api/transaction

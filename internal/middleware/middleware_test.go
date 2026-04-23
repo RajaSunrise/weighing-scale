@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"encoding/gob"
 	"fmt"
 	"net/http"
@@ -192,7 +193,7 @@ func TestRoleRequired(t *testing.T) {
 func TestRateLimiter(t *testing.T) {
 	r := setupTestRouter()
 	// Strict limit: 1 request per second, burst 1
-	r.Use(RateLimiter(rate.Limit(1), 1))
+	r.Use(RateLimiter(context.Background(), rate.Limit(1), 1))
 	r.GET("/", func(c *gin.Context) {
 		c.Status(http.StatusOK)
 	})

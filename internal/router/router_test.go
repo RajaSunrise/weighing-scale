@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -40,7 +41,7 @@ func TestPublicRoute(t *testing.T) {
 		}
 	}()
 
-	r := SetupRouter(server)
+	r := SetupRouter(context.Background(), server)
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)

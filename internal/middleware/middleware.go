@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"strings"
@@ -117,7 +118,7 @@ func RoleRequired(role string) gin.HandlerFunc {
 }
 
 // RateLimiter implements a simple IP-based rate limiter using token bucket
-func RateLimiter(limit rate.Limit, burst int) gin.HandlerFunc {
+func RateLimiter(ctx context.Context, limit rate.Limit, burst int) gin.HandlerFunc {
 	type client struct {
 		limiter  *rate.Limiter
 		lastSeen time.Time
@@ -129,15 +130,21 @@ func RateLimiter(limit rate.Limit, burst int) gin.HandlerFunc {
 
 	// Background cleanup for old entries
 	go func() {
+		ticker := time.NewTicker(time.Minute)
+		defer ticker.Stop()
 		for {
-			time.Sleep(time.Minute)
-			mu.Lock()
-			for ip, client := range clients {
-				if time.Since(client.lastSeen) > 3*time.Minute {
-					delete(clients, ip)
+			select {
+			case <-ticker.C:
+				mu.Lock()
+				for ip, client := range clients {
+					if time.Since(client.lastSeen) > 3*time.Minute {
+						delete(clients, ip)
+					}
 				}
+				mu.Unlock()
+			case <-ctx.Done():
+				return
 			}
-			mu.Unlock()
 		}
 	}()
 

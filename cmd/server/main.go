@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"time"
@@ -67,7 +68,7 @@ func main() {
 	server := handlers.NewServer(db, hardware.Manager, anpr, rdb)
 
 	// 6. Setup Router
-	r := router.SetupRouter(server)
+	r := router.SetupRouter(context.Background(), server)
 
 	port := os.Getenv("PORT")
 	if port == "" {

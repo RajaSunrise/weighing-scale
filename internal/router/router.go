@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -25,7 +26,7 @@ import (
 	"stoneweigh/internal/pkg/templates"
 )
 
-func SetupRouter(server *handlers.Server) *gin.Engine {
+func SetupRouter(ctx context.Context, server *handlers.Server) *gin.Engine {
 	// 1. Initialize Gin
 	if os.Getenv("GIN_MODE") == "release" {
 		gin.SetMode(gin.ReleaseMode)
@@ -65,7 +66,7 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	r.Use(middleware.RequestLogger())
 	r.Use(middleware.SecurityHeaders()) // Add Security Headers
 	// Rate Limit: 20 requests/second, burst of 50
-	r.Use(middleware.RateLimiter(rate.Limit(20), 50))
+	r.Use(middleware.RateLimiter(ctx, rate.Limit(20), 50))
 
 	// CSRF Protection (Skipping /api/external)
 	r.Use(func(c *gin.Context) {
@@ -150,12 +151,12 @@ func SetupRouter(server *handlers.Server) *gin.Engine {
 	// Auth Routes
 	r.GET("/login", server.ShowLogin)
 	// Apply strict rate limiting to login POST (1 req/min, burst 5) to prevent brute force
-	loginLimiter := middleware.RateLimiter(rate.Limit(1.0/60.0), 5)
+	loginLimiter := middleware.RateLimiter(ctx, rate.Limit(1.0/60.0), 5)
 	r.POST("/login", loginLimiter, server.Login)
 	r.GET("/logout", server.Logout)
 
 	// Apply rate limiting to captcha (10 req/min, burst 20) to prevent memory exhaustion DoS
-	captchaLimiter := middleware.RateLimiter(rate.Limit(10.0/60.0), 20)
+	captchaLimiter := middleware.RateLimiter(ctx, rate.Limit(10.0/60.0), 20)
 	r.GET("/api/captcha", captchaLimiter, server.GetCaptcha) // New endpoint for refreshing captcha
 
 	// 6. Protected Routes
